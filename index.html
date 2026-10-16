@@ -22,15 +22,7 @@
                         brand: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d' },
                         headerGreen: '#004d3d',
                         headerDark: '#00382c',
-                        tabActive: '#005a48',
-                        modInv: '#2563eb',
-                        modHR: '#059669',
-                        modClean: '#0d9488',
-                        modPest: '#d97706',
-                        modWaste: '#ea580c',
-                        modCompost: '#16a34a',
-                        modWater: '#0284c7',
-                        modProc: '#7c3aed'
+                        tabActive: '#005a48'
                     }
                 }
             }
@@ -61,12 +53,12 @@
                     </div>
                 </div>
 
-                <!-- User Profile & Auth -->
+                <!-- User Profile & Auth Status -->
                 <div class="flex items-center space-x-4">
                     <div class="hidden sm:flex flex-col text-right">
                         <span id="userEmailDisplay" class="text-xs font-semibold text-emerald-100">Not Signed In</span>
                         <div>
-                            <span id="userRoleBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-700/80 text-emerald-100 font-semibold border border-emerald-500/30">Guest</span>
+                            <span id="userRoleBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-red-700/80 text-white font-semibold border border-red-500/30">Unauthorized</span>
                         </div>
                     </div>
 
@@ -91,7 +83,7 @@
         </div>
     </header>
 
-    <!-- SUB-NAVIGATION BAR (8 HOUSEKEEPING MODULES) -->
+    <!-- SUB-NAVIGATION BAR (MODULE TABS) -->
     <div id="subModuleNavbar" class="bg-white border-b border-slate-200 shadow-sm py-3 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center space-x-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0" id="housekeepingSubTabs">
             <!-- Dynamic Sub Module Buttons -->
@@ -101,7 +93,7 @@
     <!-- MAIN CONTENT CONTAINER -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         
-        <!-- MODULE BANNER / TITLE & EXPORT UTILITIES -->
+        <!-- MODULE BANNER & UTILITIES -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 mb-6 border-b border-slate-200 gap-4">
             <div class="flex items-center space-x-3">
                 <div id="moduleIconContainer" class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-lg shadow-sm">
@@ -114,7 +106,15 @@
             </div>
 
             <!-- Action Controls & Export Dropdown -->
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                
+                <!-- COPY CODE / DATA BUTTON IN PORTAL TOOLBAR -->
+                <button onclick="copyCurrentModuleData()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-2">
+                    <i class="fa-solid fa-code text-emerald-400"></i>
+                    <span id="copyBtnText">Copy Code / Data</span>
+                </button>
+
+                <!-- EXPORT DROPDOWN -->
                 <div class="relative inline-block text-left">
                     <button onclick="toggleDropdown('exportDropdown')" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-2">
                         <i class="fa-solid fa-file-export text-slate-500"></i>
@@ -151,17 +151,17 @@
 
     <!-- GLOBAL MODALS CONTAINER -->
     <!-- 1. AUTH MODAL -->
-    <div id="authModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div id="authModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
                     <i class="fa-solid fa-lock text-emerald-600"></i>
-                    <span>Portal Sign In</span>
+                    <span>Authorized Sign In Required</span>
                 </h3>
                 <button onclick="closeModal('authModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             
-            <p class="text-xs text-slate-500 mb-6">Sign in using your authorized email to access role-specific housekeeping features.</p>
+            <p class="text-xs text-slate-500 mb-6">Access is restricted strictly to authorized email accounts (<code class="text-emerald-700 font-semibold">@jameasaifiyah.edu</code>).</p>
             
             <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm py-2.5 px-4 rounded-xl border border-slate-300 shadow-sm flex items-center justify-center space-x-3 mb-4 transition">
                 <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
@@ -177,7 +177,7 @@
             <form onsubmit="handleEmailLogin(event)" class="space-y-3 mt-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
-                    <input type="email" id="loginEmail" required placeholder="e.g. fm.marol@siyanat.org" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <input type="email" id="loginEmail" required placeholder="murtaza.kheraluwala@jameasaifiyah.edu" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
@@ -206,7 +206,7 @@
                     <form onsubmit="saveUserAccess(event)" class="space-y-3">
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-600 mb-1">User Email ID</label>
-                            <input type="email" id="accessEmail" required placeholder="user@domain.com" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                            <input type="email" id="accessEmail" required placeholder="user@jameasaifiyah.edu" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-600 mb-1">User Role</label>
@@ -245,19 +245,6 @@
         </div>
     </div>
 
-    <!-- 3. GENERIC REUSABLE MODAL -->
-    <div id="genericModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                <h3 class="text-base font-bold text-slate-900" id="genericModalTitle">Form Window</h3>
-                <button onclick="closeModal('genericModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div id="genericModalBody">
-                <!-- Inner Form injected dynamically -->
-            </div>
-        </div>
-    </div>
-
     <!-- FIREBASE MODULE INTEGRATION SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -271,7 +258,7 @@
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // Your Web App's Firebase Configuration
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBPGqD2emtRMEMFd02UoC2iGRyFDbmBVxU",
             authDomain: "siyanat-housekeeping.firebaseapp.com",
@@ -281,17 +268,14 @@
             appId: "1:290263999867:web:94c15947934039de8589de"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // Attach Auth Functions to Global Window
         window.loginWithGoogle = async function() {
             try {
                 const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                window.handleUserAuthenticated(user.email);
+                window.handleUserAuthenticated(result.user.email);
                 closeModal('authModal');
             } catch (error) {
                 console.error("Google Auth Error:", error);
@@ -316,7 +300,7 @@
                         closeModal('authModal');
                         alert("Account created and signed in!");
                     } catch (createErr) {
-                        alert("Sign in / Sign up error: " + createErr.message);
+                        alert("Sign in error: " + createErr.message);
                     }
                 } else {
                     alert("Authentication Error: " + error.message);
@@ -330,88 +314,133 @@
             });
         };
 
-        // Auth Observer for Automatic Login Handling
         onAuthStateChanged(auth, (user) => {
-            const authBtn = document.getElementById('authBtn');
             const authBtnText = document.getElementById('authBtnText');
+            const authBtn = document.getElementById('authBtn');
 
             if (user) {
                 window.handleUserAuthenticated(user.email);
                 if (authBtnText) authBtnText.innerText = 'Sign Out';
-                if (authBtn) {
-                    authBtn.onclick = () => window.logoutUser();
-                }
+                if (authBtn) authBtn.onclick = () => window.logoutUser();
             } else {
+                window.handleUserAuthenticated(null);
                 if (authBtnText) authBtnText.innerText = 'Sign In';
-                if (authBtn) {
-                    authBtn.onclick = () => openModal('authModal');
-                }
+                if (authBtn) authBtn.onclick = () => openModal('authModal');
             }
         });
     </script>
 
     <!-- MAIN APP SCRIPT -->
     <script>
-        // ==========================================
-        // 1. CONSTANTS, ROLES & ACCESS CONFIG
-        // ==========================================
-        const MAIN_ADMINS = ['fm.marol', 'murtaza.kheraluwala', 'fm.marol@siyanat.org', 'murtaza.kheraluwala@siyanat.org', 'murtaza.kheraluwala@jameasaifiyah.edu'];
-        
-        const AREAS = [
-            'Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 
-            'Estates', 'Boys Hostel', 'Girls Hostel', 'Najmi Bldg', 'Compound Area'
+        // STRICT LIST OF AUTHORIZED USERS
+        const ALLOWED_USERS = [
+            'murtaza.kheraluwala@jameasaifiyah.edu',
+            'fm.marol@jameasaifiyah.edu'
         ];
-
-        const EXEC_ADMIN_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates'];
-        const EXEC_HOSTEL_AREAS = ['Boys Hostel', 'Girls Hostel', 'Najmi Bldg', 'Compound Area'];
 
         const MODULES = [
-            { id: 'inventory', name: '1. Inventory Management', shortName: '1. Inventory', icon: 'fa-boxes-stacked', color: '#2563eb', bg: 'bg-blue-600' },
-            { id: 'hr', name: '2. HR & Staff Schedule', shortName: '2. HR & Schedule', icon: 'fa-users', color: '#059669', bg: 'bg-emerald-600' },
-            { id: 'cleaning', name: '3. Cleaning Reports', shortName: '3. Cleaning Reports', icon: 'fa-broom', color: '#0d9488', bg: 'bg-teal-600' },
-            { id: 'pest', name: '4. Pest Control', shortName: '4. Pest Control', icon: 'fa-bug', color: '#d97706', bg: 'bg-amber-600' },
-            { id: 'waste', name: '5. Dry Waste Management', shortName: '5. Dry Waste', icon: 'fa-recycle', color: '#ea580c', bg: 'bg-orange-600' },
-            { id: 'compost', name: '6. Compost Operations', shortName: '6. Compost', icon: 'fa-seedling', color: '#16a34a', bg: 'bg-green-600' },
-            { id: 'water', name: '7. Water Tanks Cleaning', shortName: '7. Water Tanks', icon: 'fa-faucet-drip', color: '#0284c7', bg: 'bg-sky-600' },
-            { id: 'procurement', name: '8. Procurement & Rates', shortName: '8. Procurement', icon: 'fa-cart-shopping', color: '#7c3aed', bg: 'bg-purple-600' }
+            { id: 'inventory', name: '1. Inventory Management', shortName: '1. Inventory', icon: 'fa-boxes-stacked', color: '#2563eb' },
+            { id: 'hr', name: '2. HR & Staff Schedule', shortName: '2. HR & Schedule', icon: 'fa-users', color: '#059669' },
+            { id: 'cleaning', name: '3. Cleaning Reports', shortName: '3. Cleaning Reports', icon: 'fa-broom', color: '#0d9488' },
+            { id: 'pest', name: '4. Pest Control', shortName: '4. Pest Control', icon: 'fa-bug', color: '#d97706' },
+            { id: 'waste', name: '5. Dry Waste Management', shortName: '5. Dry Waste', icon: 'fa-recycle', color: '#ea580c' },
+            { id: 'compost', name: '6. Compost Operations', shortName: '6. Compost', icon: 'fa-seedling', color: '#16a34a' },
+            { id: 'water', name: '7. Water Tanks Cleaning', shortName: '7. Water Tanks', icon: 'fa-faucet-drip', color: '#0284c7' },
+            { id: 'procurement', name: '8. Procurement & Rates', shortName: '8. Procurement', icon: 'fa-cart-shopping', color: '#7c3aed' }
         ];
 
-        // Default User State
-        let currentUser = {
-            email: 'murtaza.kheraluwala@jameasaifiyah.edu',
-            role: 'Administrator',
-            area: 'All',
-            modules: MODULES.map(m => m.id)
-        };
-
-        // Active Navigation States
+        let currentUser = null;
         let currentPrimaryTab = 'housekeeping';
         let activeModule = 'inventory';
 
-        // Deployed Google Apps Script Execution URL
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxiU-_4R-8lnOukXbODlUVFuJ9Elvh-afvSXnbBc-PJfrlDnhP86BsXIJXeZa9f75K/exec";
 
-        // APP INITIALIZATION
+        let dbData = {
+            inventory: [
+                { id: 'INV-01', code: 'CHM-01', name: 'R1 Bathroom Cleaner', category: 'Chemicals', unit: 'Ltr', mainStock: 120 },
+                { id: 'INV-02', code: 'CHM-02', name: 'R2 Hard Surface Cleaner', category: 'Chemicals', unit: 'Ltr', mainStock: 80 }
+            ],
+            hr: [],
+            cleaningReports: [],
+            pestControl: [],
+            dryWaste: [],
+            compost: [],
+            waterTanks: []
+        };
+
         function initApp() {
             updateUserDisplay();
-            switchModule('inventory');
-            loadSheetData();
+        }
+
+        // COPY CODE / DATA FUNCTIONALITY
+        function copyCurrentModuleData() {
+            const dataToCopy = dbData[activeModule] || dbData.inventory;
+            const formattedJson = JSON.stringify(dataToCopy, null, 2);
+
+            navigator.clipboard.writeText(formattedJson).then(() => {
+                const copyBtnText = document.getElementById('copyBtnText');
+                if (copyBtnText) {
+                    copyBtnText.innerText = 'Copied to Clipboard!';
+                    setTimeout(() => {
+                        copyBtnText.innerText = 'Copy Code / Data';
+                    }, 2000);
+                }
+            }).catch(err => {
+                console.error("Copy failed:", err);
+            });
         }
 
         function handleUserAuthenticated(email) {
-            const foundUser = userAccessDb.find(u => u.email === email);
-            if (foundUser) {
-                currentUser = foundUser;
+            if (!email) {
+                currentUser = null;
             } else {
-                currentUser = {
-                    email: email,
-                    role: 'Administrator',
-                    area: 'All',
-                    modules: MODULES.map(m => m.id)
-                };
+                const normalizedEmail = email.toLowerCase().trim();
+                const isAuthorized = ALLOWED_USERS.includes(normalizedEmail);
+
+                if (isAuthorized) {
+                    currentUser = {
+                        email: normalizedEmail,
+                        role: 'Administrator',
+                        area: 'All',
+                        modules: MODULES.map(m => m.id)
+                    };
+                } else {
+                    currentUser = null;
+                    alert(`Access Denied: The email "${email}" is not authorized.`);
+                }
             }
+
             updateUserDisplay();
-            switchModule('inventory');
+            
+            if (currentUser) {
+                closeModal('authModal');
+                switchModule('inventory');
+            } else {
+                renderUnauthenticatedGate();
+                openModal('authModal');
+            }
+        }
+
+        function renderUnauthenticatedGate() {
+            const container = document.getElementById('moduleContainer');
+            const subNavbar = document.getElementById('housekeepingSubTabs');
+            if (subNavbar) subNavbar.innerHTML = '';
+            
+            if (container) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-slate-200 text-center shadow-sm my-8">
+                        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mb-4">
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">Access Restricted</h3>
+                        <p class="text-sm text-slate-500 max-w-md mb-6">Please sign in with an authorized @jameasaifiyah.edu account.</p>
+                        <button onclick="openModal('authModal')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow transition flex items-center space-x-2">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                            <span>Sign In to Access Portal</span>
+                        </button>
+                    </div>
+                `;
+            }
         }
 
         function openModal(id) {
@@ -419,6 +448,7 @@
         }
 
         function closeModal(id) {
+            if (id === 'authModal' && !currentUser) return;
             document.getElementById(id).classList.add('hidden');
         }
 
@@ -426,109 +456,12 @@
             document.getElementById(id).classList.toggle('hidden');
         }
 
-        /**
-         * Helper function to post data directly to Google Apps Script Web App endpoint
-         */
-        async function sendToGoogleSheet(action, payload) {
-            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_WEB_APP_URL_HERE")) {
-                console.warn("Google Script URL is not set. Data saved locally only.");
-                return { status: "local_only" };
-            }
-
-            try {
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: action, ...payload })
-                });
-                console.log("Successfully posted data to Apps Script:", action);
-                return { status: 'success' };
-            } catch (error) {
-                console.error("Error pushing data to Apps Script Web App:", error);
-                return { status: 'error', error: error.toString() };
-            }
-        }
-
-        // ==========================================
-        // 2. STATE DATABASE (Mock Data Fallback)
-        // ==========================================
-        let dbData = {
-            inventory: [
-                { id: 'INV-01', code: 'CHM-01', name: 'R1 Bathroom Cleaner', category: 'Chemicals', unit: 'Ltr', mainStock: 120, areaStocks: { 'Admin Phase 1': 15, 'Boys Hostel': 25, 'Girls Hostel': 20 } },
-                { id: 'INV-02', code: 'CHM-02', name: 'R2 Hard Surface Cleaner', category: 'Chemicals', unit: 'Ltr', mainStock: 80, areaStocks: { 'Admin Phase 1': 10, 'Boys Hostel': 12 } },
-                { id: 'INV-03', code: 'EQP-01', name: 'Wet & Dry Vacuum Cleaner', category: 'Equipment', unit: 'Pcs', mainStock: 8, areaStocks: { 'Mahad Bldg': 2, 'Religious Block': 1 } }
-            ],
-            invArchive: [
-                { date: '2026-10-15', item: 'R1 Bathroom Cleaner', type: 'Purchase', qty: 50, area: 'Main Store', user: 'murtaza.kheraluwala' }
-            ],
-            hr: [
-                { id: 'EMP-01', name: 'Murtaza Kheraluwala', contact: '9876543210', locker: 'L-01', uniform: 'Yes', uniformDate: '2026-01-10', category: 'Aljamea', area: 'Admin Phase 1', isSupervisor: true },
-                { id: 'EMP-02', name: 'Huzefa Kapasi', contact: '9876543211', locker: 'L-02', uniform: 'Yes', uniformDate: '2026-02-15', category: 'United', area: 'Boys Hostel', isSupervisor: false }
-            ],
-            cleaningReports: [
-                { id: 'DWR-1', date: '2026-10-15', area: 'Admin Phase 1', tasksCompleted: ['Corridor Mopping', 'Window Dusting'], remarks: 'All clear' }
-            ],
-            pestControl: [
-                { id: 'PC-1', date: '2026-10-14', area: 'Boys Hostel', type: 'Recurring', location: 'Kitchen Pantry', remarks: 'Gel treatment applied', photos: [] }
-            ],
-            dryWaste: [
-                { id: 'DW-1', date: '2026-10-14', month: '2026-10', weights: { 'Soft Plastic': 10, 'Hard Plastic': 5, 'Cardboard': 20, 'Color Paper': 15, 'Metal/Tin': 2, 'Glass': 0 }, totalKg: 52, totalAmt: 680 }
-            ],
-            wasteRates: { 'Soft Plastic': 12, 'Hard Plastic': 15, 'Cardboard': 10, 'Color Paper': 8, 'Metal/Tin': 25, 'Glass': 2 },
-            wetWaste: [],
-            compost: [],
-            waterTanks: [
-                { id: 'WT-01', location: 'Mahad Building Roof', type: 'Domestic', category: 'Overhead', capacity: '15,000L', history: [{ date: '2026-09-01', remarks: 'Chlorination and scrubbing done' }] }
-            ],
-            vendors: ['Vendor A', 'Vendor B'],
-            procurementRates: {}
-        };
-
-        // User Access DB
-        let userAccessDb = [
-            { email: 'murtaza.kheraluwala@jameasaifiyah.edu', role: 'Administrator', area: 'All', modules: MODULES.map(m => m.id) }
-        ];
-
-        // Fetch Initial Data from Google Sheet on Load
-        async function loadSheetData() {
-            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_WEB_APP_URL_HERE")) return;
-            try {
-                const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getAllData`);
-                const result = await response.json();
-                if (result) {
-                    if (result.inventory && result.inventory.length > 0) dbData.inventory = result.inventory;
-                    if (result.hr && result.hr.length > 0) dbData.hr = result.hr;
-                    if (result.cleaningReports && result.cleaningReports.length > 0) dbData.cleaningReports = result.cleaningReports;
-                    if (result.pestControl && result.pestControl.length > 0) dbData.pestControl = result.pestControl;
-                    if (result.dryWaste && result.dryWaste.length > 0) dbData.dryWaste = result.dryWaste;
-                    switchModule(activeModule);
-                }
-            } catch (err) {
-                console.log("Using local state, could not load remote Google Sheet data:", err);
-            }
-        }
-
         function switchPrimaryTab(tabName) {
-            if (tabName === 'admin' && currentUser.role !== 'Administrator') {
-                alert('Access Denied: The Admin Access module is restricted to Administrators only.');
-                return;
-            }
-
+            if (!currentUser) { openModal('authModal'); return; }
             currentPrimaryTab = tabName;
-            const hkBtn = document.getElementById('mainTabHousekeeping');
-            const adminBtn = document.getElementById('mainTabAdmin');
-            const subNavbar = document.getElementById('subModuleNavbar');
-
             if (tabName === 'housekeeping') {
-                hkBtn.className = 'px-4 py-2 font-semibold text-xs sm:text-sm rounded-t-lg transition flex items-center space-x-2 bg-[#006e57] text-white border-b-2 border-emerald-300 shadow-sm';
-                if (adminBtn) adminBtn.className = 'px-4 py-2 font-medium text-xs sm:text-sm rounded-t-lg transition flex items-center space-x-2 text-emerald-100 hover:text-white hover:bg-emerald-800/40';
-                subNavbar.classList.remove('hidden');
                 switchModule(activeModule);
             } else if (tabName === 'admin') {
-                if (adminBtn) adminBtn.className = 'px-4 py-2 font-semibold text-xs sm:text-sm rounded-t-lg transition flex items-center space-x-2 bg-[#006e57] text-white border-b-2 border-emerald-300 shadow-sm';
-                hkBtn.className = 'px-4 py-2 font-medium text-xs sm:text-sm rounded-t-lg transition flex items-center space-x-2 text-emerald-100 hover:text-white hover:bg-emerald-800/40';
-                subNavbar.classList.add('hidden');
                 openAdminModal();
             }
         }
@@ -536,21 +469,30 @@
         function updateUserDisplay() {
             const emailEl = document.getElementById('userEmailDisplay');
             const roleEl = document.getElementById('userRoleBadge');
-            if (emailEl) emailEl.innerText = currentUser.email || "Not Signed In";
-            if (roleEl) roleEl.innerText = currentUser.role || "Guest";
-            renderHeaderNavigation();
+            
+            if (currentUser) {
+                if (emailEl) emailEl.innerText = currentUser.email;
+                if (roleEl) {
+                    roleEl.innerText = currentUser.role;
+                    roleEl.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-700/80 text-emerald-100 font-semibold border border-emerald-500/30";
+                }
+                renderHeaderNavigation();
+            } else {
+                if (emailEl) emailEl.innerText = "Not Signed In";
+                if (roleEl) {
+                    roleEl.innerText = "Unauthorized";
+                    roleEl.className = "text-[10px] px-2 py-0.5 rounded-full bg-red-700/80 text-white font-semibold border border-red-500/30";
+                }
+            }
         }
 
         function renderHeaderNavigation() {
             const container = document.getElementById('housekeepingSubTabs');
-            if (!container) return;
+            if (!container || !currentUser) return;
             container.innerHTML = '';
 
             MODULES.forEach(mod => {
-                if (currentUser.role !== 'Administrator' && !currentUser.modules.includes(mod.id)) return;
-
                 const isActive = activeModule === mod.id;
-                
                 const btn = document.createElement('button');
                 btn.className = `px-3.5 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex items-center space-x-2 ${isActive ? 'bg-[#004d3d] text-white shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`;
                 btn.onclick = () => switchModule(mod.id);
@@ -560,12 +502,9 @@
         }
 
         function switchModule(moduleId) {
-            activeModule = moduleId;
-            if (currentPrimaryTab !== 'housekeeping') {
-                switchPrimaryTab('housekeeping');
-                return;
-            }
+            if (!currentUser) { renderUnauthenticatedGate(); return; }
 
+            activeModule = moduleId;
             renderHeaderNavigation();
 
             const mod = MODULES.find(m => m.id === moduleId);
@@ -578,57 +517,24 @@
             const container = document.getElementById('moduleContainer');
             const actions = document.getElementById('modulePrimaryActions');
             if (!container || !actions) return;
-            actions.innerHTML = '';
 
             switch(moduleId) {
                 case 'inventory': renderInventoryModule(container, actions); break;
-                case 'hr': renderHRModule(container, actions); break;
-                case 'cleaning': renderCleaningModule(container, actions); break;
-                case 'pest': renderPestModule(container, actions); break;
-                case 'waste': renderWasteModule(container, actions); break;
-                case 'compost': renderCompostModule(container, actions); break;
-                case 'water': renderWaterModule(container, actions); break;
-                case 'procurement': renderProcurementModule(container, actions); break;
+                default: container.innerHTML = `<div class="p-4 bg-white rounded-xl shadow-sm text-xs text-slate-600">Module view rendering default layout...</div>`;
             }
         }
 
-        // ==========================================
-        // 4. MODULE 1: INVENTORY MANAGEMENT
-        // ==========================================
         function renderInventoryModule(container, actions) {
-            const isExecOrAdmin = currentUser.role === 'Administrator' || currentUser.role.startsWith('Executive');
-            
             actions.innerHTML = `
-                <div class="flex items-center space-x-2">
-                    ${currentUser.role === 'Administrator' ? `<button onclick="openOpeningStockModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-plus mr-1"></i> Opening Stock</button>` : ''}
-                    ${isExecOrAdmin ? `<button onclick="openTransactionModal()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-arrow-right-arrow-left mr-1"></i> Purchase / Issue</button>` : ''}
-                    ${currentUser.role === 'Supervisor' ? `<button onclick="openOutItemModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-minus-circle mr-1"></i> OUT Used Item</button>` : ''}
-                </div>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-plus mr-1"></i> Stock Entry</button>
             `;
 
             container.innerHTML = `
                 <div class="space-y-6">
-                    <!-- Filters & Search -->
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between gap-4">
-                        <div class="flex flex-1 items-center space-x-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                            <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
-                            <input type="text" id="invSearch" onkeyup="filterInventoryTable()" placeholder="Search item by name, category or code..." class="bg-transparent border-none text-xs focus:outline-none w-full">
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <select id="invCatFilter" onchange="filterInventoryTable()" class="text-xs border border-slate-200 rounded-lg px-3 py-2 bg-white">
-                                <option value="All">All Categories</option>
-                                <option value="Chemicals">Chemicals</option>
-                                <option value="Equipment">Equipment</option>
-                                <option value="Consumables">Consumables</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Inventory Table -->
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center">
-                            <span>Current Stock Balances</span>
-                            <span class="text-[11px] text-slate-500 font-normal">View restriction active for: ${currentUser.role}</span>
+                            <span>Current Inventory Items</span>
+                            <span class="text-[11px] text-emerald-600 font-semibold">User: ${currentUser.email}</span>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-xs">
@@ -638,8 +544,7 @@
                                         <th class="p-3">Item Name</th>
                                         <th class="p-3">Category</th>
                                         <th class="p-3">Unit</th>
-                                        ${isExecOrAdmin ? `<th class="p-3 text-blue-600 font-bold">Main Store</th>` : ''}
-                                        ${getVisibleAreas().map(a => `<th class="p-3">${a}</th>`).join('')}
+                                        <th class="p-3 text-blue-600 font-bold">Main Store Stock</th>
                                     </tr>
                                 </thead>
                                 <tbody id="invTableBody" class="divide-y divide-slate-100 text-slate-700">
@@ -649,41 +554,7 @@
                                             <td class="p-3 font-semibold text-slate-900">${item.name}</td>
                                             <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">${item.category}</span></td>
                                             <td class="p-3 text-slate-500">${item.unit}</td>
-                                            ${isExecOrAdmin ? `<td class="p-3 font-bold text-blue-600">${item.mainStock}</td>` : ''}
-                                            ${getVisibleAreas().map(a => `<td class="p-3 font-semibold">${item.areaStocks[a] || 0}</td>`).join('')}
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Archive Table -->
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700">
-                            <span>Transaction Archive Log</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
-                                    <tr>
-                                        <th class="p-3">Date</th>
-                                        <th class="p-3">Item</th>
-                                        <th class="p-3">Type</th>
-                                        <th class="p-3">Qty</th>
-                                        <th class="p-3">Area / Store</th>
-                                        <th class="p-3">User</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 text-slate-700">
-                                    ${dbData.invArchive.map(arch => `
-                                        <tr class="hover:bg-slate-50">
-                                            <td class="p-3">${arch.date}</td>
-                                            <td class="p-3 font-medium">${arch.item}</td>
-                                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${arch.type === 'Purchase' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}">${arch.type}</span></td>
-                                            <td class="p-3 font-bold">${arch.qty}</td>
-                                            <td class="p-3">${arch.area}</td>
-                                            <td class="p-3 text-slate-500">${arch.user}</td>
+                                            <td class="p-3 font-bold text-blue-600">${item.mainStock}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -694,684 +565,8 @@
             `;
         }
 
-        // ==========================================
-        // 5. MODULE 2: HR & SCHEDULE
-        // ==========================================
-        function renderHRModule(container, actions) {
-            actions.innerHTML = `
-                <button onclick="openAddStaffModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-user-plus mr-1"></i> Add Staff Member</button>
-            `;
-
-            const visibleAreas = getVisibleAreas();
-
-            container.innerHTML = `
-                <div class="space-y-6">
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center">
-                            <span>Staff Details Directory</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
-                                    <tr>
-                                        <th class="p-3">Emp ID</th>
-                                        <th class="p-3">Name</th>
-                                        <th class="p-3">Role</th>
-                                        <th class="p-3">Area</th>
-                                        <th class="p-3">Contact</th>
-                                        <th class="p-3">Locker #</th>
-                                        <th class="p-3">Uniform Issued</th>
-                                        <th class="p-3">Category</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 text-slate-700">
-                                    ${dbData.hr.filter(e => visibleAreas.includes(e.area) || currentUser.role === 'Administrator').map(emp => `
-                                        <tr class="hover:bg-slate-50">
-                                            <td class="p-3 font-mono text-slate-500">${emp.id}</td>
-                                            <td class="p-3 font-semibold text-slate-900">${emp.name}</td>
-                                            <td class="p-3">${emp.isSupervisor ? '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-[10px]">Supervisor</span>' : 'Staff'}</td>
-                                            <td class="p-3">${emp.area}</td>
-                                            <td class="p-3">${emp.contact}</td>
-                                            <td class="p-3 font-mono">${emp.locker}</td>
-                                            <td class="p-3">${emp.uniform === 'Yes' ? `<span class="text-emerald-600 font-bold">Yes (${emp.uniformDate})</span>` : '<span class="text-slate-400">No</span>'}</td>
-                                            <td class="p-3 font-medium">${emp.category}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // 6. MODULE 3: CLEANING REPORTS
-        // ==========================================
-        function renderCleaningModule(container, actions) {
-            actions.innerHTML = `
-                <div class="flex space-x-2">
-                    <button onclick="openAddDWRModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-plus mr-1"></i> Add Daily Report</button>
-                </div>
-            `;
-
-            container.innerHTML = `
-                <div class="space-y-6">
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                        <h3 class="font-bold text-sm text-slate-800 mb-4">Daily Cleaning Work Checklist Matrix</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-xs text-left">
-                                <thead class="bg-slate-50 text-slate-600 font-semibold border-b">
-                                    <tr>
-                                        <th class="p-2.5">Date</th>
-                                        <th class="p-2.5">Area</th>
-                                        <th class="p-2.5">Tasks Performed</th>
-                                        <th class="p-2.5">Remarks</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y">
-                                    ${dbData.cleaningReports.map(r => `
-                                        <tr>
-                                            <td class="p-2.5 font-medium">${r.date}</td>
-                                            <td class="p-2.5">${r.area}</td>
-                                            <td class="p-2.5"><span class="px-2 py-1 bg-teal-50 text-teal-700 rounded border border-teal-200 text-[10px] font-medium">${Array.isArray(r.tasksCompleted) ? r.tasksCompleted.join(', ') : r.tasksCompleted}</span></td>
-                                            <td class="p-2.5 text-slate-500">${r.remarks}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // 7. MODULE 4: PEST CONTROL
-        // ==========================================
-        function renderPestModule(container, actions) {
-            actions.innerHTML = `
-                <button onclick="openPestModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-bug mr-1"></i> Add Treatment Log</button>
-            `;
-
-            container.innerHTML = `
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                    <h3 class="font-bold text-sm text-slate-900 mb-4">Pest Control Logs</h3>
-                    <div class="space-y-3">
-                        ${dbData.pestControl.map(p => `
-                            <div class="p-3 border border-slate-200 rounded-lg flex justify-between items-center hover:bg-slate-50">
-                                <div>
-                                    <div class="flex items-center space-x-2">
-                                        <span class="font-bold text-xs text-slate-900">${p.area}</span>
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.type === 'Recurring' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}">${p.type}</span>
-                                    </div>
-                                    <p class="text-xs text-slate-500 mt-1">${p.remarks} (${p.location})</p>
-                                </div>
-                                <span class="text-xs text-slate-400">${p.date}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // 8. MODULE 5: DRY WASTE MANAGEMENT
-        // ==========================================
-        function renderWasteModule(container, actions) {
-            actions.innerHTML = `
-                <button onclick="openAddWasteModal()" class="bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-plus mr-1"></i> Add Offloading Log</button>
-            `;
-
-            container.innerHTML = `
-                <div class="space-y-6">
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 overflow-x-auto">
-                        <table class="w-full text-xs text-left">
-                            <thead class="bg-slate-50 text-slate-600 font-semibold border-b">
-                                <tr>
-                                    <th class="p-2.5">Date</th>
-                                    <th class="p-2.5">Soft Plastic</th>
-                                    <th class="p-2.5">Hard Plastic</th>
-                                    <th class="p-2.5">Cardboard</th>
-                                    <th class="p-2.5 font-bold">Total Kg</th>
-                                    <th class="p-2.5 font-bold text-orange-600">Total Revenue</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y">
-                                ${dbData.dryWaste.map(w => `
-                                    <tr>
-                                        <td class="p-2.5 font-medium">${w.date}</td>
-                                        <td class="p-2.5">${w.weights?.['Soft Plastic'] || 0} kg</td>
-                                        <td class="p-2.5">${w.weights?.['Hard Plastic'] || 0} kg</td>
-                                        <td class="p-2.5">${w.weights?.['Cardboard'] || 0} kg</td>
-                                        <td class="p-2.5 font-bold">${w.totalKg} kg</td>
-                                        <td class="p-2.5 font-bold text-orange-600">₹ ${w.totalAmt}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // 9. MODULE 6: COMPOST MANAGEMENT
-        // ==========================================
-        function renderCompostModule(container, actions) {
-            actions.innerHTML = `
-                <div class="flex space-x-2">
-                    <button onclick="openAddWetWasteModal()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-plus mr-1"></i> Add Wet Waste</button>
-                    <button onclick="openAddCompostModal()" class="bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-seedling mr-1"></i> Add Compost Yield</button>
-                </div>
-            `;
-
-            container.innerHTML = `
-                <div class="space-y-6">
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase">Wet Waste Recd</span>
-                            <h4 class="text-lg font-bold text-slate-800 mt-1">120 Kg</h4>
-                        </div>
-                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase">Compost Yielded</span>
-                            <h4 class="text-lg font-bold text-emerald-700 mt-1">28 Kg</h4>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // 10. MODULE 7: WATER TANKS CLEANING
-        // ==========================================
-        function renderWaterModule(container, actions) {
-            actions.innerHTML = `
-                <button onclick="openAddTankModal()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-plus mr-1"></i> Add Water Tank</button>
-            `;
-
-            container.innerHTML = `
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <h3 class="font-bold text-sm text-slate-800 mb-4">Water Tank Cleaning Master Directory</h3>
-                    <div class="space-y-4">
-                        ${dbData.waterTanks.map(tank => `
-                            <div class="p-4 border border-slate-200 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-slate-50">
-                                <div>
-                                    <h4 class="font-bold text-sm text-slate-900">${tank.location}</h4>
-                                    <div class="flex items-center space-x-2 mt-1">
-                                        <span class="px-2 py-0.5 bg-sky-100 text-sky-800 rounded text-[10px] font-medium">${tank.type}</span>
-                                        <span class="text-xs text-slate-500">Cap: ${tank.capacity}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // 11. MODULE 8: PROCUREMENT
-        // ==========================================
-        function renderProcurementModule(container, actions) {
-            actions.innerHTML = `
-                <button onclick="alert('PO Generated!')" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-file-pdf mr-1"></i> Generate PO</button>
-            `;
-
-            container.innerHTML = `
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                    <h3 class="font-bold text-sm text-slate-800 mb-4">Vendor Rate Matrix</h3>
-                    <p class="text-xs text-slate-500">Procurement rates and supplier overview.</p>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // 12. HELPER & MODAL BUILDERS
-        // ==========================================
-        function getVisibleAreas() {
-            if (currentUser.role === 'Administrator') return AREAS;
-            if (currentUser.role === 'Executive – Admin') return EXEC_ADMIN_AREAS;
-            if (currentUser.role === 'Executive – Hostels') return EXEC_HOSTEL_AREAS;
-            if (currentUser.role === 'Supervisor') return [currentUser.area];
-            return [];
-        }
-
-        function openGenericModal(title, contentHtml) {
-            document.getElementById('genericModalTitle').innerText = title;
-            document.getElementById('genericModalBody').innerHTML = contentHtml;
-            openModal('genericModal');
-        }
-
-        function openAdminModal() {
-            const listContainer = document.getElementById('userAccessList');
-            if (listContainer) {
-                listContainer.innerHTML = userAccessDb.map(u => `
-                    <div class="p-3 border rounded-lg flex justify-between items-center text-xs">
-                        <div>
-                            <span class="font-bold text-slate-800">${u.email}</span>
-                            <span class="ml-2 text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">${u.role}</span>
-                        </div>
-                    </div>
-                `).join('');
-            }
-            openModal('adminModal');
-        }
-
-        function openTransactionModal() {
-            const itemOptions = dbData.inventory.map(i => `<option value="${i.id}">${i.name} (${i.code})</option>`).join('');
-            const areaOptions = AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
-            const html = `
-                <form onsubmit="handleTransactionSubmit(event)" class="space-y-3 text-xs">
-                    <div>
-                        <label class="block font-semibold mb-1">Transaction Type</label>
-                        <select id="transType" class="w-full border p-2 rounded-lg bg-white">
-                            <option value="Purchase">Purchase (Add to Main Store)</option>
-                            <option value="Issue">Issue (Main Store to Area)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-semibold mb-1">Select Item</label>
-                        <select id="transItem" class="w-full border p-2 rounded-lg bg-white">${itemOptions}</select>
-                    </div>
-                    <div>
-                        <label class="block font-semibold mb-1">Target Area (For Issue)</label>
-                        <select id="transArea" class="w-full border p-2 rounded-lg bg-white">${areaOptions}</select>
-                    </div>
-                    <div>
-                        <label class="block font-semibold mb-1">Quantity</label>
-                        <input type="number" id="transQty" required min="1" class="w-full border p-2 rounded-lg" placeholder="Qty">
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition">Submit Transaction</button>
-                </form>
-            `;
-            openGenericModal('Purchase / Issue Inventory Item', html);
-        }
-
-        function openOpeningStockModal() {
-            const itemOptions = dbData.inventory.map(i => `<option value="${i.id}">${i.name} (${i.code})</option>`).join('');
-            const areaOptions = AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
-            const html = `
-                <form onsubmit="handleOpeningStockSubmit(event)" class="space-y-3 text-xs">
-                    <div>
-                        <label class="block font-semibold mb-1">Select Item</label>
-                        <select id="opItem" class="w-full border p-2 rounded-lg bg-white">${itemOptions}</select>
-                    </div>
-                    <div>
-                        <label class="block font-semibold mb-1">Select Store / Area</label>
-                        <select id="opArea" class="w-full border p-2 rounded-lg bg-white">
-                            <option value="Main Store">Main Store</option>
-                            ${areaOptions}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-semibold mb-1">Opening Quantity</label>
-                        <input type="number" id="opQty" required min="1" class="w-full border p-2 rounded-lg" placeholder="Enter Qty">
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition">Save Opening Stock</button>
-                </form>
-            `;
-            openGenericModal('Enter Opening Stock', html);
-        }
-
-        function openOutItemModal() {
-            const itemOptions = dbData.inventory.map(i => `<option value="${i.id}">${i.name} (${i.code})</option>`).join('');
-            const html = `
-                <form onsubmit="handleOutItemSubmit(event)" class="space-y-3 text-xs">
-                    <div>
-                        <label class="block font-semibold mb-1">Select Used Item</label>
-                        <select id="outItem" class="w-full border p-2 rounded-lg bg-white">${itemOptions}</select>
-                    </div>
-                    <div>
-                        <label class="block font-semibold mb-1">Quantity Consumed</label>
-                        <input type="number" id="outQty" required min="1" class="w-full border p-2 rounded-lg" placeholder="Enter Qty">
-                    </div>
-                    <button type="submit" class="w-full bg-amber-600 text-white font-bold py-2 rounded-lg hover:bg-amber-700 transition">Record Out / Consumed</button>
-                </form>
-            `;
-            openGenericModal('Record Consumed Stock Item', html);
-        }
-
-        function openAddStaffModal() {
-            const areaOptions = AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
-            const html = `
-                <form onsubmit="handleAddStaffSubmit(event)" class="space-y-3 text-xs">
-                    <div><label class="block font-semibold mb-1">Staff Name</label><input type="text" id="staffName" required class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Contact</label><input type="text" id="staffContact" required class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Locker #</label><input type="text" id="staffLocker" class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Category</label><input type="text" id="staffCategory" value="Aljamea" class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Area</label><select id="staffArea" class="w-full border p-2 rounded-lg bg-white">${areaOptions}</select></div>
-                    <div><label class="inline-flex items-center"><input type="checkbox" id="staffSupervisor" class="mr-2"> Is Supervisor?</label></div>
-                    <button type="submit" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg hover:bg-emerald-700 transition">Save Staff Member</button>
-                </form>
-            `;
-            openGenericModal('Add New Staff Member', html);
-        }
-
-        function openAddDWRModal() {
-            const areaOptions = AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
-            const html = `
-                <form onsubmit="handleAddDWRSubmit(event)" class="space-y-3 text-xs">
-                    <div><label class="block font-semibold mb-1">Date</label><input type="date" id="dwrDate" required value="${new Date().toISOString().split('T')[0]}" class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Area</label><select id="dwrArea" class="w-full border p-2 rounded-lg bg-white">${areaOptions}</select></div>
-                    <div><label class="block font-semibold mb-1">Tasks Completed (comma separated)</label><input type="text" id="dwrTasks" required placeholder="Mopping, Dusting" class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Remarks</label><input type="text" id="dwrRemarks" class="w-full border p-2 rounded-lg"></div>
-                    <button type="submit" class="w-full bg-teal-600 text-white font-bold py-2 rounded-lg hover:bg-teal-700 transition">Submit Daily Report</button>
-                </form>
-            `;
-            openGenericModal('Add Daily Cleaning Report', html);
-        }
-
-        function openPestModal() {
-            const areaOptions = AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
-            const html = `
-                <form onsubmit="handlePestSubmit(event)" class="space-y-3 text-xs">
-                    <div><label class="block font-semibold mb-1">Date</label><input type="date" id="pestDate" required value="${new Date().toISOString().split('T')[0]}" class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Area</label><select id="pestArea" class="w-full border p-2 rounded-lg bg-white">${areaOptions}</select></div>
-                    <div><label class="block font-semibold mb-1">Type</label><select id="pestType" class="w-full border p-2 rounded-lg bg-white"><option value="Recurring">Recurring</option><option value="Complaint">Complaint</option></select></div>
-                    <div><label class="block font-semibold mb-1">Location / Detail</label><input type="text" id="pestLoc" required class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Remarks</label><input type="text" id="pestRemarks" required class="w-full border p-2 rounded-lg"></div>
-                    <button type="submit" class="w-full bg-amber-600 text-white font-bold py-2 rounded-lg hover:bg-amber-700 transition">Save Pest Log</button>
-                </form>
-            `;
-            openGenericModal('Add Pest Control Log', html);
-        }
-
-        function openAddWasteModal() {
-            const html = `
-                <form onsubmit="handleWasteSubmit(event)" class="space-y-3 text-xs">
-                    <div><label class="block font-semibold mb-1">Date</label><input type="date" id="wasteDate" required value="${new Date().toISOString().split('T')[0]}" class="w-full border p-2 rounded-lg"></div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block mb-1">Soft Plastic (kg)</label><input type="number" id="wSoft" class="w-full border p-2 rounded-lg" value="0"></div>
-                        <div><label class="block mb-1">Hard Plastic (kg)</label><input type="number" id="wHard" class="w-full border p-2 rounded-lg" value="0"></div>
-                        <div><label class="block mb-1">Cardboard (kg)</label><input type="number" id="wCardboard" class="w-full border p-2 rounded-lg" value="0"></div>
-                        <div><label class="block mb-1">Color Paper (kg)</label><input type="number" id="wPaper" class="w-full border p-2 rounded-lg" value="0"></div>
-                        <div><label class="block mb-1">Metal/Tin (kg)</label><input type="number" id="wMetal" class="w-full border p-2 rounded-lg" value="0"></div>
-                        <div><label class="block mb-1">Glass (kg)</label><input type="number" id="wGlass" class="w-full border p-2 rounded-lg" value="0"></div>
-                    </div>
-                    <button type="submit" class="w-full bg-orange-600 text-white font-bold py-2 rounded-lg hover:bg-orange-700 transition">Save Waste Log</button>
-                </form>
-            `;
-            openGenericModal('Add Dry Waste Collection Log', html);
-        }
-
-        function openAddWetWasteModal() {
-            const html = `
-                <form onsubmit="handleWetWasteSubmit(event)" class="space-y-3 text-xs">
-                    <div><label class="block font-semibold mb-1">Date</label><input type="date" id="wwDate" required value="${new Date().toISOString().split('T')[0]}" class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Raw Wet Waste (kg)</label><input type="number" id="wwRaw" required class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Shredded Waste (kg)</label><input type="number" id="wwShredded" required class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Crate Designation</label><input type="text" id="wwCrate" required placeholder="Crate #01" class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Loaded to Crate (kg)</label><input type="number" id="wwCrateKg" required class="w-full border p-2 rounded-lg"></div>
-                    <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition">Save Wet Waste Entry</button>
-                </form>
-            `;
-            openGenericModal('Add Wet Waste Collection Log', html);
-        }
-
-        function openAddCompostModal() {
-            const html = `
-                <form onsubmit="handleCompostSubmit(event)" class="space-y-3 text-xs">
-                    <div><label class="block font-semibold mb-1">Date Harvested</label><input type="date" id="cmpDate" required value="${new Date().toISOString().split('T')[0]}" class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Crate Designation</label><input type="text" id="cmpCrate" required placeholder="Crate #01" class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Compost Harvested (kg)</label><input type="number" id="cmpKg" required class="w-full border p-2 rounded-lg"></div>
-                    <button type="submit" class="w-full bg-emerald-800 text-white font-bold py-2 rounded-lg hover:bg-emerald-900 transition">Save Harvest Log</button>
-                </form>
-            `;
-            openGenericModal('Harvest Compost Yield', html);
-        }
-
-        function openAddTankModal() {
-            const html = `
-                <form onsubmit="handleTankSubmit(event)" class="space-y-3 text-xs">
-                    <div><label class="block font-semibold mb-1">Location</label><input type="text" id="tkLoc" required class="w-full border p-2 rounded-lg"></div>
-                    <div><label class="block font-semibold mb-1">Type</label><select id="tkType" class="w-full border p-2 rounded-lg bg-white"><option value="Domestic">Domestic</option><option value="Flushing">Flushing</option></select></div>
-                    <div><label class="block font-semibold mb-1">Capacity</label><input type="text" id="tkCap" required placeholder="10,000L" class="w-full border p-2 rounded-lg"></div>
-                    <button type="submit" class="w-full bg-sky-600 text-white font-bold py-2 rounded-lg hover:bg-sky-700 transition">Save Water Tank</button>
-                </form>
-            `;
-            openGenericModal('Add Water Tank Master', html);
-        }
-
-        // ==========================================
-        // 13. FORM SUBMISSION HANDLERS
-        // ==========================================
-        function handleOpeningStockSubmit(e) {
-            e.preventDefault();
-            const itemId = document.getElementById('opItem').value;
-            const area = document.getElementById('opArea').value;
-            const qty = parseInt(document.getElementById('opQty').value) || 0;
-
-            const item = dbData.inventory.find(i => i.id === itemId);
-            if (item) {
-                if (area === 'Main Store') {
-                    item.mainStock += qty;
-                } else {
-                    item.areaStocks[area] = (item.areaStocks[area] || 0) + qty;
-                }
-                const transData = { item: item.name, type: 'Purchase', qty: qty, area: area, user: currentUser.email.split('@')[0] };
-                dbData.invArchive.unshift({ date: new Date().toISOString().split('T')[0], ...transData });
-                sendToGoogleSheet('addInventoryTransaction', transData);
-            }
-            closeModal('genericModal');
-            switchModule('inventory');
-        }
-
-        function handleTransactionSubmit(e) {
-            e.preventDefault();
-            const type = document.getElementById('transType').value;
-            const itemId = document.getElementById('transItem').value;
-            const area = document.getElementById('transArea').value;
-            const qty = parseInt(document.getElementById('transQty').value) || 0;
-
-            const item = dbData.inventory.find(i => i.id === itemId);
-            if (item) {
-                if (type === 'Purchase') {
-                    item.mainStock += qty;
-                    const transData = { item: item.name, type: 'Purchase', qty: qty, area: 'Main Store', user: currentUser.email.split('@')[0] };
-                    dbData.invArchive.unshift({ date: new Date().toISOString().split('T')[0], ...transData });
-                    sendToGoogleSheet('addInventoryTransaction', transData);
-                } else {
-                    if (item.mainStock < qty) {
-                        alert('Insufficient quantity in Main Store!');
-                        return;
-                    }
-                    item.mainStock -= qty;
-                    item.areaStocks[area] = (item.areaStocks[area] || 0) + qty;
-                    const transData = { item: item.name, type: 'Issue', qty: qty, area: area, user: currentUser.email.split('@')[0] };
-                    dbData.invArchive.unshift({ date: new Date().toISOString().split('T')[0], ...transData });
-                    sendToGoogleSheet('addInventoryTransaction', transData);
-                }
-            }
-            closeModal('genericModal');
-            switchModule('inventory');
-        }
-
-        function handleOutItemSubmit(e) {
-            e.preventDefault();
-            const itemId = document.getElementById('outItem').value;
-            const qty = parseInt(document.getElementById('outQty').value) || 0;
-            const area = currentUser.area;
-
-            const item = dbData.inventory.find(i => i.id === itemId);
-            if (item) {
-                const currentAreaQty = item.areaStocks[area] || 0;
-                if (currentAreaQty < qty) {
-                    alert('Cannot OUT more items than available in area store!');
-                    return;
-                }
-                item.areaStocks[area] -= qty;
-                const transData = { item: item.name, type: 'OUT', qty: qty, area: area, user: currentUser.email.split('@')[0] };
-                dbData.invArchive.unshift({ date: new Date().toISOString().split('T')[0], ...transData });
-                sendToGoogleSheet('addInventoryTransaction', transData);
-            }
-            closeModal('genericModal');
-            switchModule('inventory');
-        }
-
-        function handleAddStaffSubmit(e) {
-            e.preventDefault();
-            const newEmp = {
-                id: `EMP-${(dbData.hr.length + 1).toString().padStart(2, '0')}`,
-                name: document.getElementById('staffName').value,
-                contact: document.getElementById('staffContact').value,
-                locker: document.getElementById('staffLocker').value,
-                uniform: 'No',
-                uniformDate: '-',
-                category: document.getElementById('staffCategory').value,
-                area: document.getElementById('staffArea').value,
-                isSupervisor: document.getElementById('staffSupervisor').checked
-            };
-            dbData.hr.push(newEmp);
-            sendToGoogleSheet('addStaff', newEmp);
-            closeModal('genericModal');
-            switchModule('hr');
-        }
-
-        function handleAddDWRSubmit(e) {
-            e.preventDefault();
-            const dwrData = {
-                id: `DWR-${dbData.cleaningReports.length + 1}`,
-                date: document.getElementById('dwrDate').value,
-                area: document.getElementById('dwrArea').value,
-                tasksCompleted: document.getElementById('dwrTasks').value.split(',').map(t => t.trim()),
-                remarks: document.getElementById('dwrRemarks').value || 'Completed'
-            };
-            dbData.cleaningReports.unshift(dwrData);
-            sendToGoogleSheet('addCleaningReport', dwrData);
-            closeModal('genericModal');
-            switchModule('cleaning');
-        }
-
-        function handlePestSubmit(e) {
-            e.preventDefault();
-            const pestData = {
-                id: `PC-${dbData.pestControl.length + 1}`,
-                date: document.getElementById('pestDate').value,
-                area: document.getElementById('pestArea').value,
-                type: document.getElementById('pestType').value,
-                location: document.getElementById('pestLoc').value,
-                remarks: document.getElementById('pestRemarks').value,
-                photos: []
-            };
-            dbData.pestControl.unshift(pestData);
-            sendToGoogleSheet('addPestLog', pestData);
-            closeModal('genericModal');
-            switchModule('pest');
-        }
-
-        function handleWasteSubmit(e) {
-            e.preventDefault();
-            const weights = {
-                'Soft Plastic': parseFloat(document.getElementById('wSoft').value) || 0,
-                'Hard Plastic': parseFloat(document.getElementById('wHard').value) || 0,
-                'Cardboard': parseFloat(document.getElementById('wCardboard').value) || 0,
-                'Color Paper': parseFloat(document.getElementById('wPaper').value) || 0,
-                'Metal/Tin': parseFloat(document.getElementById('wMetal').value) || 0,
-                'Glass': parseFloat(document.getElementById('wGlass').value) || 0
-            };
-            let totalKg = 0;
-            let totalAmt = 0;
-
-            for (const key in weights) {
-                totalKg += weights[key];
-                totalAmt += weights[key] * (dbData.wasteRates[key] || 0);
-            }
-
-            const wasteData = {
-                id: `DW-${dbData.dryWaste.length + 1}`,
-                date: document.getElementById('wasteDate').value,
-                month: document.getElementById('wasteDate').value.substring(0, 7),
-                weights: weights,
-                totalKg: totalKg,
-                totalAmt: totalAmt
-            };
-
-            dbData.dryWaste.unshift(wasteData);
-            sendToGoogleSheet('addWasteLog', wasteData);
-            closeModal('genericModal');
-            switchModule('waste');
-        }
-
-        function handleWetWasteSubmit(e) {
-            e.preventDefault();
-            dbData.wetWaste.unshift({
-                id: `WW-${dbData.wetWaste.length + 1}`,
-                date: document.getElementById('wwDate').value,
-                rawQty: parseFloat(document.getElementById('wwRaw').value) || 0,
-                shreddedQty: parseFloat(document.getElementById('wwShredded').value) || 0,
-                crateNo: document.getElementById('wwCrate').value,
-                crateKg: parseFloat(document.getElementById('wwCrateKg').value) || 0,
-                status: 'Active'
-            });
-            closeModal('genericModal');
-            switchModule('compost');
-        }
-
-        function handleCompostSubmit(e) {
-            e.preventDefault();
-            dbData.compost.unshift({
-                id: `CMP-${dbData.compost.length + 1}`,
-                date: document.getElementById('cmpDate').value,
-                crateNo: document.getElementById('cmpCrate').value,
-                compostKg: parseFloat(document.getElementById('cmpKg').value) || 0
-            });
-            closeModal('genericModal');
-            switchModule('compost');
-        }
-
-        function handleTankSubmit(e) {
-            e.preventDefault();
-            dbData.waterTanks.push({
-                id: `WT-${(dbData.waterTanks.length + 1).toString().padStart(2, '0')}`,
-                location: document.getElementById('tkLoc').value,
-                type: document.getElementById('tkType').value,
-                category: 'Overhead',
-                capacity: document.getElementById('tkCap').value,
-                history: []
-            });
-            closeModal('genericModal');
-            switchModule('water');
-        }
-
-        function filterInventoryTable() {
-            const search = document.getElementById('invSearch').value.toLowerCase();
-            const category = document.getElementById('invCatFilter').value;
-            const rows = document.querySelectorAll('#invTableBody tr');
-
-            rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                const matchesSearch = text.includes(search);
-                const matchesCat = (category === 'All' || row.cells[2].innerText.includes(category));
-
-                if (matchesSearch && matchesCat) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-
-        function saveUserAccess(e) {
-            e.preventDefault();
-            const email = document.getElementById('accessEmail').value;
-            const role = document.getElementById('accessRole').value;
-            const area = document.getElementById('accessArea').value;
-
-            const existingIndex = userAccessDb.findIndex(u => u.email === email);
-            if (existingIndex >= 0) {
-                userAccessDb[existingIndex] = { email, role, area, modules: MODULES.map(m => m.id) };
-            } else {
-                userAccessDb.push({ email, role, area, modules: MODULES.map(m => m.id) });
-            }
-
-            alert('User permissions updated successfully!');
-            closeModal('adminModal');
-        }
-
-        function exportCurrentModule(type) {
-            alert(`Exporting ${activeModule} to ${type.toUpperCase()}...`);
-        }
+        function openAdminModal() { openModal('adminModal'); }
+        function exportCurrentModule(type) { alert(`Exporting data to ${type.toUpperCase()}`); }
     </script>
 </body>
 </html>
