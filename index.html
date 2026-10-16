@@ -64,9 +64,9 @@
                 <!-- User Profile & Auth -->
                 <div class="flex items-center space-x-4">
                     <div class="hidden sm:flex flex-col text-right">
-                        <span id="userEmailDisplay" class="text-xs font-semibold text-emerald-100">murtaza.kheraluwala@jameasaifiyah.edu</span>
+                        <span id="userEmailDisplay" class="text-xs font-semibold text-emerald-100">Not Signed In</span>
                         <div>
-                            <span id="userRoleBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-700/80 text-emerald-100 font-semibold border border-emerald-500/30">Administrator</span>
+                            <span id="userRoleBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-700/80 text-emerald-100 font-semibold border border-emerald-500/30">Guest</span>
                         </div>
                     </div>
 
@@ -77,7 +77,7 @@
                 </div>
             </div>
 
-            <!-- PRIMARY TOP TABS (Housekeeping & Admin Access) -->
+            <!-- PRIMARY TOP TABS -->
             <div class="flex items-center space-x-2 pt-1 border-t border-emerald-800/60" id="primaryTopTabs">
                 <button id="mainTabHousekeeping" onclick="switchPrimaryTab('housekeeping')" class="px-4 py-2 font-semibold text-xs sm:text-sm rounded-t-lg transition flex items-center space-x-2 bg-[#006e57] text-white border-b-2 border-emerald-300 shadow-sm">
                     <i class="fa-solid fa-broom text-emerald-300"></i>
@@ -94,7 +94,7 @@
     <!-- SUB-NAVIGATION BAR (8 HOUSEKEEPING MODULES) -->
     <div id="subModuleNavbar" class="bg-white border-b border-slate-200 shadow-sm py-3 px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto flex items-center space-x-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0" id="housekeepingSubTabs">
-            <!-- Dynamic Sub Module Buttons (1. Inventory, 2. HR & Schedule, etc.) -->
+            <!-- Dynamic Sub Module Buttons -->
         </div>
     </div>
 
@@ -132,7 +132,7 @@
                 </div>
 
                 <div id="modulePrimaryActions">
-                    <!-- Dynamic Action Buttons like 'Add Item', 'Add Log' -->
+                    <!-- Dynamic Action Buttons -->
                 </div>
             </div>
         </div>
@@ -258,6 +258,98 @@
         </div>
     </div>
 
+    <!-- FIREBASE MODULE INTEGRATION SCRIPTS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Your Web App's Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPGqD2emtRMEMFd02UoC2iGRyFDbmBVxU",
+            authDomain: "siyanat-housekeeping.firebaseapp.com",
+            projectId: "siyanat-housekeeping",
+            storageBucket: "siyanat-housekeeping.firebasestorage.app",
+            messagingSenderId: "290263999867",
+            appId: "1:290263999867:web:94c15947934039de8589de"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // Attach Auth Functions to Global Window
+        window.loginWithGoogle = async function() {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                window.handleUserAuthenticated(user.email);
+                closeModal('authModal');
+            } catch (error) {
+                console.error("Google Auth Error:", error);
+                alert("Google Sign-In failed: " + error.message);
+            }
+        };
+
+        window.handleEmailLogin = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                window.handleUserAuthenticated(userCredential.user.email);
+                closeModal('authModal');
+            } catch (error) {
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                    try {
+                        const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+                        window.handleUserAuthenticated(newUserCredential.user.email);
+                        closeModal('authModal');
+                        alert("Account created and signed in!");
+                    } catch (createErr) {
+                        alert("Sign in / Sign up error: " + createErr.message);
+                    }
+                } else {
+                    alert("Authentication Error: " + error.message);
+                }
+            }
+        };
+
+        window.logoutUser = function() {
+            signOut(auth).then(() => {
+                location.reload();
+            });
+        };
+
+        // Auth Observer for Automatic Login Handling
+        onAuthStateChanged(auth, (user) => {
+            const authBtn = document.getElementById('authBtn');
+            const authBtnText = document.getElementById('authBtnText');
+
+            if (user) {
+                window.handleUserAuthenticated(user.email);
+                if (authBtnText) authBtnText.innerText = 'Sign Out';
+                if (authBtn) {
+                    authBtn.onclick = () => window.logoutUser();
+                }
+            } else {
+                if (authBtnText) authBtnText.innerText = 'Sign In';
+                if (authBtn) {
+                    authBtn.onclick = () => openModal('authModal');
+                }
+            }
+        });
+    </script>
+
     <!-- MAIN APP SCRIPT -->
     <script>
         // ==========================================
@@ -284,7 +376,7 @@
             { id: 'procurement', name: '8. Procurement & Rates', shortName: '8. Procurement', icon: 'fa-cart-shopping', color: '#7c3aed', bg: 'bg-purple-600' }
         ];
 
-        // Default local store for state management
+        // Default User State
         let currentUser = {
             email: 'murtaza.kheraluwala@jameasaifiyah.edu',
             role: 'Administrator',
@@ -304,6 +396,22 @@
             updateUserDisplay();
             switchModule('inventory');
             loadSheetData();
+        }
+
+        function handleUserAuthenticated(email) {
+            const foundUser = userAccessDb.find(u => u.email === email);
+            if (foundUser) {
+                currentUser = foundUser;
+            } else {
+                currentUser = {
+                    email: email,
+                    role: 'Administrator',
+                    area: 'All',
+                    modules: MODULES.map(m => m.id)
+                };
+            }
+            updateUserDisplay();
+            switchModule('inventory');
         }
 
         function openModal(id) {
@@ -426,8 +534,10 @@
         }
 
         function updateUserDisplay() {
-            document.getElementById('userEmailDisplay').innerText = currentUser.email;
-            document.getElementById('userRoleBadge').innerText = currentUser.role;
+            const emailEl = document.getElementById('userEmailDisplay');
+            const roleEl = document.getElementById('userRoleBadge');
+            if (emailEl) emailEl.innerText = currentUser.email || "Not Signed In";
+            if (roleEl) roleEl.innerText = currentUser.role || "Guest";
             renderHeaderNavigation();
         }
 
@@ -1257,31 +1367,6 @@
 
             alert('User permissions updated successfully!');
             closeModal('adminModal');
-        }
-
-        function handleEmailLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
-            const foundUser = userAccessDb.find(u => u.email === email);
-
-            if (foundUser) {
-                currentUser = foundUser;
-            } else {
-                currentUser = {
-                    email: email,
-                    role: 'Administrator',
-                    area: 'Admin Phase 1',
-                    modules: MODULES.map(m => m.id)
-                };
-            }
-
-            closeModal('authModal');
-            updateUserDisplay();
-            switchModule('inventory');
-        }
-
-        function loginWithGoogle() {
-            handleEmailLogin({ preventDefault: () => {} });
         }
 
         function exportCurrentModule(type) {
