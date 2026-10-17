@@ -58,7 +58,7 @@
                     <div class="hidden sm:flex flex-col text-right">
                         <span id="userEmailDisplay" class="text-xs font-semibold text-emerald-100">Not Signed In</span>
                         <div>
-                            <span id="userRoleBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-red-700/80 text-white font-semibold border border-red-500/30">Unauthorized</span>
+                            <span id="userRoleBadge" class="text-[10px] px-2.5 py-0.5 rounded-full bg-red-700/80 text-white font-semibold border border-red-500/30">Unauthorized</span>
                         </div>
                     </div>
 
@@ -314,7 +314,173 @@
         </div>
     </div>
 
-    <!-- 4. EDIT ARCHIVE MODAL -->
+    <!-- 4. ADD / EDIT MACHINERY MODAL -->
+    <div id="machineryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 id="machineryModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-gears text-indigo-600"></i>
+                    <span>Machinery Details Form</span>
+                </h3>
+                <button onclick="closeModal('machineryModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form onsubmit="handleSaveMachinery(event)" class="space-y-3.5">
+                <input type="hidden" id="machineryEditId">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Category</label>
+                        <div class="flex space-x-1.5">
+                            <select id="machineryCategory" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
+                                <option value="Vacuum Cleaner">Vacuum Cleaner</option>
+                                <option value="Surface Cleaning">Surface Cleaning</option>
+                                <option value="Fumigation">Fumigation Machine</option>
+                            </select>
+                            <button type="button" onclick="addNewMachineryCategoryPrompt()" class="bg-slate-100 hover:bg-slate-200 px-2.5 py-2 rounded-lg text-xs font-bold border border-slate-300" title="Add Custom Category">+</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Brand Name</label>
+                        <input type="text" id="machineryBrand" required placeholder="e.g. Kärcher / Taski" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Model Name & Number</label>
+                        <input type="text" id="machineryModel" required placeholder="e.g. WD 3 Super 1000W" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Assigned Area</label>
+                        <select id="machineryArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
+                            <!-- Dynamically populated -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Date of Purchase (Optional)</label>
+                        <input type="date" id="machineryPurchaseDate" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Warranty Period (Optional)</label>
+                        <input type="text" id="machineryWarranty" placeholder="e.g. 2 Years (Till Oct 2027)" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Photo of Machine (URL / Upload)</label>
+                    <input type="text" id="machineryPhoto" placeholder="Paste image link or click upload" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('machineryModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow">Save Machinery Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. BREAKDOWN DETAILS & REPAIRS MODAL -->
+    <div id="breakdownModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <div>
+                    <h3 id="breakdownMachineTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+                        <span>Breakdown & Repair History</span>
+                    </h3>
+                    <p id="breakdownMachineSubtitle" class="text-xs text-slate-500 mt-0.5">Machine breakdown logs and associated maintenance expenses</p>
+                </div>
+                <button onclick="closeModal('breakdownModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
+                <!-- ADD BREAKDOWN FORM -->
+                <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-4">
+                    <h4 class="font-bold text-xs text-amber-900 mb-2 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-circle-exclamation text-amber-600"></i>
+                        <span>Log New Machine Breakdown</span>
+                    </h4>
+                    <form onsubmit="handleSaveBreakdown(event)" class="space-y-2.5">
+                        <input type="hidden" id="breakdownMachineId">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Describe Issue</label>
+                            <textarea id="breakdownIssue" required rows="2" placeholder="Describe mechanical fault or electrical issue..." class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500"></textarea>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex-1">
+                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Breakdown Photo URL</label>
+                                <input type="text" id="breakdownPhoto" placeholder="Link to fault photo..." class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg">
+                            </div>
+                            <div class="sm:self-end">
+                                <button type="submit" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg shadow">Log Breakdown Issue</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ADD REPAIR FORM (TOGGLED ON CLICK) -->
+                <div id="addRepairBox" class="hidden bg-emerald-50/60 border border-emerald-200 rounded-xl p-4">
+                    <h4 class="font-bold text-xs text-emerald-900 mb-2 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-wrench text-emerald-600"></i>
+                        <span>Record Repair Activity</span>
+                    </h4>
+                    <form onsubmit="handleSaveRepair(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                        <input type="hidden" id="repairBreakdownId">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">Date of Repair</label>
+                            <input type="date" id="repairDate" required class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">Repair Done By</label>
+                            <select id="repairDoneBy" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
+                                <option value="In-house Technician">In-house Technician</option>
+                                <option value="Company Technician">Company Technician / Vendor</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">Cost of Repair (₹)</label>
+                            <input type="number" id="repairCost" min="0" required placeholder="0" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">Remarks & Details</label>
+                            <input type="text" id="repairRemarks" placeholder="Parts replaced, motor serviced..." class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">After Repair Photo URL</label>
+                            <input type="text" id="repairAfterPhoto" placeholder="Link..." class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
+                        </div>
+                        <div class="sm:col-span-3 flex justify-end space-x-2 pt-1">
+                            <button type="button" onclick="document.getElementById('addRepairBox').classList.add('hidden')" class="bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg">Cancel</button>
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg shadow">Submit Repair Entry</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- BREAKDOWN & REPAIR LOG HISTORY LIST -->
+                <div class="space-y-3">
+                    <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider">Breakdowns & Maintenance Logs</h4>
+                    <div id="breakdownListContainer" class="space-y-3">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOTAL REPAIR COST FOOTER -->
+            <div class="pt-3 mt-3 border-t border-slate-200 flex justify-between items-center bg-slate-50 p-3 rounded-xl">
+                <span class="text-xs font-bold text-slate-700">Total Machinery Repairs Expense:</span>
+                <span id="totalMachineRepairCost" class="text-sm font-extrabold text-emerald-700">₹0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. EDIT ARCHIVE MODAL -->
     <div id="editArchiveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 border border-slate-100">
             <div class="flex justify-between items-center mb-3">
@@ -332,24 +498,25 @@
         </div>
     </div>
 
-    <!-- 5. ADMIN USER ACCESS CONTROL MODAL -->
+    <!-- 7. ADMIN USER ACCESS CONTROL MODAL -->
     <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
                 <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
                     <i class="fa-solid fa-users-gear text-emerald-600"></i>
-                    <span>User Role & Area Access Management</span>
+                    <span>User Role & Module Access Management</span>
                 </h3>
                 <button onclick="closeModal('adminModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 overflow-hidden">
-                <!-- Add User Form -->
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 overflow-y-auto">
-                    <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider mb-3">Grant / Edit User Access</h4>
+                <!-- Add/Edit User Form -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 overflow-y-auto custom-scrollbar">
+                    <h4 id="userAccessFormTitle" class="font-bold text-xs text-slate-700 uppercase tracking-wider mb-3">Grant / Edit User Access</h4>
                     <form onsubmit="saveUserAccess(event)" class="space-y-3">
+                        <input type="hidden" id="editingUserEmail">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">User Email ID (Any Email)</label>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">User Email ID</label>
                             <input type="email" id="accessEmail" required placeholder="user@domain.com" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
                         </div>
                         <div>
@@ -367,6 +534,21 @@
                                 <!-- Dynamically filled based on role -->
                             </select>
                         </div>
+
+                        <!-- MODULE PERMISSION CHECKBOXES (MODULES 4 TO 9) -->
+                        <div class="pt-2 border-t border-slate-200">
+                            <label class="block text-[11px] font-bold text-slate-700 mb-2">Module Access Rights (4 to 9):</label>
+                            <p class="text-[10px] text-slate-400 mb-2">Note: Inventory, HR, and Cleaning are automatically accessible to all users as per assigned areas.</p>
+                            <div class="space-y-1.5 text-xs text-slate-700" id="moduleCheckboxesContainer">
+                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_pest" class="rounded text-emerald-600"> <span>4. Pest Control</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_waste" class="rounded text-emerald-600"> <span>5. Dry Waste Management</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_compost" class="rounded text-emerald-600"> <span>6. Compost Operations</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_water" class="rounded text-emerald-600"> <span>7. Water Tanks Cleaning</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_procurement" class="rounded text-emerald-600"> <span>8. Procurement & Rates</span></label>
+                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_machinery" class="rounded text-emerald-600"> <span>9. Machinery</span></label>
+                            </div>
+                        </div>
+
                         <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 rounded-lg shadow transition">Save User Permissions</button>
                     </form>
                 </div>
@@ -471,7 +653,7 @@
 
     <!-- MAIN APP SCRIPT -->
     <script>
-        // MASTER STRUCTURE - 9 AREAS, 2 EXECUTIVES, 7 SUPERVISORS
+        // MASTER STRUCTURE - 9 AREAS
         const ADMIN_EXECUTIVE_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates'];
         const HOSTEL_EXECUTIVE_AREAS = ['Boys Hostel', 'Girls Hostel', 'Compound Area', 'Najmi Bldg'];
         const ALL_AREAS = [...ADMIN_EXECUTIVE_AREAS, ...HOSTEL_EXECUTIVE_AREAS];
@@ -480,26 +662,27 @@
             'Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Boys Hostel', 'Girls Hostel', 'Compound Area'
         ];
 
-        // CONFIGURABLE SYSTEM USERS
+        // CONFIGURABLE SYSTEM USERS WITH CUSTOM MODULE ACCESSIBILITY
         let userRegistry = [
-            { email: 'murtaza.kheraluwala@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS },
-            { email: 'fm.marol@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS },
-            { email: 'kheralu52@gmail.com', role: 'Executive – Hostels', areas: HOSTEL_EXECUTIVE_AREAS },
-            { email: 'exec.admin@domain.com', role: 'Executive – Admin', areas: ADMIN_EXECUTIVE_AREAS },
-            { email: 'sup.admin1@domain.com', role: 'Supervisor', areas: ['Admin Phase 1'] },
-            { email: 'sup.boyshostel@domain.com', role: 'Supervisor', areas: ['Boys Hostel'] }
+            { email: 'murtaza.kheraluwala@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
+            { email: 'fm.marol@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
+            { email: 'kheralu52@gmail.com', role: 'Executive – Hostels', areas: HOSTEL_EXECUTIVE_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'machinery'] },
+            { email: 'exec.admin@domain.com', role: 'Executive – Admin', areas: ADMIN_EXECUTIVE_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'waste'] }
         ];
 
         const MODULES = [
             { id: 'inventory', name: '1. Inventory Management', shortName: '1. Inventory', icon: 'fa-boxes-stacked', color: '#2563eb' },
             { id: 'hr', name: '2. HR & Staff Schedule', shortName: '2. HR & Schedule', icon: 'fa-users', color: '#059669' },
-            { id: 'cleaning', name: '3. Cleaning Reports', shortName: '3. Cleaning Reports', icon: 'fa-broom', color: '#0d9488' },
+            { id: 'cleaning', name: '3. Cleaning Reports & Schedule', shortName: '3. Cleaning Reports', icon: 'fa-broom', color: '#0d9488' },
             { id: 'pest', name: '4. Pest Control', shortName: '4. Pest Control', icon: 'fa-bug', color: '#d97706' },
             { id: 'waste', name: '5. Dry Waste Management', shortName: '5. Dry Waste', icon: 'fa-recycle', color: '#ea580c' },
             { id: 'compost', name: '6. Compost Operations', shortName: '6. Compost', icon: 'fa-seedling', color: '#16a34a' },
             { id: 'water', name: '7. Water Tanks Cleaning', shortName: '7. Water Tanks', icon: 'fa-faucet-drip', color: '#0284c7' },
-            { id: 'procurement', name: '8. Procurement & Rates', shortName: '8. Procurement', icon: 'fa-cart-shopping', color: '#7c3aed' }
+            { id: 'procurement', name: '8. Procurement & Rates', shortName: '8. Procurement', icon: 'fa-cart-shopping', color: '#7c3aed' },
+            { id: 'machinery', name: '9. Machinery', shortName: '9. Machinery', icon: 'fa-gears', color: '#4f46e5' }
         ];
+
+        let machineryCategories = ['Vacuum Cleaner', 'Surface Cleaning', 'Fumigation Machine'];
 
         let currentUser = null;
         let currentPrimaryTab = 'housekeeping';
@@ -516,24 +699,27 @@
                 { 
                     id: 'INV-02', code: 'CHM-02', name: 'R2 Hard Surface Cleaner', category: 'Chemicals', unit: 'Ltr', 
                     openingStock: { 'Main Store': 150, 'Admin Phase 1': 8, 'Admin Phase 3': 8, 'Mahad Bldg': 6, 'Religious Block': 4, 'Estates': 3, 'Boys Hostel': 12, 'Girls Hostel': 10, 'Compound Area': 5, 'Najmi Bldg': 4 }
-                },
-                { 
-                    id: 'INV-03', code: 'TLS-01', name: 'Microfiber Mop Head', category: 'Tools', unit: 'Pcs', 
-                    openingStock: { 'Main Store': 60, 'Admin Phase 1': 5, 'Admin Phase 3': 5, 'Mahad Bldg': 5, 'Religious Block': 3, 'Estates': 2, 'Boys Hostel': 8, 'Girls Hostel': 8, 'Compound Area': 2, 'Najmi Bldg': 2 }
                 }
             ],
             inventoryArchive: [
-                { id: 'ARC-101', date: '2026-10-16 09:30', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Main Store', type: 'PURCHASE', qty: 50, user: 'fm.marol@jameasaifiyah.edu', remarks: 'Vendor Delivery' },
-                { id: 'ARC-102', date: '2026-10-16 11:15', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Religious Block', type: 'ISSUE', qty: 10, user: 'exec.admin@domain.com', remarks: 'Issued to Sub Store' }
+                { id: 'ARC-101', date: '2026-10-16 09:30', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Main Store', type: 'PURCHASE', qty: 50, user: 'fm.marol@jameasaifiyah.edu', remarks: 'Vendor Delivery' }
             ],
-            hr: []
+            machinery: [
+                { id: 'MAC-01', category: 'Vacuum Cleaner', brand: 'Kärcher', model: 'WD 3 V-17/4/20', area: 'Mahad Bldg', purchaseDate: '2025-05-10', warranty: '2 Years', photo: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=300&q=80' },
+                { id: 'MAC-02', category: 'Surface Cleaning', brand: 'Taski', model: 'ergodisc 165', area: 'Boys Hostel', purchaseDate: '2024-11-20', warranty: '1 Year', photo: '' }
+            ],
+            breakdowns: [
+                { id: 'BRK-101', machineId: 'MAC-01', issue: 'Suction motor making abnormal noise and losing power', photo: '', repairs: [
+                    { id: 'REP-1', date: '2026-09-12', doneBy: 'Company Technician', cost: 1200, remarks: 'Replaced carbon brushes and cleaned filter', afterPhoto: '' }
+                ]}
+            ]
         };
 
         function initApp() {
             updateUserDisplay();
         }
 
-        // COMPUTE CURRENT DYNAMIC STOCK LEVEL
+        // COMPUTE CURRENT DYNAMIC INVENTORY STOCK
         function calculateCurrentStock(item, targetArea) {
             const initial = (item.openingStock && item.openingStock[targetArea]) ? item.openingStock[targetArea] : 0;
             let current = initial;
@@ -563,11 +749,11 @@
                 if (matchedUser) {
                     currentUser = { ...matchedUser };
                 } else {
-                    // Unregistered users are default Supervisors for safer permissions
                     currentUser = {
                         email: normalizedEmail,
                         role: 'Supervisor',
-                        areas: ['Admin Phase 1']
+                        areas: ['Admin Phase 1'],
+                        allowedModules: ['inventory', 'hr', 'cleaning']
                     };
                 }
             }
@@ -615,7 +801,6 @@
         function switchPrimaryTab(tabName) {
             if (!currentUser) { openModal('authModal'); return; }
             
-            // STRICT GUARD: Only Administrator can access Admin Tab
             if (tabName === 'admin') {
                 if (currentUser.role !== 'Administrator') {
                     alert('Access Denied: Admin Access is strictly restricted to Administrators.');
@@ -638,14 +823,13 @@
             
             if (currentUser) {
                 const areaSummary = currentUser.role === 'Administrator' ? 'All Areas' : currentUser.areas.join(', ');
-                if (emailEl) emailEl.innerText = `${currentUser.email} [${areaSummary}]`;
+                if (emailEl) emailEl.innerText = `${currentUser.email}`;
                 
                 if (roleEl) {
-                    roleEl.innerText = currentUser.role;
+                    roleEl.innerText = `${currentUser.role} (${areaSummary})`;
                     roleEl.className = "text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-700/80 text-emerald-100 font-semibold border border-emerald-500/30";
                 }
 
-                // Show Admin Tab ONLY for Administrators
                 if (adminTabBtn) {
                     if (currentUser.role === 'Administrator') {
                         adminTabBtn.classList.remove('hidden');
@@ -671,12 +855,18 @@
             container.innerHTML = '';
 
             MODULES.forEach(mod => {
-                const isActive = activeModule === mod.id;
-                const btn = document.createElement('button');
-                btn.className = `px-3.5 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex items-center space-x-2 ${isActive ? 'bg-[#004d3d] text-white shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`;
-                btn.onclick = () => switchModule(mod.id);
-                btn.innerHTML = `<i class="fa-solid ${mod.icon}" style="color:${isActive ? '#6ee7b7' : mod.color}"></i><span>${mod.shortName}</span>`;
-                container.appendChild(btn);
+                // Check if user has permission to view this module
+                const isCoreModule = ['inventory', 'hr', 'cleaning'].includes(mod.id);
+                const isAllowedExtra = currentUser.role === 'Administrator' || (currentUser.allowedModules && currentUser.allowedModules.includes(mod.id));
+
+                if (isCoreModule || isAllowedExtra) {
+                    const isActive = activeModule === mod.id;
+                    const btn = document.createElement('button');
+                    btn.className = `px-3.5 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex items-center space-x-2 ${isActive ? 'bg-[#004d3d] text-white shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`;
+                    btn.onclick = () => switchModule(mod.id);
+                    btn.innerHTML = `<i class="fa-solid ${mod.icon}" style="color:${isActive ? '#6ee7b7' : mod.color}"></i><span>${mod.shortName}</span>`;
+                    container.appendChild(btn);
+                }
             });
         }
 
@@ -768,6 +958,7 @@
 
             switch(moduleId) {
                 case 'inventory': renderInventoryModule(container, actions); break;
+                case 'machinery': renderMachineryModule(container, actions); break;
                 default: container.innerHTML = `<div class="p-6 bg-white rounded-xl shadow-sm text-xs text-slate-600">Module view rendering standard layout...</div>`; actions.innerHTML = '';
             }
         }
@@ -813,7 +1004,6 @@
                 return matchesSearch && matchesCategory;
             });
 
-            // Columns to render based strictly on user role & assigned areas
             let visibleAreas = [];
             if (isAdmin) visibleAreas = ALL_AREAS;
             else visibleAreas = currentUser.areas;
@@ -827,7 +1017,6 @@
 
             container.innerHTML = `
                 <div class="space-y-6">
-                    <!-- SEARCH AND FILTER BAR -->
                     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div class="relative w-full sm:w-72">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
@@ -842,11 +1031,10 @@
                         </div>
                     </div>
 
-                    <!-- MAIN ITEM INVENTORY TABLE (VISIBLE AREAS STRICTLY ACCORDING TO USER ROLE) -->
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center bg-slate-50">
                             <span>Area Stores Current Stock</span>
-                            <span class="text-[11px] text-blue-600 font-semibold">${currentUser.role} (${currentUser.areas.length === 9 ? 'All Areas' : currentUser.areas.join(', ')})</span>
+                            <span class="text-[11px] text-blue-600 font-semibold">${currentUser.role}</span>
                         </div>
                         <div class="overflow-x-auto custom-scrollbar">
                             <table class="w-full text-left text-xs whitespace-nowrap">
@@ -882,10 +1070,9 @@
                         </div>
                     </div>
 
-                    <!-- TRANSACTION ARCHIVE HISTORY -->
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 bg-slate-50">
-                            <span>Transaction Archive History (Purchase / Issue / OUT)</span>
+                            <span>Transaction Archive History</span>
                         </div>
                         <div class="overflow-x-auto custom-scrollbar">
                             <table class="w-full text-left text-xs">
@@ -927,14 +1114,282 @@
             `;
         }
 
+        // ================= 9. MACHINERY MODULE IMPLEMENTATION =================
+        function renderMachineryModule(container, actions) {
+            const isAdmin = currentUser.role === 'Administrator';
+            const isExec = currentUser.role.startsWith('Executive');
+
+            actions.innerHTML = `
+                <button onclick="openMachineryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add Machinery</span>
+                </button>
+            `;
+
+            // Filter machinery by area rights
+            const filteredMachinery = dbData.machinery.filter(mac => {
+                if (isAdmin) return true;
+                return currentUser.areas.includes(mac.area);
+            });
+
+            container.innerHTML = `
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center bg-slate-50">
+                        <span>Equipment & Machinery Asset Master</span>
+                        <span class="text-[11px] text-indigo-600 font-semibold">Total Assets: ${filteredMachinery.length}</span>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Photo</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Brand & Model</th>
+                                    <th class="p-3">Assigned Area</th>
+                                    <th class="p-3">Purchase & Warranty</th>
+                                    <th class="p-3 text-center">Breakdown / Maintenance Details</th>
+                                    <th class="p-3 text-center">Edit</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-700">
+                                ${filteredMachinery.length === 0 ? `
+                                    <tr><td colspan="7" class="p-6 text-center text-slate-400">No machinery logged for your assigned area yet.</td></tr>
+                                ` : filteredMachinery.map(mac => {
+                                    const machineBreakdowns = dbData.breakdowns.filter(b => b.machineId === mac.id);
+                                    const totalRepairs = machineBreakdowns.reduce((sum, b) => sum + (b.repairs ? b.repairs.length : 0), 0);
+
+                                    return `
+                                        <tr class="hover:bg-slate-50 transition">
+                                            <td class="p-3">
+                                                ${mac.photo ? `
+                                                    <img src="${mac.photo}" class="w-10 h-10 object-cover rounded-lg border border-slate-200">
+                                                ` : `
+                                                    <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-lg">
+                                                        <i class="fa-solid fa-gears"></i>
+                                                    </div>
+                                                `}
+                                            </td>
+                                            <td class="p-3 font-semibold text-slate-800">${mac.category}</td>
+                                            <td class="p-3">
+                                                <div class="font-bold text-slate-900">${mac.brand}</div>
+                                                <div class="text-[11px] text-slate-500 font-mono">${mac.model}</div>
+                                            </td>
+                                            <td class="p-3">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200">${mac.area}</span>
+                                            </td>
+                                            <td class="p-3 text-slate-500 text-[11px]">
+                                                <div>DOB: ${mac.purchaseDate || 'N/A'}</div>
+                                                <div>Warranty: ${mac.warranty || 'N/A'}</div>
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <button onclick="openBreakdownModal('${mac.id}')" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1.5">
+                                                    <i class="fa-solid fa-wrench text-amber-600"></i>
+                                                    <span>Breakdown Details (${machineBreakdowns.length})</span>
+                                                </button>
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <button onclick="openMachineryModal('${mac.id}')" class="text-indigo-600 hover:text-indigo-800 font-semibold"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openMachineryModal(editId = null) {
+            const areaSelect = document.getElementById('machineryArea');
+            const catSelect = document.getElementById('machineryCategory');
+
+            areaSelect.innerHTML = ALL_AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
+            catSelect.innerHTML = machineryCategories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            if (editId) {
+                const mac = dbData.machinery.find(m => m.id === editId);
+                if (mac) {
+                    document.getElementById('machineryEditId').value = mac.id;
+                    document.getElementById('machineryCategory').value = mac.category;
+                    document.getElementById('machineryBrand').value = mac.brand;
+                    document.getElementById('machineryModel').value = mac.model;
+                    document.getElementById('machineryArea').value = mac.area;
+                    document.getElementById('machineryPurchaseDate').value = mac.purchaseDate || '';
+                    document.getElementById('machineryWarranty').value = mac.warranty || '';
+                    document.getElementById('machineryPhoto').value = mac.photo || '';
+                }
+            } else {
+                document.getElementById('machineryEditId').value = '';
+                document.getElementById('machineryBrand').value = '';
+                document.getElementById('machineryModel').value = '';
+                document.getElementById('machineryPurchaseDate').value = '';
+                document.getElementById('machineryWarranty').value = '';
+                document.getElementById('machineryPhoto').value = '';
+            }
+
+            openModal('machineryModal');
+        }
+
+        function addNewMachineryCategoryPrompt() {
+            const newCat = prompt("Enter new Machinery Category Name:");
+            if (newCat && newCat.trim() !== '') {
+                const catTrimmed = newCat.trim();
+                if (!machineryCategories.includes(catTrimmed)) {
+                    machineryCategories.push(catTrimmed);
+                    const catSelect = document.getElementById('machineryCategory');
+                    catSelect.innerHTML = machineryCategories.map(c => `<option value="${c}">${c}</option>`).join('');
+                    catSelect.value = catTrimmed;
+                }
+            }
+        }
+
+        function handleSaveMachinery(e) {
+            e.preventDefault();
+            const editId = document.getElementById('machineryEditId').value;
+            const category = document.getElementById('machineryCategory').value;
+            const brand = document.getElementById('machineryBrand').value.trim();
+            const model = document.getElementById('machineryModel').value.trim();
+            const area = document.getElementById('machineryArea').value;
+            const purchaseDate = document.getElementById('machineryPurchaseDate').value;
+            const warranty = document.getElementById('machineryWarranty').value.trim();
+            const photo = document.getElementById('machineryPhoto').value.trim();
+
+            if (editId) {
+                const mac = dbData.machinery.find(m => m.id === editId);
+                if (mac) {
+                    Object.assign(mac, { category, brand, model, area, purchaseDate, warranty, photo });
+                }
+            } else {
+                dbData.machinery.push({
+                    id: 'MAC-' + Date.now(),
+                    category, brand, model, area, purchaseDate, warranty, photo
+                });
+            }
+
+            closeModal('machineryModal');
+            switchModule('machinery');
+        }
+
+        // ================= BREAKDOWN & REPAIR LOGIC =================
+        function openBreakdownModal(machineId) {
+            const mac = dbData.machinery.find(m => m.id === machineId);
+            if (!mac) return;
+
+            document.getElementById('breakdownMachineId').value = mac.id;
+            document.getElementById('breakdownMachineTitle').innerText = `${mac.brand} ${mac.model} (${mac.category})`;
+            document.getElementById('breakdownMachineSubtitle').innerText = `Assigned Area: ${mac.area} | Log breakdowns & repairs`;
+
+            renderBreakdownList(machineId);
+            openModal('breakdownModal');
+        }
+
+        function renderBreakdownList(machineId) {
+            const listContainer = document.getElementById('breakdownListContainer');
+            const totalCostEl = document.getElementById('totalMachineRepairCost');
+            if (!listContainer) return;
+
+            const breakdowns = dbData.breakdowns.filter(b => b.machineId === machineId);
+            let totalRepairExpenses = 0;
+
+            if (breakdowns.length === 0) {
+                listContainer.innerHTML = `<p class="text-xs text-slate-400 italic">No breakdown logs recorded for this machine yet.</p>`;
+            } else {
+                listContainer.innerHTML = breakdowns.map((brk, idx) => {
+                    const repairs = brk.repairs || [];
+                    const breakdownCost = repairs.reduce((s, r) => s + (parseInt(r.cost) || 0), 0);
+                    totalRepairExpenses += breakdownCost;
+
+                    return `
+                        <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50 space-y-2">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Fault #${idx+1}</span>
+                                    <p class="text-xs font-semibold text-slate-800 mt-1">${brk.issue}</p>
+                                </div>
+                                <button onclick="openAddRepairBox('${brk.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow flex items-center space-x-1">
+                                    <i class="fa-solid fa-plus text-[10px]"></i><span>Add Repair</span>
+                                </button>
+                            </div>
+
+                            ${brk.photo ? `<div class="mt-1"><img src="${brk.photo}" class="h-16 object-cover rounded border"></div>` : ''}
+
+                            <!-- REPAIR ENTRIES -->
+                            ${repairs.length > 0 ? `
+                                <div class="mt-2 pt-2 border-t border-slate-200 space-y-1.5">
+                                    <span class="text-[10px] font-bold uppercase text-slate-500">Repair History Logs:</span>
+                                    ${repairs.map(rep => `
+                                        <div class="bg-white p-2 rounded-lg border border-slate-200 text-xs flex justify-between items-center">
+                                            <div>
+                                                <span class="font-bold text-slate-700">${rep.date}</span> - 
+                                                <span class="text-slate-600">${rep.doneBy}</span>
+                                                <p class="text-[11px] text-slate-500">${rep.remarks || 'No remarks'}</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="font-extrabold text-emerald-700">₹${rep.cost}</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : '<p class="text-[11px] text-slate-400 italic">No repair activity recorded yet.</p>'}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            if (totalCostEl) totalCostEl.innerText = `₹${totalRepairExpenses}`;
+        }
+
+        function handleSaveBreakdown(e) {
+            e.preventDefault();
+            const machineId = document.getElementById('breakdownMachineId').value;
+            const issue = document.getElementById('breakdownIssue').value.trim();
+            const photo = document.getElementById('breakdownPhoto').value.trim();
+
+            dbData.breakdowns.unshift({
+                id: 'BRK-' + Date.now(),
+                machineId, issue, photo, repairs: []
+            });
+
+            document.getElementById('breakdownIssue').value = '';
+            document.getElementById('breakdownPhoto').value = '';
+
+            renderBreakdownList(machineId);
+        }
+
+        function openAddRepairBox(breakdownId) {
+            document.getElementById('repairBreakdownId').value = breakdownId;
+            document.getElementById('addRepairBox').classList.remove('hidden');
+        }
+
+        function handleSaveRepair(e) {
+            e.preventDefault();
+            const breakdownId = document.getElementById('repairBreakdownId').value;
+            const date = document.getElementById('repairDate').value;
+            const doneBy = document.getElementById('repairDoneBy').value;
+            const cost = parseInt(document.getElementById('repairCost').value) || 0;
+            const remarks = document.getElementById('repairRemarks').value.trim();
+            const afterPhoto = document.getElementById('repairAfterPhoto').value.trim();
+
+            const brk = dbData.breakdowns.find(b => b.id === breakdownId);
+            if (brk) {
+                if (!brk.repairs) brk.repairs = [];
+                brk.repairs.push({ id: 'REP-' + Date.now(), date, doneBy, cost, remarks, afterPhoto });
+
+                document.getElementById('addRepairBox').classList.add('hidden');
+                document.getElementById('repairCost').value = '';
+                document.getElementById('repairRemarks').value = '';
+
+                renderBreakdownList(brk.machineId);
+            }
+        }
+
+        // ================= INVENTORY COMMON UTILITIES =================
         function handleInvSearch(val) { searchSearchTerm = val; switchModule('inventory'); }
         function handleInvCategoryFilter(val) { selectedCategoryFilter = val; switchModule('inventory'); }
 
-        // OPENING STOCK & ITEM MANAGEMENT (ADMIN MODAL)
-        function openOpeningStockModal() {
-            renderOpeningStockTable();
-            openModal('openingStockModal');
-        }
+        function openOpeningStockModal() { renderOpeningStockTable(); openModal('openingStockModal'); }
 
         function renderOpeningStockTable() {
             const tbody = document.getElementById('openingStockTableBody');
@@ -979,10 +1434,7 @@
             const openingStock = { 'Main Store': 0 };
             ALL_AREAS.forEach(a => openingStock[a] = 0);
 
-            dbData.inventory.push({
-                id: 'INV-' + Date.now(),
-                code, name, category, unit, openingStock
-            });
+            dbData.inventory.push({ id: 'INV-' + Date.now(), code, name, category, unit, openingStock });
 
             document.getElementById('newItemCode').value = '';
             document.getElementById('newItemName').value = '';
@@ -1009,7 +1461,6 @@
 
             selectItem.innerHTML = dbData.inventory.map(i => `<option value="${i.id}">${i.code} - ${i.name}</option>`).join('');
             
-            // Limit options based on role
             if (isAdmin || isExec) {
                 typeSelect.innerHTML = `
                     <option value="PURCHASE">Purchase (Add to Main Store)</option>
@@ -1031,13 +1482,20 @@
             const type = document.getElementById('invTxType').value;
             const areaGroup = document.getElementById('invTxAreaGroup');
             const areaSelect = document.getElementById('invTxArea');
+            const isExec = currentUser.role.startsWith('Executive');
+            const isAdmin = currentUser.role === 'Administrator';
 
             if (type === 'PURCHASE') {
                 areaGroup.classList.add('hidden');
             } else {
                 areaGroup.classList.remove('hidden');
-                // Strictly limit target sub-store options to the user's assigned areas
-                areaSelect.innerHTML = currentUser.areas.map(a => `<option value="${a}">${a}</option>`).join('');
+                
+                // BOTH EXECUTIVES & ADMIN HAVE RIGHTS TO ISSUE TO ALL 9 AREAS
+                if (type === 'ISSUE' && (isExec || isAdmin)) {
+                    areaSelect.innerHTML = ALL_AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
+                } else {
+                    areaSelect.innerHTML = currentUser.areas.map(a => `<option value="${a}">${a}</option>`).join('');
+                }
             }
         }
 
@@ -1093,11 +1551,21 @@
 
         // ================= ADMIN USER ACCESS MANAGEMENT =================
         function openAdminModal() { 
-            if (currentUser.role !== 'Administrator') {
-                alert('Access Denied');
-                return;
-            }
+            if (currentUser.role !== 'Administrator') { alert('Access Denied'); return; }
+            resetUserAccessForm();
             openModal('adminModal'); 
+        }
+
+        function resetUserAccessForm() {
+            document.getElementById('editingUserEmail').value = '';
+            document.getElementById('accessEmail').value = '';
+            document.getElementById('accessRole').value = 'Administrator';
+            document.getElementById('userAccessFormTitle').innerText = 'Grant / Edit User Access';
+            
+            ['mod_pest', 'mod_waste', 'mod_compost', 'mod_water', 'mod_procurement', 'mod_machinery'].forEach(id => {
+                document.getElementById(id).checked = true;
+            });
+            updateAccessAreaDropdown();
         }
 
         function updateAccessAreaDropdown() {
@@ -1115,8 +1583,33 @@
             }
         }
 
+        function editUserAccess(email) {
+            const u = userRegistry.find(usr => usr.email.toLowerCase() === email.toLowerCase());
+            if (!u) return;
+
+            document.getElementById('editingUserEmail').value = u.email;
+            document.getElementById('accessEmail').value = u.email;
+            document.getElementById('accessRole').value = u.role;
+            document.getElementById('userAccessFormTitle').innerText = `Editing Access: ${u.email}`;
+
+            updateAccessAreaDropdown();
+
+            if (u.role === 'Supervisor') {
+                document.getElementById('accessArea').value = u.areas[0] || SUPERVISOR_ASSIGNED_AREAS[0];
+            }
+
+            const allowed = u.allowedModules || [];
+            document.getElementById('mod_pest').checked = allowed.includes('pest');
+            document.getElementById('mod_waste').checked = allowed.includes('waste');
+            document.getElementById('mod_compost').checked = allowed.includes('compost');
+            document.getElementById('mod_water').checked = allowed.includes('water');
+            document.getElementById('mod_procurement').checked = allowed.includes('procurement');
+            document.getElementById('mod_machinery').checked = allowed.includes('machinery');
+        }
+
         function saveUserAccess(e) {
             e.preventDefault();
+            const editingEmail = document.getElementById('editingUserEmail').value;
             const email = document.getElementById('accessEmail').value.toLowerCase().trim();
             const role = document.getElementById('accessRole').value;
             const areaVal = document.getElementById('accessArea').value;
@@ -1127,14 +1620,23 @@
             else if (role === 'Executive – Hostels') assignedAreas = HOSTEL_EXECUTIVE_AREAS;
             else assignedAreas = [areaVal];
 
-            const existingIndex = userRegistry.findIndex(u => u.email.toLowerCase() === email);
+            let allowedModules = ['inventory', 'hr', 'cleaning'];
+            if (document.getElementById('mod_pest').checked) allowedModules.push('pest');
+            if (document.getElementById('mod_waste').checked) allowedModules.push('waste');
+            if (document.getElementById('mod_compost').checked) allowedModules.push('compost');
+            if (document.getElementById('mod_water').checked) allowedModules.push('water');
+            if (document.getElementById('mod_procurement').checked) allowedModules.push('procurement');
+            if (document.getElementById('mod_machinery').checked) allowedModules.push('machinery');
+
+            const existingIndex = userRegistry.findIndex(u => u.email.toLowerCase() === (editingEmail || email));
             if (existingIndex >= 0) {
-                userRegistry[existingIndex] = { email, role, areas: assignedAreas };
+                userRegistry[existingIndex] = { email, role, areas: assignedAreas, allowedModules };
             } else {
-                userRegistry.push({ email, role, areas: assignedAreas });
+                userRegistry.push({ email, role, areas: assignedAreas, allowedModules });
             }
 
-            alert(`User permissions updated for ${email}`);
+            alert(`User access updated successfully for ${email}`);
+            resetUserAccessForm();
             renderUserAccessList();
         }
 
@@ -1147,8 +1649,12 @@
                     <div>
                         <p class="font-bold text-slate-800">${u.email}</p>
                         <p class="text-[11px] text-slate-500">Role: <span class="font-semibold text-emerald-700">${u.role}</span> | Areas: <span class="font-semibold text-blue-700">${u.areas.join(', ')}</span></p>
+                        <p class="text-[10px] text-slate-400">Allowed Modules: ${(u.allowedModules || []).join(', ')}</p>
                     </div>
-                    <button onclick="removeUserAccess(${idx})" class="text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="editUserAccess('${u.email}')" class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs px-2 py-1"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                        <button onclick="removeUserAccess(${idx})" class="text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
                 </div>
             `).join('');
         }
