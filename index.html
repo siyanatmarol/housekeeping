@@ -621,8 +621,9 @@
             } else {
                 var normalizedEmail = email.toLowerCase().trim();
                 var matchedUser = null;
+                
                 for (var i = 0; i < userRegistry.length; i++) {
-                    if (userRegistry[i].email.toLowerCase() === normalizedEmail) {
+                    if (userRegistry[i].email.toLowerCase().trim() === normalizedEmail) {
                         matchedUser = userRegistry[i];
                         break;
                     }
@@ -631,11 +632,13 @@
                 if (matchedUser) {
                     currentUser = matchedUser;
                 } else {
+                    // Default fallback: Give full Administrator rights to fm.marol and murtaza
+                    var isAdminEmail = normalizedEmail.includes('fm.marol') || normalizedEmail.includes('murtaza');
                     currentUser = {
                         email: normalizedEmail,
-                        role: 'Supervisor',
-                        areas: ['Admin Phase 1'],
-                        allowedModules: ['inventory', 'hr', 'cleaning']
+                        role: isAdminEmail ? 'Administrator' : 'Supervisor',
+                        areas: isAdminEmail ? ALL_AREAS : ['Admin Phase 1'],
+                        allowedModules: isAdminEmail ? ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] : ['inventory', 'hr', 'cleaning']
                     };
                 }
             }
@@ -651,10 +654,27 @@
             }
         };
 
-        function initApp() {
-            updateUserDisplay();
-        }
+        function switchPrimaryTab(tabName) {
+            if (!currentUser) { openModal('authModal'); return; }
+            
+            if (tabName === 'admin') {
+                // Ensure admins can open panel even if role string has slight formatting differences
+                var isUserAdmin = currentUser.role === 'Administrator' || currentUser.email.toLowerCase().includes('fm.marol') || currentUser.email.toLowerCase().includes('murtaza');
+                
+                if (!isUserAdmin) {
+                    alert('Access Denied: Admin Access is strictly restricted to Administrators.');
+                    return;
+                }
+                
+                renderUserAccessList();
+                updateAccessAreaDropdown();
+                openModal('adminModal');
+                return;
+            }
 
+            currentPrimaryTab = tabName;
+            switchModule(activeModule);
+        }
         function previewFileToBase64(inputEl, targetHiddenId) {
             var file = inputEl.files[0];
             if (!file) return;
