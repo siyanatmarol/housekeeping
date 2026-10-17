@@ -75,7 +75,7 @@
                     <i class="fa-solid fa-broom text-emerald-300"></i>
                     <span>Housekeeping</span>
                 </button>
-                <!-- ADMIN ACCESS TAB (HIDDEN FOR NON-ADMIN USERS) -->
+                <!-- ADMIN ACCESS TAB -->
                 <button id="mainTabAdmin" onclick="switchPrimaryTab('admin')" class="hidden px-4 py-2 font-medium text-xs sm:text-sm rounded-t-lg transition flex items-center space-x-2 text-emerald-100 hover:text-white hover:bg-emerald-800/40">
                     <i class="fa-solid fa-user-shield text-emerald-300"></i>
                     <span>Admin Access</span>
@@ -108,11 +108,8 @@
 
             <!-- Action Controls & Export Dropdown -->
             <div class="flex items-center space-x-2 sm:space-x-3 flex-wrap gap-y-2">
-                
-                <!-- IMPORT BUTTON (Rendered dynamically for Inventory & HR) -->
                 <div id="moduleImportContainer"></div>
 
-                <!-- EXPORT DROPDOWN -->
                 <div class="relative inline-block text-left">
                     <button onclick="toggleDropdown('exportDropdown')" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-2">
                         <i class="fa-solid fa-file-export text-slate-500"></i>
@@ -129,16 +126,11 @@
                     </div>
                 </div>
 
-                <div id="modulePrimaryActions" class="flex items-center space-x-2">
-                    <!-- Dynamic Action Buttons -->
-                </div>
+                <div id="modulePrimaryActions" class="flex items-center space-x-2"></div>
             </div>
         </div>
 
-        <!-- MODULE VIEWPORT CONTAINER -->
-        <div id="moduleContainer" class="min-h-[500px]">
-            <!-- Dynamic Module Content HTML standard template rendered here -->
-        </div>
+        <div id="moduleContainer" class="min-h-[500px]"></div>
 
     </main>
 
@@ -186,7 +178,7 @@
         </div>
     </div>
 
-    <!-- 2. INVENTORY TRANSACTION MODAL (PURCHASE / ISSUE / OUT) -->
+    <!-- 2. INVENTORY TRANSACTION MODAL -->
     <div id="invTransactionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -200,23 +192,17 @@
             <form onsubmit="handleInventoryTransactionSubmit(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Transaction Type</label>
-                    <select id="invTxType" onchange="toggleInvModalFields()" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white">
-                        <!-- Options dynamically populated based on role -->
-                    </select>
+                    <select id="invTxType" onchange="toggleInvModalFields()" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Select Item</label>
-                    <select id="invTxItem" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white">
-                        <!-- Populated dynamically -->
-                    </select>
+                    <select id="invTxItem" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
                 </div>
 
                 <div id="invTxAreaGroup">
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Target Area Store</label>
-                    <select id="invTxArea" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white">
-                        <!-- Populated dynamically according to user area rights -->
-                    </select>
+                    <select id="invTxArea" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
                 </div>
 
                 <div>
@@ -236,7 +222,7 @@
         </div>
     </div>
 
-    <!-- 3. OPENING STOCK & ITEM MANAGEMENT MODAL (ADMIN ONLY) -->
+    <!-- 3. OPENING STOCK & ITEM MANAGEMENT MODAL -->
     <div id="openingStockModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-5xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -250,7 +236,6 @@
                 <button onclick="closeModal('openingStockModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <!-- ADD NEW ITEM FORM -->
             <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 mb-4">
                 <h4 class="font-bold text-xs text-slate-700 mb-2 flex items-center space-x-1.5">
                     <i class="fa-solid fa-plus-circle text-emerald-600"></i>
@@ -281,7 +266,6 @@
                 </form>
             </div>
 
-            <!-- EDIT OPENING STOCKS TABLE -->
             <div class="flex-1 overflow-auto border border-slate-200 rounded-xl custom-scrollbar">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-slate-100 text-slate-700 uppercase font-bold sticky top-0 border-b border-slate-200 z-10">
@@ -300,9 +284,7 @@
                             <th class="p-2.5 text-center">Delete</th>
                         </tr>
                     </thead>
-                    <tbody id="openingStockTableBody" class="divide-y divide-slate-200 bg-white">
-                        <!-- Rendered dynamically -->
-                    </tbody>
+                    <tbody id="openingStockTableBody" class="divide-y divide-slate-200 bg-white"></tbody>
                 </table>
             </div>
 
@@ -314,7 +296,7 @@
         </div>
     </div>
 
-    <!-- 4. ADD / EDIT MACHINERY MODAL -->
+    <!-- 4. ADD / EDIT MACHINERY MODAL (WITH DIRECT FILE UPLOAD) -->
     <div id="machineryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -332,11 +314,7 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Category</label>
                         <div class="flex space-x-1.5">
-                            <select id="machineryCategory" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
-                                <option value="Vacuum Cleaner">Vacuum Cleaner</option>
-                                <option value="Surface Cleaning">Surface Cleaning</option>
-                                <option value="Fumigation">Fumigation Machine</option>
-                            </select>
+                            <select id="machineryCategory" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
                             <button type="button" onclick="addNewMachineryCategoryPrompt()" class="bg-slate-100 hover:bg-slate-200 px-2.5 py-2 rounded-lg text-xs font-bold border border-slate-300" title="Add Custom Category">+</button>
                         </div>
                     </div>
@@ -355,9 +333,7 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Assigned Area</label>
-                        <select id="machineryArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
-                            <!-- Dynamically populated -->
-                        </select>
+                        <select id="machineryArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
                     </div>
                 </div>
 
@@ -373,9 +349,14 @@
                     </div>
                 </div>
 
+                <!-- DIRECT FILE UPLOAD FOR MACHINERY PHOTO -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Photo of Machine (URL / Upload)</label>
-                    <input type="text" id="machineryPhoto" placeholder="Paste image link or click upload" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Upload Photo of Machine (Saved to fm.marol Drive)</label>
+                    <input type="file" id="machineryPhotoFileInput" accept="image/*" onchange="previewFileToBase64(this, 'machineryPhotoData')" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg bg-slate-50 cursor-pointer">
+                    <input type="hidden" id="machineryPhotoData">
+                    <div id="machineryPhotoPreviewBox" class="mt-2 hidden">
+                        <img id="machineryPhotoImg" class="h-20 object-cover rounded-lg border border-slate-200">
+                    </div>
                 </div>
 
                 <div class="pt-2 flex justify-end space-x-2">
@@ -415,17 +396,18 @@
                         </div>
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex-1">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Breakdown Photo URL</label>
-                                <input type="text" id="breakdownPhoto" placeholder="Link to fault photo..." class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg">
+                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Upload Breakdown Photo</label>
+                                <input type="file" id="breakdownPhotoInput" accept="image/*" onchange="previewFileToBase64(this, 'breakdownPhotoData')" class="w-full text-xs px-2 py-1 border border-slate-300 rounded-lg bg-white">
+                                <input type="hidden" id="breakdownPhotoData">
                             </div>
                             <div class="sm:self-end">
-                                <button type="submit" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg shadow">Log Breakdown Issue</button>
+                                <button type="submit" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow">Log Breakdown Issue</button>
                             </div>
                         </div>
                     </form>
                 </div>
 
-                <!-- ADD REPAIR FORM (TOGGLED ON CLICK) -->
+                <!-- ADD REPAIR FORM -->
                 <div id="addRepairBox" class="hidden bg-emerald-50/60 border border-emerald-200 rounded-xl p-4">
                     <h4 class="font-bold text-xs text-emerald-900 mb-2 flex items-center space-x-1.5">
                         <i class="fa-solid fa-wrench text-emerald-600"></i>
@@ -453,8 +435,9 @@
                             <input type="text" id="repairRemarks" placeholder="Parts replaced, motor serviced..." class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">After Repair Photo URL</label>
-                            <input type="text" id="repairAfterPhoto" placeholder="Link..." class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
+                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">Upload After Repair Photo</label>
+                            <input type="file" id="repairAfterPhotoInput" accept="image/*" onchange="previewFileToBase64(this, 'repairAfterPhotoData')" class="w-full text-xs px-2 py-1 border border-slate-300 rounded-lg bg-white">
+                            <input type="hidden" id="repairAfterPhotoData">
                         </div>
                         <div class="sm:col-span-3 flex justify-end space-x-2 pt-1">
                             <button type="button" onclick="document.getElementById('addRepairBox').classList.add('hidden')" class="bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg">Cancel</button>
@@ -463,16 +446,12 @@
                     </form>
                 </div>
 
-                <!-- BREAKDOWN & REPAIR LOG HISTORY LIST -->
                 <div class="space-y-3">
                     <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider">Breakdowns & Maintenance Logs</h4>
-                    <div id="breakdownListContainer" class="space-y-3">
-                        <!-- Populated dynamically -->
-                    </div>
+                    <div id="breakdownListContainer" class="space-y-3"></div>
                 </div>
             </div>
 
-            <!-- TOTAL REPAIR COST FOOTER -->
             <div class="pt-3 mt-3 border-t border-slate-200 flex justify-between items-center bg-slate-50 p-3 rounded-xl">
                 <span class="text-xs font-bold text-slate-700">Total Machinery Repairs Expense:</span>
                 <span id="totalMachineRepairCost" class="text-sm font-extrabold text-emerald-700">₹0</span>
@@ -480,7 +459,18 @@
         </div>
     </div>
 
-    <!-- 6. EDIT ARCHIVE MODAL -->
+    <!-- 6. EXPANDABLE PHOTO LIGHTBOX MODAL -->
+    <div id="photoPreviewModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4" onclick="closeModal('photoPreviewModal')">
+        <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onclick="event.stopPropagation()">
+            <button onclick="closeModal('photoPreviewModal')" class="absolute -top-10 right-0 text-white hover:text-slate-300 text-2xl font-bold">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <img id="photoPreviewImage" src="" class="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl border border-slate-700">
+            <p id="photoPreviewCaption" class="text-white text-xs mt-3 font-semibold text-center bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700"></p>
+        </div>
+    </div>
+
+    <!-- 7. EDIT ARCHIVE MODAL -->
     <div id="editArchiveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 border border-slate-100">
             <div class="flex justify-between items-center mb-3">
@@ -498,7 +488,7 @@
         </div>
     </div>
 
-    <!-- 7. ADMIN USER ACCESS CONTROL MODAL -->
+    <!-- 8. ADMIN USER ACCESS CONTROL MODAL (PERMISSIONS FORM FIXED) -->
     <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -510,7 +500,6 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 overflow-hidden">
-                <!-- Add/Edit User Form -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 overflow-y-auto custom-scrollbar">
                     <h4 id="userAccessFormTitle" class="font-bold text-xs text-slate-700 uppercase tracking-wider mb-3">Grant / Edit User Access</h4>
                     <form onsubmit="saveUserAccess(event)" class="space-y-3">
@@ -530,12 +519,10 @@
                         </div>
                         <div id="areaSelectGroup">
                             <label class="block text-[11px] font-semibold text-slate-600 mb-1">Assigned Area</label>
-                            <select id="accessArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
-                                <!-- Dynamically filled based on role -->
-                            </select>
+                            <select id="accessArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
                         </div>
 
-                        <!-- MODULE PERMISSION CHECKBOXES (MODULES 4 TO 9) -->
+                        <!-- MODULE PERMISSION CHECKBOXES WITH PROPER ID BINDING -->
                         <div class="pt-2 border-t border-slate-200">
                             <label class="block text-[11px] font-bold text-slate-700 mb-2">Module Access Rights (4 to 9):</label>
                             <p class="text-[10px] text-slate-400 mb-2">Note: Inventory, HR, and Cleaning are automatically accessible to all users as per assigned areas.</p>
@@ -553,14 +540,11 @@
                     </form>
                 </div>
 
-                <!-- Existing User List -->
                 <div class="md:col-span-2 border border-slate-200 rounded-xl overflow-hidden flex flex-col">
                     <div class="bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center">
                         <span>Configured Portal Users</span>
                     </div>
-                    <div class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar" id="userAccessList">
-                        <!-- Dynamic User Rows -->
-                    </div>
+                    <div class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar" id="userAccessList"></div>
                 </div>
             </div>
         </div>
@@ -579,7 +563,6 @@
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBPGqD2emtRMEMFd02UoC2iGRyFDbmBVxU",
             authDomain: "siyanat-housekeeping.firebaseapp.com",
@@ -653,7 +636,6 @@
 
     <!-- MAIN APP SCRIPT -->
     <script>
-        // MASTER STRUCTURE - 9 AREAS
         const ADMIN_EXECUTIVE_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates'];
         const HOSTEL_EXECUTIVE_AREAS = ['Boys Hostel', 'Girls Hostel', 'Compound Area', 'Najmi Bldg'];
         const ALL_AREAS = [...ADMIN_EXECUTIVE_AREAS, ...HOSTEL_EXECUTIVE_AREAS];
@@ -662,11 +644,11 @@
             'Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Boys Hostel', 'Girls Hostel', 'Compound Area'
         ];
 
-        // CONFIGURABLE SYSTEM USERS WITH CUSTOM MODULE ACCESSIBILITY
+        // CONFIGURABLE SYSTEM USERS WITH ACCURATE MODULE RIGHTS
         let userRegistry = [
             { email: 'murtaza.kheraluwala@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
             { email: 'fm.marol@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
-            { email: 'kheralu52@gmail.com', role: 'Executive – Hostels', areas: HOSTEL_EXECUTIVE_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'machinery'] },
+            { email: 'kheralu52@gmail.com', role: 'Executive – Hostels', areas: HOSTEL_EXECUTIVE_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'water', 'machinery'] },
             { email: 'exec.admin@domain.com', role: 'Executive – Admin', areas: ADMIN_EXECUTIVE_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'waste'] }
         ];
 
@@ -719,7 +701,29 @@
             updateUserDisplay();
         }
 
-        // COMPUTE CURRENT DYNAMIC INVENTORY STOCK
+        // COMPUTE FILE TO BASE64 ENCODING
+        function previewFileToBase64(inputEl, targetHiddenId) {
+            const file = inputEl.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById(targetHiddenId).value = e.target.result;
+                if (targetHiddenId === 'machineryPhotoData') {
+                    document.getElementById('machineryPhotoImg').src = e.target.result;
+                    document.getElementById('machineryPhotoPreviewBox').classList.remove('hidden');
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function expandPhotoModal(src, caption) {
+            if (!src) return;
+            document.getElementById('photoPreviewImage').src = src;
+            document.getElementById('photoPreviewCaption').innerText = caption || 'Equipment Photo';
+            openModal('photoPreviewModal');
+        }
+
         function calculateCurrentStock(item, targetArea) {
             const initial = (item.openingStock && item.openingStock[targetArea]) ? item.openingStock[targetArea] : 0;
             let current = initial;
@@ -855,7 +859,6 @@
             container.innerHTML = '';
 
             MODULES.forEach(mod => {
-                // Check if user has permission to view this module
                 const isCoreModule = ['inventory', 'hr', 'cleaning'].includes(mod.id);
                 const isAllowedExtra = currentUser.role === 'Administrator' || (currentUser.allowedModules && currentUser.allowedModules.includes(mod.id));
 
@@ -963,7 +966,7 @@
             }
         }
 
-        // ================= INVENTORY MODULE IMPLEMENTATION =================
+        // ================= INVENTORY MODULE =================
         function renderInventoryModule(container, actions) {
             const isAdmin = currentUser.role === 'Administrator';
             const isExec = currentUser.role.startsWith('Executive');
@@ -1114,10 +1117,9 @@
             `;
         }
 
-        // ================= 9. MACHINERY MODULE IMPLEMENTATION =================
+        // ================= 9. MACHINERY MODULE =================
         function renderMachineryModule(container, actions) {
             const isAdmin = currentUser.role === 'Administrator';
-            const isExec = currentUser.role.startsWith('Executive');
 
             actions.innerHTML = `
                 <button onclick="openMachineryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
@@ -1126,7 +1128,6 @@
                 </button>
             `;
 
-            // Filter machinery by area rights
             const filteredMachinery = dbData.machinery.filter(mac => {
                 if (isAdmin) return true;
                 return currentUser.areas.includes(mac.area);
@@ -1143,7 +1144,7 @@
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">
                                 <tr>
-                                    <th class="p-3">Photo</th>
+                                    <th class="p-3">Photo (Click to Expand)</th>
                                     <th class="p-3">Category</th>
                                     <th class="p-3">Brand & Model</th>
                                     <th class="p-3">Assigned Area</th>
@@ -1157,15 +1158,14 @@
                                     <tr><td colspan="7" class="p-6 text-center text-slate-400">No machinery logged for your assigned area yet.</td></tr>
                                 ` : filteredMachinery.map(mac => {
                                     const machineBreakdowns = dbData.breakdowns.filter(b => b.machineId === mac.id);
-                                    const totalRepairs = machineBreakdowns.reduce((sum, b) => sum + (b.repairs ? b.repairs.length : 0), 0);
 
                                     return `
                                         <tr class="hover:bg-slate-50 transition">
                                             <td class="p-3">
                                                 ${mac.photo ? `
-                                                    <img src="${mac.photo}" class="w-10 h-10 object-cover rounded-lg border border-slate-200">
+                                                    <img src="${mac.photo}" onclick="expandPhotoModal('${mac.photo}', '${mac.brand} ${mac.model}')" class="w-12 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-80 transition shadow-sm">
                                                 ` : `
-                                                    <div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-lg">
+                                                    <div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-lg">
                                                         <i class="fa-solid fa-gears"></i>
                                                     </div>
                                                 `}
@@ -1208,6 +1208,9 @@
             areaSelect.innerHTML = ALL_AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
             catSelect.innerHTML = machineryCategories.map(c => `<option value="${c}">${c}</option>`).join('');
 
+            document.getElementById('machineryPhotoData').value = '';
+            document.getElementById('machineryPhotoPreviewBox').classList.add('hidden');
+
             if (editId) {
                 const mac = dbData.machinery.find(m => m.id === editId);
                 if (mac) {
@@ -1218,7 +1221,11 @@
                     document.getElementById('machineryArea').value = mac.area;
                     document.getElementById('machineryPurchaseDate').value = mac.purchaseDate || '';
                     document.getElementById('machineryWarranty').value = mac.warranty || '';
-                    document.getElementById('machineryPhoto').value = mac.photo || '';
+                    if (mac.photo) {
+                        document.getElementById('machineryPhotoData').value = mac.photo;
+                        document.getElementById('machineryPhotoImg').src = mac.photo;
+                        document.getElementById('machineryPhotoPreviewBox').classList.remove('hidden');
+                    }
                 }
             } else {
                 document.getElementById('machineryEditId').value = '';
@@ -1226,7 +1233,6 @@
                 document.getElementById('machineryModel').value = '';
                 document.getElementById('machineryPurchaseDate').value = '';
                 document.getElementById('machineryWarranty').value = '';
-                document.getElementById('machineryPhoto').value = '';
             }
 
             openModal('machineryModal');
@@ -1254,7 +1260,7 @@
             const area = document.getElementById('machineryArea').value;
             const purchaseDate = document.getElementById('machineryPurchaseDate').value;
             const warranty = document.getElementById('machineryWarranty').value.trim();
-            const photo = document.getElementById('machineryPhoto').value.trim();
+            const photo = document.getElementById('machineryPhotoData').value.trim();
 
             if (editId) {
                 const mac = dbData.machinery.find(m => m.id === editId);
@@ -1272,7 +1278,7 @@
             switchModule('machinery');
         }
 
-        // ================= BREAKDOWN & REPAIR LOGIC =================
+        // ================= BREAKDOWN & REPAIR LOGS =================
         function openBreakdownModal(machineId) {
             const mac = dbData.machinery.find(m => m.id === machineId);
             if (!mac) return;
@@ -1313,9 +1319,8 @@
                                 </button>
                             </div>
 
-                            ${brk.photo ? `<div class="mt-1"><img src="${brk.photo}" class="h-16 object-cover rounded border"></div>` : ''}
+                            ${brk.photo ? `<div class="mt-1"><img src="${brk.photo}" onclick="expandPhotoModal('${brk.photo}', 'Breakdown Photo')" class="h-16 object-cover rounded border cursor-pointer hover:opacity-80"></div>` : ''}
 
-                            <!-- REPAIR ENTRIES -->
                             ${repairs.length > 0 ? `
                                 <div class="mt-2 pt-2 border-t border-slate-200 space-y-1.5">
                                     <span class="text-[10px] font-bold uppercase text-slate-500">Repair History Logs:</span>
@@ -1325,6 +1330,7 @@
                                                 <span class="font-bold text-slate-700">${rep.date}</span> - 
                                                 <span class="text-slate-600">${rep.doneBy}</span>
                                                 <p class="text-[11px] text-slate-500">${rep.remarks || 'No remarks'}</p>
+                                                ${rep.afterPhoto ? `<div class="mt-1"><img src="${rep.afterPhoto}" onclick="expandPhotoModal('${rep.afterPhoto}', 'After Repair Photo')" class="h-10 object-cover rounded border cursor-pointer"></div>` : ''}
                                             </div>
                                             <div class="text-right">
                                                 <span class="font-extrabold text-emerald-700">₹${rep.cost}</span>
@@ -1345,7 +1351,7 @@
             e.preventDefault();
             const machineId = document.getElementById('breakdownMachineId').value;
             const issue = document.getElementById('breakdownIssue').value.trim();
-            const photo = document.getElementById('breakdownPhoto').value.trim();
+            const photo = document.getElementById('breakdownPhotoData').value.trim();
 
             dbData.breakdowns.unshift({
                 id: 'BRK-' + Date.now(),
@@ -1353,7 +1359,8 @@
             });
 
             document.getElementById('breakdownIssue').value = '';
-            document.getElementById('breakdownPhoto').value = '';
+            document.getElementById('breakdownPhotoData').value = '';
+            document.getElementById('breakdownPhotoInput').value = '';
 
             renderBreakdownList(machineId);
         }
@@ -1370,7 +1377,7 @@
             const doneBy = document.getElementById('repairDoneBy').value;
             const cost = parseInt(document.getElementById('repairCost').value) || 0;
             const remarks = document.getElementById('repairRemarks').value.trim();
-            const afterPhoto = document.getElementById('repairAfterPhoto').value.trim();
+            const afterPhoto = document.getElementById('repairAfterPhotoData').value.trim();
 
             const brk = dbData.breakdowns.find(b => b.id === breakdownId);
             if (brk) {
@@ -1380,6 +1387,7 @@
                 document.getElementById('addRepairBox').classList.add('hidden');
                 document.getElementById('repairCost').value = '';
                 document.getElementById('repairRemarks').value = '';
+                document.getElementById('repairAfterPhotoData').value = '';
 
                 renderBreakdownList(brk.machineId);
             }
@@ -1490,7 +1498,7 @@
             } else {
                 areaGroup.classList.remove('hidden');
                 
-                // BOTH EXECUTIVES & ADMIN HAVE RIGHTS TO ISSUE TO ALL 9 AREAS
+                // BOTH EXECUTIVES HAVE ISSUE ACCESS TO ALL 9 AREAS
                 if (type === 'ISSUE' && (isExec || isAdmin)) {
                     areaSelect.innerHTML = ALL_AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
                 } else {
@@ -1549,7 +1557,7 @@
             }
         }
 
-        // ================= ADMIN USER ACCESS MANAGEMENT =================
+        // ================= ADMIN USER ACCESS CONTROL =================
         function openAdminModal() { 
             if (currentUser.role !== 'Administrator') { alert('Access Denied'); return; }
             resetUserAccessForm();
@@ -1563,7 +1571,8 @@
             document.getElementById('userAccessFormTitle').innerText = 'Grant / Edit User Access';
             
             ['mod_pest', 'mod_waste', 'mod_compost', 'mod_water', 'mod_procurement', 'mod_machinery'].forEach(id => {
-                document.getElementById(id).checked = true;
+                const el = document.getElementById(id);
+                if (el) el.checked = true;
             });
             updateAccessAreaDropdown();
         }
