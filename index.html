@@ -555,7 +555,7 @@
         </div>
     </div>
 
-    <!-- MAIN SCRIPT (GLOBAL FUNCTIONS DEFINED FIRST) -->
+    <!-- MAIN SCRIPT -->
     <script>
         const ADMIN_EXECUTIVE_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates'];
         const HOSTEL_EXECUTIVE_AREAS = ['Boys Hostel', 'Girls Hostel', 'Compound Area', 'Najmi Bldg'];
@@ -617,7 +617,7 @@
             ]
         };
 
-        // EXPLICITLY BIND FOR FIREBASE MODULE ACCESSIBILITY
+        // EXPLICITLY ATTACH HANDLER FOR MODULE ACCESSIBILITY
         window.handleUserAuthenticated = function(email) {
             if (!email) {
                 currentUser = null;
@@ -1044,7 +1044,7 @@
             `;
         }
 
-        // ================= 9. MACHINERY MODULE =================
+        // ================= MACHINERY MODULE =================
         function renderMachineryModule(container, actions) {
             const isAdmin = currentUser.role === 'Administrator';
 
@@ -1729,7 +1729,7 @@
             createUserWithEmailAndPassword, 
             signOut, 
             onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBPGqD2emtRMEMFd02UoC2iGRyFDbmBVxU",
