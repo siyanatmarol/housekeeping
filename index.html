@@ -1565,6 +1565,8 @@
             if (document.getElementById('mod_procurement').checked) allowedModules.push('procurement');
             if (document.getElementById('mod_machinery').checked) allowedModules.push('machinery');
 
+            var newUserObj = { email: email, role: role, areas: assignedAreas, allowedModules: allowedModules };
+
             var targetEmail = editingEmail || email;
             var existingIndex = -1;
             for (var i = 0; i < userRegistry.length; i++) {
@@ -1572,36 +1574,42 @@
             }
 
             if (existingIndex >= 0) {
-                userRegistry[existingIndex] = { email: email, role: role, areas: assignedAreas, allowedModules: allowedModules };
+                userRegistry[existingIndex] = newUserObj;
             } else {
-                userRegistry.push({ email: email, role: role, areas: assignedAreas, allowedModules: allowedModules });
+                userRegistry.push(newUserObj);
             }
 
-            alert("User access updated successfully for " + email);
+            // Sync with Firestore Cloud Database
+            if (typeof window.saveUserToFirebase === 'function') {
+                window.saveUserToFirebase(newUserObj);
+            }
+
+            alert("User access updated and synced to Firestore for " + email);
             resetUserAccessForm();
             renderUserAccessList();
         }
 
-        function renderUserAccessList() {
-            var listEl = document.getElementById('userAccessList');
-            if (!listEl) return;
-
-            var html = '';
-            userRegistry.forEach(function(u, idx) {
-                html += '<div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs"><div><p class="font-bold text-slate-800">' + u.email + '</p><p class="text-[11px] text-slate-500">Role: <span class="font-semibold text-emerald-700">' + u.role + '</span> | Areas: <span class="font-semibold text-blue-700">' + u.areas.join(', ') + '</span></p><p class="text-[10px] text-slate-400">Allowed Modules: ' + (u.allowedModules || []).join(', ') + '</p></div><div class="flex items-center space-x-2"><button onclick="editUserAccess(\'' + u.email + '\')" class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs px-2 py-1"><i class="fa-solid fa-pen-to-square"></i> Edit</button><button onclick="removeUserAccess(' + idx + ')" class="text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button></div></div>';
-            });
-            listEl.innerHTML = html;
-        }
-
         function removeUserAccess(idx) {
-            userRegistry.splice(idx, 1);
-            renderUserAccessList();
+            var targetUser = userRegistry[idx];
+            if (!targetUser) return;
+
+            if (confirm("Are you sure you want to remove access for " + targetUser.email + "?")) {
+                var emailToRemove = targetUser.email;
+                userRegistry.splice(idx, 1);
+
+                // Sync deletion with Firestore Cloud Database
+                if (typeof window.removeUserFromFirebase === 'function') {
+                    window.removeUserFromFirebase(emailToRemove);
+                }
+
+                renderUserAccessList();
+            }
         }
 
         function exportCurrentModule(type) { alert("Exporting data to " + type.toUpperCase()); }
     </script>
 
-    <!-- FIREBASE AUTH MODULE -->
+ <!-- FIREBASE AUTH & FIRESTORE DATABASE MODULE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
@@ -1613,6 +1621,14 @@
             signOut, 
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            setDoc, 
+            deleteDoc, 
+            onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBPGqD2emtRMEMFd02UoC2iGRyFDbmBVxU",
@@ -1625,8 +1641,51 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
+        // --- REAL-TIME FIRESTORE USER SYNC ---
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            const firebaseUsers = [];
+            snapshot.forEach((docSnap) => {
+                firebaseUsers.push(docSnap.data());
+            });
+
+            if (firebaseUsers.length > 0) {
+                window.userRegistry = firebaseUsers;
+                if (window.currentUser) {
+                    window.handleUserAuthenticated(window.currentUser.email);
+                }
+                if (typeof window.renderUserAccessList === 'function') {
+                    window.renderUserAccessList();
+                }
+            }
+        });
+
+        // --- FIRESTORE DATABASE HELPERS ---
+        window.saveUserToFirebase = async function(userData) {
+            try {
+                const docId = userData.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+                await setDoc(doc(db, "users", docId), userData);
+                console.log("User access saved to Firestore:", userData.email);
+            } catch (err) {
+                console.error("Error saving user to Firebase:", err);
+                alert("Database save error: " + err.message);
+            }
+        };
+
+        window.removeUserFromFirebase = async function(email) {
+            try {
+                const docId = email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+                await deleteDoc(doc(db, "users", docId));
+                console.log("User removed from Firestore:", email);
+            } catch (err) {
+                console.error("Error removing user from Firebase:", err);
+                alert("Database delete error: " + err.message);
+            }
+        };
+
+        // --- AUTHENTICATION HANDLERS ---
         window.loginWithGoogle = async function() {
             try {
                 const result = await signInWithPopup(auth, provider);
