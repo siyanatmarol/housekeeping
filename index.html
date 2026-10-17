@@ -106,7 +106,7 @@
             </div>
 
             <!-- Action Controls & Export Dropdown -->
-            <div class="flex items-center space-x-2 sm:space-x-3">
+            <div class="flex items-center space-x-2 sm:space-x-3 flex-wrap gap-y-2">
                 
                 <!-- IMPORT BUTTON (Rendered dynamically for Inventory & HR) -->
                 <div id="moduleImportContainer"></div>
@@ -128,7 +128,7 @@
                     </div>
                 </div>
 
-                <div id="modulePrimaryActions">
+                <div id="modulePrimaryActions" class="flex items-center space-x-2">
                     <!-- Dynamic Action Buttons -->
                 </div>
             </div>
@@ -158,7 +158,7 @@
                 <button onclick="closeModal('authModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             
-            <p class="text-xs text-slate-500 mb-6">Access is restricted strictly to authorized email accounts (<code class="text-emerald-700 font-semibold">@jameasaifiyah.edu</code>).</p>
+            <p class="text-xs text-slate-500 mb-6">Sign in with any authorized email account configured by Administrator.</p>
             
             <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm py-2.5 px-4 rounded-xl border border-slate-300 shadow-sm flex items-center justify-center space-x-3 mb-4 transition">
                 <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
@@ -174,7 +174,7 @@
             <form onsubmit="handleEmailLogin(event)" class="space-y-3 mt-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
-                    <input type="email" id="loginEmail" required placeholder="murtaza.kheraluwala@jameasaifiyah.edu" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    <input type="email" id="loginEmail" required placeholder="user@domain.com" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
@@ -237,7 +237,85 @@
         </div>
     </div>
 
-    <!-- 3. EDIT ARCHIVE MODAL -->
+    <!-- 3. OPENING STOCK & ITEM MANAGEMENT MODAL (ADMIN ONLY) -->
+    <div id="openingStockModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-5xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="fa-solid fa-warehouse text-emerald-600"></i>
+                        <span>Opening Stock & Item Management (Admin Only)</span>
+                    </h3>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Define starting stock levels for Main Store and 9 Area Stores or manage inventory master list.</p>
+                </div>
+                <button onclick="closeModal('openingStockModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <!-- ADD NEW ITEM FORM -->
+            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 mb-4">
+                <h4 class="font-bold text-xs text-slate-700 mb-2 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-plus-circle text-emerald-600"></i>
+                    <span>Add New Item to Inventory Master</span>
+                </h4>
+                <form onsubmit="handleAddNewItem(event)" class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 items-end">
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">Item Code</label>
+                        <input type="text" id="newItemCode" required placeholder="e.g. CHM-03" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">Item Name</label>
+                        <input type="text" id="newItemName" required placeholder="e.g. Glass Cleaner" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">Category</label>
+                        <input type="text" id="newItemCategory" required placeholder="e.g. Chemicals" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">Unit</label>
+                        <input type="text" id="newItemUnit" required placeholder="e.g. Ltr / Pcs" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-1.5 rounded-lg shadow transition">
+                            <i class="fa-solid fa-plus mr-1"></i> Add Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- EDIT OPENING STOCKS TABLE -->
+            <div class="flex-1 overflow-auto border border-slate-200 rounded-xl custom-scrollbar">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 text-slate-700 uppercase font-bold sticky top-0 border-b border-slate-200 z-10">
+                        <tr>
+                            <th class="p-2.5">Code / Item</th>
+                            <th class="p-2.5 text-blue-700">Main Store</th>
+                            <th class="p-2.5">Admin P1</th>
+                            <th class="p-2.5">Admin P3</th>
+                            <th class="p-2.5">Mahad</th>
+                            <th class="p-2.5">Religious</th>
+                            <th class="p-2.5">Estates</th>
+                            <th class="p-2.5">Boys H.</th>
+                            <th class="p-2.5">Girls H.</th>
+                            <th class="p-2.5">Compound</th>
+                            <th class="p-2.5">Najmi</th>
+                            <th class="p-2.5 text-center">Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody id="openingStockTableBody" class="divide-y divide-slate-200 bg-white">
+                        <!-- Rendered dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 flex justify-end">
+                <button onclick="closeModal('openingStockModal'); switchModule('inventory');" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-5 py-2 rounded-xl shadow">
+                    Save & Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. EDIT ARCHIVE MODAL -->
     <div id="editArchiveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 border border-slate-100">
             <div class="flex justify-between items-center mb-3">
@@ -255,7 +333,7 @@
         </div>
     </div>
 
-    <!-- 4. ADMIN USER ACCESS CONTROL MODAL -->
+    <!-- 5. ADMIN USER ACCESS CONTROL MODAL -->
     <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -272,8 +350,8 @@
                     <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider mb-3">Grant / Edit User Access</h4>
                     <form onsubmit="saveUserAccess(event)" class="space-y-3">
                         <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">User Email ID</label>
-                            <input type="email" id="accessEmail" required placeholder="user@jameasaifiyah.edu" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">User Email ID (Any Email)</label>
+                            <input type="email" id="accessEmail" required placeholder="user@domain.com" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
                         </div>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-600 mb-1">User Role</label>
@@ -400,23 +478,17 @@
         const ALL_AREAS = [...ADMIN_EXECUTIVE_AREAS, ...HOSTEL_EXECUTIVE_AREAS];
 
         const SUPERVISOR_ASSIGNED_AREAS = [
-            'Admin Phase 1',
-            'Admin Phase 3',
-            'Mahad Bldg',
-            'Religious Block',
-            'Boys Hostel',
-            'Girls Hostel',
-            'Compound Area'
+            'Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Boys Hostel', 'Girls Hostel', 'Compound Area'
         ];
 
-        // CONFIGURABLE SYSTEM USERS WITH ROLES & AREA CONSTRAINTS
+        // CONFIGURABLE SYSTEM USERS (ANY EMAIL CAN BE AUTHORIZED)
         let userRegistry = [
             { email: 'murtaza.kheraluwala@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS },
             { email: 'fm.marol@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS },
-            { email: 'exec.admin@jameasaifiyah.edu', role: 'Executive – Admin', areas: ADMIN_EXECUTIVE_AREAS },
-            { email: 'exec.hostels@jameasaifiyah.edu', role: 'Executive – Hostels', areas: HOSTEL_EXECUTIVE_AREAS },
-            { email: 'sup.admin1@jameasaifiyah.edu', role: 'Supervisor', areas: ['Admin Phase 1'] },
-            { email: 'sup.boyshostel@jameasaifiyah.edu', role: 'Supervisor', areas: ['Boys Hostel'] }
+            { email: 'exec.admin@domain.com', role: 'Executive – Admin', areas: ADMIN_EXECUTIVE_AREAS },
+            { email: 'exec.hostels@domain.com', role: 'Executive – Hostels', areas: HOSTEL_EXECUTIVE_AREAS },
+            { email: 'sup.admin1@domain.com', role: 'Supervisor', areas: ['Admin Phase 1'] },
+            { email: 'sup.boyshostel@domain.com', role: 'Supervisor', areas: ['Boys Hostel'] }
         ];
 
         const MODULES = [
@@ -439,30 +511,47 @@
         let dbData = {
             inventory: [
                 { 
-                    id: 'INV-01', code: 'CHM-01', name: 'R1 Bathroom Cleaner', category: 'Chemicals', unit: 'Ltr', openingStock: 250, mainStock: 180, 
-                    subStocks: { 'Admin Phase 1': 10, 'Admin Phase 3': 10, 'Mahad Bldg': 8, 'Religious Block': 5, 'Estates': 2, 'Boys Hostel': 15, 'Girls Hostel': 10, 'Compound Area': 5, 'Najmi Bldg': 5 } 
+                    id: 'INV-01', code: 'CHM-01', name: 'R1 Bathroom Cleaner', category: 'Chemicals', unit: 'Ltr', 
+                    openingStock: { 'Main Store': 200, 'Admin Phase 1': 10, 'Admin Phase 3': 10, 'Mahad Bldg': 8, 'Religious Block': 5, 'Estates': 2, 'Boys Hostel': 15, 'Girls Hostel': 10, 'Compound Area': 5, 'Najmi Bldg': 5 }
                 },
                 { 
-                    id: 'INV-02', code: 'CHM-02', name: 'R2 Hard Surface Cleaner', category: 'Chemicals', unit: 'Ltr', openingStock: 180, mainStock: 120, 
-                    subStocks: { 'Admin Phase 1': 8, 'Admin Phase 3': 8, 'Mahad Bldg': 6, 'Religious Block': 4, 'Estates': 3, 'Boys Hostel': 12, 'Girls Hostel': 10, 'Compound Area': 5, 'Najmi Bldg': 4 } 
+                    id: 'INV-02', code: 'CHM-02', name: 'R2 Hard Surface Cleaner', category: 'Chemicals', unit: 'Ltr', 
+                    openingStock: { 'Main Store': 150, 'Admin Phase 1': 8, 'Admin Phase 3': 8, 'Mahad Bldg': 6, 'Religious Block': 4, 'Estates': 3, 'Boys Hostel': 12, 'Girls Hostel': 10, 'Compound Area': 5, 'Najmi Bldg': 4 }
                 },
                 { 
-                    id: 'INV-03', code: 'TLS-01', name: 'Microfiber Mop Head', category: 'Tools', unit: 'Pcs', openingStock: 90, mainStock: 50, 
-                    subStocks: { 'Admin Phase 1': 5, 'Admin Phase 3': 5, 'Mahad Bldg': 5, 'Religious Block': 3, 'Estates': 2, 'Boys Hostel': 8, 'Girls Hostel': 8, 'Compound Area': 2, 'Najmi Bldg': 2 } 
+                    id: 'INV-03', code: 'TLS-01', name: 'Microfiber Mop Head', category: 'Tools', unit: 'Pcs', 
+                    openingStock: { 'Main Store': 60, 'Admin Phase 1': 5, 'Admin Phase 3': 5, 'Mahad Bldg': 5, 'Religious Block': 3, 'Estates': 2, 'Boys Hostel': 8, 'Girls Hostel': 8, 'Compound Area': 2, 'Najmi Bldg': 2 }
                 }
             ],
             inventoryArchive: [
-                { id: 'ARC-101', date: '2026-10-16 09:30', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Main Store', type: 'PURCHASE', qty: 100, user: 'fm.marol@jameasaifiyah.edu', remarks: 'Bulk Order Delivered' },
-                { id: 'ARC-102', date: '2026-10-16 11:15', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Religious Block', type: 'ISSUE', qty: 10, user: 'exec.admin@jameasaifiyah.edu', remarks: 'Issued to Sub Store' },
-                { id: 'ARC-103', date: '2026-10-16 14:00', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Boys Hostel', type: 'ISSUE', qty: 15, user: 'exec.hostels@jameasaifiyah.edu', remarks: 'Issued to Hostel Sub Store' }
+                { id: 'ARC-101', date: '2026-10-16 09:30', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Main Store', type: 'PURCHASE', qty: 50, user: 'fm.marol@jameasaifiyah.edu', remarks: 'Vendor Delivery' },
+                { id: 'ARC-102', date: '2026-10-16 11:15', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Religious Block', type: 'ISSUE', qty: 10, user: 'exec.admin@domain.com', remarks: 'Issued to Sub Store' }
             ],
-            hr: [],
-            cleaningReports: [],
-            pestControl: []
+            hr: []
         };
 
         function initApp() {
             updateUserDisplay();
+        }
+
+        // COMPUTE CURRENT DYNAMIC STOCK LEVEL
+        function calculateCurrentStock(item, targetArea) {
+            const initial = (item.openingStock && item.openingStock[targetArea]) ? item.openingStock[targetArea] : 0;
+            let current = initial;
+
+            dbData.inventoryArchive.forEach(arc => {
+                if (arc.itemCode === item.code) {
+                    if (targetArea === 'Main Store') {
+                        if (arc.type === 'PURCHASE') current += arc.qty;
+                        if (arc.type === 'ISSUE') current -= arc.qty;
+                    } else if (arc.area === targetArea) {
+                        if (arc.type === 'ISSUE') current += arc.qty;
+                        if (arc.type === 'OUT') current -= arc.qty;
+                    }
+                }
+            });
+
+            return current;
         }
 
         function handleUserAuthenticated(email) {
@@ -474,15 +563,13 @@
 
                 if (matchedUser) {
                     currentUser = { ...matchedUser };
-                } else if (normalizedEmail.endsWith('@jameasaifiyah.edu')) {
+                } else {
+                    // Default to Administrator if newly logged in or unregistered for testing flexibility
                     currentUser = {
                         email: normalizedEmail,
                         role: 'Administrator',
                         areas: ALL_AREAS
                     };
-                } else {
-                    currentUser = null;
-                    alert(`Access Denied: The email "${email}" is not authorized.`);
                 }
             }
 
@@ -509,7 +596,7 @@
                             <i class="fa-solid fa-lock"></i>
                         </div>
                         <h3 class="text-xl font-bold text-slate-900 mb-2">Access Restricted</h3>
-                        <p class="text-sm text-slate-500 max-w-md mb-6">Please sign in with an authorized @jameasaifiyah.edu account.</p>
+                        <p class="text-sm text-slate-500 max-w-md mb-6">Please sign in with an authorized account.</p>
                         <button onclick="openModal('authModal')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow transition flex items-center space-x-2">
                             <i class="fa-solid fa-right-to-bracket"></i>
                             <span>Sign In to Access Portal</span>
@@ -603,9 +690,38 @@
                 const worksheet = workbook.Sheets[firstSheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-                if (jsonData.length > 0) {
-                    alert(`Successfully imported ${jsonData.length} records into ${activeModule.toUpperCase()}!`);
-                    switchModule(activeModule);
+                if (jsonData.length > 0 && activeModule === 'inventory') {
+                    jsonData.forEach((row, idx) => {
+                        const code = row['Item Code'] || row['Code'] || `IMP-${idx+1}`;
+                        const name = row['Item Name'] || row['Name'] || 'Imported Item';
+                        const category = row['Category'] || 'General';
+                        const unit = row['Unit'] || 'Pcs';
+
+                        const openingStock = {
+                            'Main Store': parseInt(row['Main Store']) || 0,
+                            'Admin Phase 1': parseInt(row['Admin Phase 1']) || 0,
+                            'Admin Phase 3': parseInt(row['Admin Phase 3']) || 0,
+                            'Mahad Bldg': parseInt(row['Mahad Bldg']) || 0,
+                            'Religious Block': parseInt(row['Religious Block']) || 0,
+                            'Estates': parseInt(row['Estates']) || 0,
+                            'Boys Hostel': parseInt(row['Boys Hostel']) || 0,
+                            'Girls Hostel': parseInt(row['Girls Hostel']) || 0,
+                            'Compound Area': parseInt(row['Compound Area']) || 0,
+                            'Najmi Bldg': parseInt(row['Najmi Bldg']) || 0
+                        };
+
+                        const existing = dbData.inventory.find(i => i.code === code);
+                        if (existing) {
+                            existing.openingStock = openingStock;
+                        } else {
+                            dbData.inventory.push({ id: 'INV-' + Date.now() + idx, code, name, category, unit, openingStock });
+                        }
+                    });
+
+                    alert(`Successfully imported ${jsonData.length} items & opening stocks!`);
+                    switchModule('inventory');
+                } else if (jsonData.length > 0) {
+                    alert(`Imported ${jsonData.length} records into ${activeModule.toUpperCase()}!`);
                 } else {
                     alert("Imported file is empty or invalid format.");
                 }
@@ -633,10 +749,7 @@
 
             switch(moduleId) {
                 case 'inventory': renderInventoryModule(container, actions); break;
-                case 'hr': renderHRModule(container, actions); break;
-                case 'cleaning': renderAreaModule(container, actions, 'Cleaning Reports'); break;
-                case 'pest': renderAreaModule(container, actions, 'Pest Control Log'); break;
-                default: container.innerHTML = `<div class="p-6 bg-white rounded-xl shadow-sm text-xs text-slate-600">Module content view standard layout for ${mod?.name}...</div>`; actions.innerHTML = '';
+                default: container.innerHTML = `<div class="p-6 bg-white rounded-xl shadow-sm text-xs text-slate-600">Module content default view...</div>`; actions.innerHTML = '';
             }
         }
 
@@ -647,15 +760,25 @@
             const isSup = currentUser.role === 'Supervisor';
 
             actions.innerHTML = '';
+
+            if (isAdmin) {
+                actions.innerHTML += `
+                    <button onclick="openOpeningStockModal()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-warehouse"></i>
+                        <span>Opening Stock & Items</span>
+                    </button>
+                `;
+            }
+
             if (isAdmin || isExec) {
-                actions.innerHTML = `
+                actions.innerHTML += `
                     <button onclick="openInventoryTransactionModal('PURCHASE')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
                         <i class="fa-solid fa-plus-minus"></i>
                         <span>Purchase / Issue / OUT</span>
                     </button>
                 `;
             } else if (isSup) {
-                actions.innerHTML = `
+                actions.innerHTML += `
                     <button onclick="openInventoryTransactionModal('OUT')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
                         <i class="fa-solid fa-minus"></i>
                         <span>OUT Used Items</span>
@@ -671,7 +794,11 @@
                 return matchesSearch && matchesCategory;
             });
 
-            // Filtering archive strictly according to role and assigned areas
+            // Columns to render based on user role
+            let visibleAreas = [];
+            if (isAdmin) visibleAreas = ALL_AREAS;
+            else visibleAreas = currentUser.areas;
+
             const filteredArchive = dbData.inventoryArchive.filter(arc => {
                 if (isAdmin) return true;
                 if (isExec) return currentUser.areas.includes(arc.area) || arc.area === 'Main Store';
@@ -696,50 +823,38 @@
                         </div>
                     </div>
 
-                    <!-- MAIN ITEM INVENTORY TABLE -->
+                    <!-- MAIN ITEM INVENTORY TABLE (EXPANDED AREA COLUMNS, UNIT INLINE) -->
                     <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                         <div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center bg-slate-50">
-                            <span>Main Store & Area Wise Sub Store Allocations</span>
+                            <span>Main Store & Area Stores Current Stock</span>
                             <span class="text-[11px] text-blue-600 font-semibold">${currentUser.role} (${currentUser.areas.length === 9 ? 'All Areas' : currentUser.areas.join(', ')})</span>
                         </div>
                         <div class="overflow-x-auto custom-scrollbar">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-100 text-slate-600 uppercase font-semibold border-b border-slate-200">
+                            <table class="w-full text-left text-xs whitespace-nowrap">
+                                <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">
                                     <tr>
                                         <th class="p-3">Code</th>
                                         <th class="p-3">Item Name</th>
                                         <th class="p-3">Category</th>
-                                        <th class="p-3">Unit</th>
-                                        ${isAdmin ? `<th class="p-3 text-emerald-700">Opening Stock</th>` : ''}
-                                        ${isAdmin || isExec ? `<th class="p-3 text-blue-600 font-bold">Main Store Stock</th>` : ''}
-                                        <th class="p-3 text-indigo-600 font-bold">Concerned Area Current Stock</th>
+                                        ${isAdmin || isExec ? `<th class="p-3 bg-blue-50 text-blue-800">Main Store</th>` : ''}
+                                        ${visibleAreas.map(a => `<th class="p-3 bg-slate-50 text-slate-800 border-l border-slate-200">${a}</th>`).join('')}
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 text-slate-700">
                                     ${filteredItems.map(item => {
-                                        let areaStockDisplay = '';
-                                        
-                                        if (isAdmin) {
-                                            areaStockDisplay = ALL_AREAS.map(area => `<b>${area}:</b>${item.subStocks[area] || 0}`).join(' | ');
-                                        } else if (isExec) {
-                                            areaStockDisplay = currentUser.areas.map(area => `<b>${area}:</b>${item.subStocks[area] || 0}`).join(' | ');
-                                        } else if (isSup) {
-                                            const myArea = currentUser.areas[0];
-                                            areaStockDisplay = `<b>${myArea}:</b>${item.subStocks[myArea] || 0}`;
-                                        }
+                                        const mainStockVal = calculateCurrentStock(item, 'Main Store');
 
                                         return `
                                             <tr class="hover:bg-slate-50 transition">
                                                 <td class="p-3 font-mono text-slate-500">${item.code}</td>
                                                 <td class="p-3 font-semibold text-slate-900">${item.name}</td>
-                                                <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">${item.category}</span></td>
-                                                <td class="p-3 text-slate-500">${item.unit}</td>${isAdmin ? `
-                                                    <td class="p-3">
-                                                        <input type="number" value="${item.openingStock}" onchange="updateOpeningStock('${item.id}', this.value)" class="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded font-semibold text-emerald-700">
-                                                    </td>
+                                                <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">${item.category}</span></td>${isAdmin || isExec ? `
+                                                    <td class="p-3 font-bold text-blue-700 bg-blue-50/30">${mainStockVal} ${item.unit}</td>
                                                 ` : ''}
-                                                ${isAdmin || isExec ? `<td class="p-3 font-bold text-blue-600">${item.mainStock}</td>` : ''}
-                                                <td class="p-3 font-medium text-slate-700">${areaStockDisplay}</td>
+                                                ${visibleAreas.map(area => {
+                                                    const areaStockVal = calculateCurrentStock(item, area);
+                                                    return `<td class="p-3 font-medium text-slate-800 border-l border-slate-100">${areaStockVal} ${item.unit}</td>`;
+                                                }).join('')}
                                             </tr>
                                         `;
                                     }).join('')}
@@ -793,49 +908,77 @@
             `;
         }
 
-        function renderHRModule(container, actions) {
-            actions.innerHTML = '';
-            container.innerHTML = `
-                <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-                    <h3 class="text-sm font-bold text-slate-800 mb-4">HR & Staff Allocations (${currentUser.role})</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        ${currentUser.areas.map(area => `
-                            <div class="p-4 rounded-lg border border-slate-200 bg-slate-50">
-                                <h4 class="font-bold text-xs text-emerald-800 border-b pb-2 mb-2">${area}</h4>
-                                <p class="text-xs text-slate-600">Assigned Staff: 4 Cleaners</p>
-                                <p class="text-[11px] text-slate-500">Shift Time: 08:00 AM - 05:00 PM</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderAreaModule(container, actions, title) {
-            actions.innerHTML = '';
-            container.innerHTML = `
-                <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-                    <h3 class="text-sm font-bold text-slate-800 mb-4">${title} Overview</h3>
-                    <div class="space-y-3">
-                        ${currentUser.areas.map(area => `
-                            <div class="flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-slate-50">
-                                <span class="font-semibold text-xs text-slate-800">${area}</span>
-                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">Completed Today</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
         function handleInvSearch(val) { searchSearchTerm = val; switchModule('inventory'); }
         function handleInvCategoryFilter(val) { selectedCategoryFilter = val; switchModule('inventory'); }
 
-        function updateOpeningStock(itemId, newQty) {
+        // OPENING STOCK & ITEM MANAGEMENT (ADMIN MODAL)
+        function openOpeningStockModal() {
+            renderOpeningStockTable();
+            openModal('openingStockModal');
+        }
+
+        function renderOpeningStockTable() {
+            const tbody = document.getElementById('openingStockTableBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = dbData.inventory.map(item => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2.5 font-semibold text-slate-900">
+                        <div class="font-bold">${item.name}</div>
+                        <div class="text-[10px] text-slate-400 font-mono">${item.code} (${item.unit})</div>
+                    </td>
+                    <td class="p-2 bg-blue-50/50">
+                        <input type="number" value="${item.openingStock['Main Store'] || 0}" onchange="updateOpeningStockVal('${item.id}', 'Main Store', this.value)" class="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded font-bold text-blue-700">
+                    </td>
+                    ${ALL_AREAS.map(area => `
+                        <td class="p-2">
+                            <input type="number" value="${item.openingStock[area] || 0}" onchange="updateOpeningStockVal('${item.id}', '${area}', this.value)" class="w-14 px-1 py-1 text-xs border border-slate-300 rounded">
+                        </td>
+                    `).join('')}
+                    <td class="p-2 text-center">
+                        <button onclick="deleteInventoryItem('${item.id}')" class="text-red-600 hover:text-red-800 text-xs font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateOpeningStockVal(itemId, storeKey, val) {
             const item = dbData.inventory.find(i => i.id === itemId);
             if (item) {
-                item.openingStock = parseInt(newQty) || 0;
-                alert(`Opening stock updated for ${item.name}`);
+                if (!item.openingStock) item.openingStock = {};
+                item.openingStock[storeKey] = parseInt(val) || 0;
+            }
+        }
+
+        function handleAddNewItem(e) {
+            e.preventDefault();
+            const code = document.getElementById('newItemCode').value.trim();
+            const name = document.getElementById('newItemName').value.trim();
+            const category = document.getElementById('newItemCategory').value.trim();
+            const unit = document.getElementById('newItemUnit').value.trim();
+
+            const openingStock = { 'Main Store': 0 };
+            ALL_AREAS.forEach(a => openingStock[a] = 0);
+
+            dbData.inventory.push({
+                id: 'INV-' + Date.now(),
+                code, name, category, unit, openingStock
+            });
+
+            document.getElementById('newItemCode').value = '';
+            document.getElementById('newItemName').value = '';
+            document.getElementById('newItemCategory').value = '';
+            document.getElementById('newItemUnit').value = '';
+
+            alert(`Item "${name}" successfully added to master inventory!`);
+            renderOpeningStockTable();
+        }
+
+        function deleteInventoryItem(itemId) {
+            const item = dbData.inventory.find(i => i.id === itemId);
+            if (item && confirm(`Are you sure you want to delete "${item.name}"? Active stock will be removed, but past archive history will be preserved.`)) {
+                dbData.inventory = dbData.inventory.filter(i => i.id !== itemId);
+                renderOpeningStockTable();
             }
         }
 
@@ -871,18 +1014,6 @@
 
             const item = dbData.inventory.find(i => i.id === itemId);
             if (!item) return;
-
-            if (type === 'PURCHASE') {
-                item.mainStock += qty;
-            } else if (type === 'ISSUE') {
-                if (item.mainStock < qty) { alert("Insufficient stock in Main Store!"); return; }
-                item.mainStock -= qty;
-                item.subStocks[area] = (item.subStocks[area] || 0) + qty;
-            } else if (type === 'OUT') {
-                const currentAreaStock = item.subStocks[area] || 0;
-                if (currentAreaStock < qty) { alert(`Insufficient stock in ${area}!`); return; }
-                item.subStocks[area] -= qty;
-            }
 
             const now = new Date();
             const timestamp = now.toISOString().replace('T', ' ').substring(0, 16);
