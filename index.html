@@ -108,11 +108,8 @@
             <!-- Action Controls & Export Dropdown -->
             <div class="flex items-center space-x-2 sm:space-x-3">
                 
-                <!-- COPY CODE / DATA BUTTON IN PORTAL TOOLBAR -->
-                <button onclick="copyCurrentModuleData()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-2">
-                    <i class="fa-solid fa-code text-emerald-400"></i>
-                    <span id="copyBtnText">Copy Code / Data</span>
-                </button>
+                <!-- IMPORT BUTTON (Rendered dynamically for Inventory & HR) -->
+                <div id="moduleImportContainer"></div>
 
                 <!-- EXPORT DROPDOWN -->
                 <div class="relative inline-block text-left">
@@ -188,7 +185,81 @@
         </div>
     </div>
 
-    <!-- 2. ADMIN USER ACCESS CONTROL MODAL -->
+    <!-- 2. INVENTORY TRANSACTION MODAL (PURCHASE / ISSUE / OUT) -->
+    <div id="invTransactionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 id="invModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-boxes-packing text-emerald-600"></i>
+                    <span>Inventory Action Window</span>
+                </h3>
+                <button onclick="closeModal('invTransactionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form onsubmit="handleInventoryTransactionSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Transaction Type</label>
+                    <select id="invTxType" onchange="toggleInvModalFields()" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white">
+                        <option value="PURCHASE">Purchase (Add to Main Store)</option>
+                        <option value="ISSUE">Issue (Main Store -> Area Sub Store)</option>
+                        <option value="OUT">OUT (Material Consumed / Used)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Select Item</label>
+                    <select id="invTxItem" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div id="invTxAreaGroup">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Target Sub-Store Area</label>
+                    <select id="invTxArea" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white">
+                        <option value="Admin Phase 1">Admin Phase 1</option>
+                        <option value="Admin Phase 3">Admin Phase 3</option>
+                        <option value="Mahad Bldg">Mahad Bldg</option>
+                        <option value="Boys Hostel">Boys Hostel</option>
+                        <option value="Girls Hostel">Girls Hostel</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Quantity</label>
+                    <input type="number" id="invTxQty" min="1" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Remarks / Notes</label>
+                    <input type="text" id="invTxRemarks" placeholder="Optional remarks" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 rounded-lg shadow transition">Submit Inventory Action</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. EDIT ARCHIVE MODAL -->
+    <div id="editArchiveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 border border-slate-100">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-bold text-slate-900">Correct Archive Quantity</h3>
+                <button onclick="closeModal('editArchiveModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="saveArchiveCorrection(event)" class="space-y-3">
+                <input type="hidden" id="editArchiveId">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Correct Quantity</label>
+                    <input type="number" id="editArchiveQty" min="0" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-lg shadow">Update Record</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. ADMIN USER ACCESS CONTROL MODAL -->
     <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -212,8 +283,7 @@
                             <label class="block text-[11px] font-semibold text-slate-600 mb-1">User Role</label>
                             <select id="accessRole" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
                                 <option value="Administrator">Administrator (Full Access)</option>
-                                <option value="Executive – Admin">Executive – Admin</option>
-                                <option value="Executive – Hostels">Executive – Hostels</option>
+                                <option value="Executive">Executive</option>
                                 <option value="Supervisor">Supervisor</option>
                             </select>
                         </div>
@@ -332,10 +402,12 @@
 
     <!-- MAIN APP SCRIPT -->
     <script>
-        // STRICT LIST OF AUTHORIZED USERS
-        const ALLOWED_USERS = [
-            'murtaza.kheraluwala@jameasaifiyah.edu',
-            'fm.marol@jameasaifiyah.edu'
+        // CONFIGURABLE SYSTEM USERS WITH ROLES & AREAS
+        let userRegistry = [
+            { email: 'murtaza.kheraluwala@jameasaifiyah.edu', role: 'Administrator', area: 'All' },
+            { email: 'fm.marol@jameasaifiyah.edu', role: 'Administrator', area: 'All' },
+            { email: 'exec.hostels@jameasaifiyah.edu', role: 'Executive', area: 'Boys Hostel' },
+            { email: 'sup.mahad@jameasaifiyah.edu', role: 'Supervisor', area: 'Mahad Bldg' }
         ];
 
         const MODULES = [
@@ -352,42 +424,24 @@
         let currentUser = null;
         let currentPrimaryTab = 'housekeeping';
         let activeModule = 'inventory';
-
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxiU-_4R-8lnOukXbODlUVFuJ9Elvh-afvSXnbBc-PJfrlDnhP86BsXIJXeZa9f75K/exec";
+        let searchSearchTerm = '';
+        let selectedCategoryFilter = 'All';
 
         let dbData = {
             inventory: [
-                { id: 'INV-01', code: 'CHM-01', name: 'R1 Bathroom Cleaner', category: 'Chemicals', unit: 'Ltr', mainStock: 120 },
-                { id: 'INV-02', code: 'CHM-02', name: 'R2 Hard Surface Cleaner', category: 'Chemicals', unit: 'Ltr', mainStock: 80 }
+                { id: 'INV-01', code: 'CHM-01', name: 'R1 Bathroom Cleaner', category: 'Chemicals', unit: 'Ltr', openingStock: 150, mainStock: 120, subStocks: { 'Admin Phase 1': 10, 'Admin Phase 3': 5, 'Mahad Bldg': 5, 'Boys Hostel': 5, 'Girls Hostel': 5 } },
+                { id: 'INV-02', code: 'CHM-02', name: 'R2 Hard Surface Cleaner', category: 'Chemicals', unit: 'Ltr', openingStock: 100, mainStock: 80, subStocks: { 'Admin Phase 1': 5, 'Admin Phase 3': 5, 'Mahad Bldg': 4, 'Boys Hostel': 3, 'Girls Hostel': 3 } },
+                { id: 'INV-03', code: 'TLS-01', name: 'Microfiber Mop Head', category: 'Tools', unit: 'Pcs', openingStock: 50, mainStock: 30, subStocks: { 'Admin Phase 1': 4, 'Admin Phase 3': 4, 'Mahad Bldg': 4, 'Boys Hostel': 4, 'Girls Hostel': 4 } }
             ],
-            hr: [],
-            cleaningReports: [],
-            pestControl: [],
-            dryWaste: [],
-            compost: [],
-            waterTanks: []
+            inventoryArchive: [
+                { id: 'ARC-101', date: '2026-10-15 10:30', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Main Store', type: 'PURCHASE', qty: 50, user: 'fm.marol@jameasaifiyah.edu', remarks: 'Vendor Delivery' },
+                { id: 'ARC-102', date: '2026-10-16 14:15', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Mahad Bldg', type: 'ISSUE', qty: 10, user: 'fm.marol@jameasaifiyah.edu', remarks: 'Issued to Sub Store' }
+            ],
+            hr: []
         };
 
         function initApp() {
             updateUserDisplay();
-        }
-
-        // COPY CODE / DATA FUNCTIONALITY
-        function copyCurrentModuleData() {
-            const dataToCopy = dbData[activeModule] || dbData.inventory;
-            const formattedJson = JSON.stringify(dataToCopy, null, 2);
-
-            navigator.clipboard.writeText(formattedJson).then(() => {
-                const copyBtnText = document.getElementById('copyBtnText');
-                if (copyBtnText) {
-                    copyBtnText.innerText = 'Copied to Clipboard!';
-                    setTimeout(() => {
-                        copyBtnText.innerText = 'Copy Code / Data';
-                    }, 2000);
-                }
-            }).catch(err => {
-                console.error("Copy failed:", err);
-            });
         }
 
         function handleUserAuthenticated(email) {
@@ -395,14 +449,15 @@
                 currentUser = null;
             } else {
                 const normalizedEmail = email.toLowerCase().trim();
-                const isAuthorized = ALLOWED_USERS.includes(normalizedEmail);
+                const matchedUser = userRegistry.find(u => u.email.toLowerCase() === normalizedEmail);
 
-                if (isAuthorized) {
+                if (matchedUser) {
+                    currentUser = { ...matchedUser };
+                } else if (normalizedEmail.endsWith('@jameasaifiyah.edu')) {
                     currentUser = {
                         email: normalizedEmail,
                         role: 'Administrator',
-                        area: 'All',
-                        modules: MODULES.map(m => m.id)
+                        area: 'All'
                     };
                 } else {
                     currentUser = null;
@@ -443,18 +498,12 @@
             }
         }
 
-        function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-        }
-
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) {
             if (id === 'authModal' && !currentUser) return;
             document.getElementById(id).classList.add('hidden');
         }
-
-        function toggleDropdown(id) {
-            document.getElementById(id).classList.toggle('hidden');
-        }
+        function toggleDropdown(id) { document.getElementById(id).classList.toggle('hidden'); }
 
         function switchPrimaryTab(tabName) {
             if (!currentUser) { openModal('authModal'); return; }
@@ -462,6 +511,7 @@
             if (tabName === 'housekeeping') {
                 switchModule(activeModule);
             } else if (tabName === 'admin') {
+                renderUserAccessList();
                 openAdminModal();
             }
         }
@@ -471,7 +521,7 @@
             const roleEl = document.getElementById('userRoleBadge');
             
             if (currentUser) {
-                if (emailEl) emailEl.innerText = currentUser.email;
+                if (emailEl) emailEl.innerText = `${currentUser.email} (${currentUser.area})`;
                 if (roleEl) {
                     roleEl.innerText = currentUser.role;
                     roleEl.className = "text-[10px] px-2 py-0.5 rounded-full bg-emerald-700/80 text-emerald-100 font-semibold border border-emerald-500/30";
@@ -501,11 +551,51 @@
             });
         }
 
+        function renderImportButton() {
+            const importContainer = document.getElementById('moduleImportContainer');
+            if (!importContainer) return;
+            
+            if (activeModule === 'inventory' || activeModule === 'hr') {
+                importContainer.innerHTML = `
+                    <label class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-2 cursor-pointer">
+                        <i class="fa-solid fa-file-import text-emerald-300"></i>
+                        <span>Import Excel</span>
+                        <input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelImport(event)">
+                    </label>
+                `;
+            } else {
+                importContainer.innerHTML = '';
+            }
+        }
+
+        function handleExcelImport(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length > 0) {
+                    alert(`Successfully imported ${jsonData.length} records into ${activeModule.toUpperCase()}!`);
+                    switchModule(activeModule);
+                } else {
+                    alert("Imported file is empty or invalid format.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
         function switchModule(moduleId) {
             if (!currentUser) { renderUnauthenticatedGate(); return; }
 
             activeModule = moduleId;
             renderHeaderNavigation();
+            renderImportButton();
 
             const mod = MODULES.find(m => m.id === moduleId);
             if (mod) {
@@ -520,41 +610,155 @@
 
             switch(moduleId) {
                 case 'inventory': renderInventoryModule(container, actions); break;
-                default: container.innerHTML = `<div class="p-4 bg-white rounded-xl shadow-sm text-xs text-slate-600">Module view rendering default layout...</div>`;
+                default: container.innerHTML = `<div class="p-6 bg-white rounded-xl shadow-sm text-xs text-slate-600">Module content placeholder for ${mod?.name}...</div>`; actions.innerHTML = '';
             }
         }
 
+        // ================= INVENTORY MODULE IMPLEMENTATION =================
         function renderInventoryModule(container, actions) {
-            actions.innerHTML = `
-                <button class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition"><i class="fa-solid fa-plus mr-1"></i> Stock Entry</button>
-            `;
+            const isAdmin = currentUser.role === 'Administrator';
+            const isExec = currentUser.role === 'Executive';
+            const isSup = currentUser.role === 'Supervisor';
+
+            actions.innerHTML = '';
+            if (isAdmin || isExec) {
+                actions.innerHTML = `
+                    <button onclick="openInventoryTransactionModal('PURCHASE')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-[#ffffff]"></i>
+                        <span>Purchase / Issue / OUT</span>
+                    </button>
+                `;
+            } else if (isSup) {
+                actions.innerHTML = `
+                    <button onclick="openInventoryTransactionModal('OUT')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-minus"></i>
+                        <span>OUT Used Items</span>
+                    </button>
+                `;
+            }
+
+            // Extract unique categories for header filter
+            const categories = ['All', ...new Set(dbData.inventory.map(i => i.category))];
+
+            // Filter logic
+            const filteredItems = dbData.inventory.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchSearchTerm.toLowerCase()) || item.code.toLowerCase().includes(searchSearchTerm.toLowerCase());
+                const matchesCategory = selectedCategoryFilter === 'All' || item.category === selectedCategoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            // Archive Filter based on access
+            const filteredArchive = dbData.inventoryArchive.filter(arc => {
+                if (isAdmin) return true;
+                if (isExec) return currentUser.area === 'All' || arc.area === currentUser.area || arc.area === 'Main Store';
+                if (isSup) return arc.area === currentUser.area;
+                return true;
+            });
 
             container.innerHTML = `
                 <div class="space-y-6">
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center">
-                            <span>Current Inventory Items</span>
-                            <span class="text-[11px] text-emerald-600 font-semibold">User: ${currentUser.email}</span>
+                    <!-- SEARCH AND FILTER BAR -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="relative w-full sm:w-72">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" placeholder="Search Item Name or Code..." value="${searchSearchTerm}" oninput="handleInvSearch(this.value)" class="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
-                        <div class="overflow-x-auto">
+
+                        <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                            <span class="text-xs text-slate-500 font-medium">Filter Category:</span>
+                            <select onchange="handleInvCategoryFilter(this.value)" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none">
+                                ${categories.map(c => `<option value="${c}" ${selectedCategoryFilter === c ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- MAIN ITEM INVENTORY STORE TABLE -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center bg-slate-50">
+                            <span>Main Store & Area Stock Allocations</span>
+                            <span class="text-[11px] text-blue-600 font-semibold">User Role: ${currentUser.role} (${currentUser.area})</span>
+                        </div>
+                        <div class="overflow-x-auto custom-scrollbar">
                             <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
+                                <thead class="bg-slate-100 text-slate-600 uppercase font-semibold border-b border-slate-200">
                                     <tr>
-                                        <th class="p-3">Code</th>
+                                        <th class="p-3">Item Code</th>
                                         <th class="p-3">Item Name</th>
                                         <th class="p-3">Category</th>
                                         <th class="p-3">Unit</th>
-                                        <th class="p-3 text-blue-600 font-bold">Main Store Stock</th>
+                                        ${isAdmin ? `<th class="p-3 text-emerald-700">Opening Stock</th>` : ''}
+                                        ${isAdmin || isExec ? `<th class="p-3 text-blue-600 font-bold">Main Store Stock</th>` : ''}
+                                        <th class="p-3 text-indigo-600 font-bold">Area Current Stock</th>
                                     </tr>
                                 </thead>
-                                <tbody id="invTableBody" class="divide-y divide-slate-100 text-slate-700">
-                                    ${dbData.inventory.map(item => `
+                                <tbody class="divide-y divide-slate-100 text-slate-700">
+                                    ${filteredItems.map(item => {
+                                        let areaStockDisplay = '';
+                                        if (isAdmin) {
+                                            areaStockDisplay = Object.entries(item.subStocks).map(([area, qty]) => `${area}:${qty}`).join(' | ');
+                                        } else if (isExec) {
+                                            areaStockDisplay = currentUser.area === 'All' ? 
+                                                Object.entries(item.subStocks).map(([area, qty]) => `${area}:${qty}`).join(' | ') :
+                                                `${currentUser.area}:${item.subStocks[currentUser.area] || 0}`;
+                                        } else if (isSup) {
+                                            areaStockDisplay = `${currentUser.area}:${item.subStocks[currentUser.area] || 0}`;
+                                        }
+
+                                        return `
+                                            <tr class="hover:bg-slate-50 transition">
+                                                <td class="p-3 font-mono text-slate-500">${item.code}</td>
+                                                <td class="p-3 font-semibold text-slate-900">${item.name}</td>
+                                                <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">${item.category}</span></td>
+                                                <td class="p-3 text-slate-500">${item.unit}</td>${isAdmin ? `
+                                                    <td class="p-3">
+                                                        <input type="number" value="${item.openingStock}" onchange="updateOpeningStock('${item.id}', this.value)" class="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded font-semibold text-emerald-700">
+                                                    </td>
+                                                ` : ''}
+                                                ${isAdmin || isExec ? `<td class="p-3 font-bold text-blue-600">${item.mainStock}</td>` : ''}
+                                                <td class="p-3 font-semibold text-indigo-700">${areaStockDisplay}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TRANSACTION ARCHIVE -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 bg-slate-50">
+                            <span>Transaction Archive History (Purchase / Issue / OUT)</span>
+                        </div>
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-600 uppercase font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Date</th>
+                                        <th class="p-3">Type</th>
+                                        <th class="p-3">Item Name</th>
+                                        <th class="p-3">Store / Area</th>
+                                        <th class="p-3">Quantity</th>
+                                        <th class="p-3">Logged By</th>
+                                        ${isAdmin || isExec ? `<th class="p-3 text-center">Action</th>` : ''}
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 text-slate-700">
+                                    ${filteredArchive.map(arc => `
                                         <tr class="hover:bg-slate-50 transition">
-                                            <td class="p-3 font-mono text-slate-500">${item.code}</td>
-                                            <td class="p-3 font-semibold text-slate-900">${item.name}</td>
-                                            <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">${item.category}</span></td>
-                                            <td class="p-3 text-slate-500">${item.unit}</td>
-                                            <td class="p-3 font-bold text-blue-600">${item.mainStock}</td>
+                                            <td class="p-3 text-slate-500 font-mono">${arc.date}</td>
+                                            <td class="p-3">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${arc.type === 'PURCHASE' ? 'bg-emerald-100 text-emerald-800' : arc.type === 'ISSUE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}">
+                                                    ${arc.type}
+                                                </span>
+                                            </td>
+                                            <td class="p-3 font-medium text-slate-900">${arc.itemName}</td>
+                                            <td class="p-3 font-semibold text-slate-700">${arc.area}</td>
+                                            <td class="p-3 font-bold text-slate-900">${arc.qty}</td>
+                                            <td class="p-3 text-slate-500">${arc.user}</td>${isAdmin || isExec ? `
+                                                <td class="p-3 text-center">
+                                                    <button onclick="openEditArchiveModal('${arc.id}', ${arc.qty})" class="text-blue-600 hover:text-blue-800 font-semibold text-[11px]"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                                                </td>
+                                            ` : ''}
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -565,7 +769,145 @@
             `;
         }
 
+        function handleInvSearch(val) {
+            searchSearchTerm = val;
+            switchModule('inventory');
+        }
+
+        function handleInvCategoryFilter(val) {
+            selectedCategoryFilter = val;
+            switchModule('inventory');
+        }
+
+        function updateOpeningStock(itemId, newQty) {
+            const item = dbData.inventory.find(i => i.id === itemId);
+            if (item) {
+                item.openingStock = parseInt(newQty) || 0;
+                alert(`Opening stock updated for ${item.name}`);
+            }
+        }
+
+        function openInventoryTransactionModal(defaultType) {
+            const selectItem = document.getElementById('invTxItem');
+            selectItem.innerHTML = dbData.inventory.map(i => `<option value="${i.id}">${i.code} - ${i.name}</option>`).join('');
+            
+            document.getElementById('invTxType').value = defaultType;
+            toggleInvModalFields();
+            openModal('invTransactionModal');
+        }
+
+        function toggleInvModalFields() {
+            const type = document.getElementById('invTxType').value;
+            const areaGroup = document.getElementById('invTxAreaGroup');
+            if (type === 'PURCHASE') {
+                areaGroup.classList.add('hidden');
+            } else {
+                areaGroup.classList.remove('hidden');
+            }
+        }
+
+        function handleInventoryTransactionSubmit(e) {
+            e.preventDefault();
+            const type = document.getElementById('invTxType').value;
+            const itemId = document.getElementById('invTxItem').value;
+            const qty = parseInt(document.getElementById('invTxQty').value) || 0;
+            const area = type === 'PURCHASE' ? 'Main Store' : document.getElementById('invTxArea').value;
+            const remarks = document.getElementById('invTxRemarks').value;
+
+            const item = dbData.inventory.find(i => i.id === itemId);
+            if (!item) return;
+
+            if (type === 'PURCHASE') {
+                item.mainStock += qty;
+            } else if (type === 'ISSUE') {
+                if (item.mainStock < qty) { alert("Insufficient stock in Main Store!"); return; }
+                item.mainStock -= qty;
+                item.subStocks[area] = (item.subStocks[area] || 0) + qty;
+            } else if (type === 'OUT') {
+                const currentAreaStock = item.subStocks[area] || 0;
+                if (currentAreaStock < qty) { alert(`Insufficient stock in ${area}!`); return; }
+                item.subStocks[area] -= qty;
+            }
+
+            const now = new Date();
+            const timestamp = now.toISOString().replace('T', ' ').substring(0, 16);
+
+            dbData.inventoryArchive.unshift({
+                id: 'ARC-' + Date.now(),
+                date: timestamp,
+                itemCode: item.code,
+                itemName: item.name,
+                area: area,
+                type: type,
+                qty: qty,
+                user: currentUser.email,
+                remarks: remarks
+            });
+
+            closeModal('invTransactionModal');
+            switchModule('inventory');
+        }
+
+        function openEditArchiveModal(arcId, currentQty) {
+            document.getElementById('editArchiveId').value = arcId;
+            document.getElementById('editArchiveQty').value = currentQty;
+            openModal('editArchiveModal');
+        }
+
+        function saveArchiveCorrection(e) {
+            e.preventDefault();
+            const arcId = document.getElementById('editArchiveId').value;
+            const newQty = parseInt(document.getElementById('editArchiveQty').value) || 0;
+
+            const record = dbData.inventoryArchive.find(a => a.id === arcId);
+            if (record) {
+                record.qty = newQty;
+                alert("Archive record successfully updated.");
+                closeModal('editArchiveModal');
+                switchModule('inventory');
+            }
+        }
+
+        // ================= ADMIN USER ACCESS MANAGEMENT =================
         function openAdminModal() { openModal('adminModal'); }
+
+        function saveUserAccess(e) {
+            e.preventDefault();
+            const email = document.getElementById('accessEmail').value.toLowerCase().trim();
+            const role = document.getElementById('accessRole').value;
+            const area = document.getElementById('accessArea').value;
+
+            const existingIndex = userRegistry.findIndex(u => u.email.toLowerCase() === email);
+            if (existingIndex >= 0) {
+                userRegistry[existingIndex] = { email, role, area };
+            } else {
+                userRegistry.push({ email, role, area });
+            }
+
+            alert(`User access for ${email} saved successfully!`);
+            renderUserAccessList();
+        }
+
+        function renderUserAccessList() {
+            const listEl = document.getElementById('userAccessList');
+            if (!listEl) return;
+
+            listEl.innerHTML = userRegistry.map((u, idx) => `
+                <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                    <div>
+                        <p class="font-bold text-slate-800">${u.email}</p>
+                        <p class="text-[11px] text-slate-500">Role: <span class="font-semibold text-emerald-700">${u.role}</span> | Area: <span class="font-semibold text-blue-700">${u.area}</span></p>
+                    </div>
+                    <button onclick="removeUserAccess(${idx})" class="text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+            `).join('');
+        }
+
+        function removeUserAccess(idx) {
+            userRegistry.splice(idx, 1);
+            renderUserAccessList();
+        }
+
         function exportCurrentModule(type) { alert(`Exporting data to ${type.toUpperCase()}`); }
     </script>
 </body>
