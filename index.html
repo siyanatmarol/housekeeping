@@ -296,7 +296,7 @@
         </div>
     </div>
 
-    <!-- 4. ADD / EDIT MACHINERY MODAL (WITH PHOTO DELETE OPTION) -->
+    <!-- 4. ADD / EDIT MACHINERY MODAL -->
     <div id="machineryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -349,7 +349,6 @@
                     </div>
                 </div>
 
-                <!-- DIRECT FILE UPLOAD WITH PHOTO DELETE OPTION -->
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Machinery Photo</label>
                     <input type="file" id="machineryPhotoFileInput" accept="image/*" onchange="previewFileToBase64(this, 'machineryPhotoData')" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg bg-slate-50 cursor-pointer">
@@ -556,91 +555,7 @@
         </div>
     </div>
 
-    <!-- FIREBASE MODULE INTEGRATION SCRIPTS -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { 
-            getAuth, 
-            GoogleAuthProvider, 
-            signInWithPopup, 
-            signInWithEmailAndPassword, 
-            createUserWithEmailAndPassword, 
-            signOut, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBPGqD2emtRMEMFd02UoC2iGRyFDbmBVxU",
-            authDomain: "siyanat-housekeeping.firebaseapp.com",
-            projectId: "siyanat-housekeeping",
-            storageBucket: "siyanat-housekeeping.firebasestorage.app",
-            messagingSenderId: "290263999867",
-            appId: "1:290263999867:web:94c15947934039de8589de"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
-
-        window.loginWithGoogle = async function() {
-            try {
-                const result = await signInWithPopup(auth, provider);
-                window.handleUserAuthenticated(result.user.email);
-                closeModal('authModal');
-            } catch (error) {
-                console.error("Google Auth Error:", error);
-                alert("Google Sign-In failed: " + error.message);
-            }
-        };
-
-        window.handleEmailLogin = async function(e) {
-            e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                window.handleUserAuthenticated(userCredential.user.email);
-                closeModal('authModal');
-            } catch (error) {
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                    try {
-                        const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
-                        window.handleUserAuthenticated(newUserCredential.user.email);
-                        closeModal('authModal');
-                        alert("Account created and signed in!");
-                    } catch (createErr) {
-                        alert("Sign in error: " + createErr.message);
-                    }
-                } else {
-                    alert("Authentication Error: " + error.message);
-                }
-            }
-        };
-
-        window.logoutUser = function() {
-            signOut(auth).then(() => {
-                location.reload();
-            });
-        };
-
-        onAuthStateChanged(auth, (user) => {
-            const authBtnText = document.getElementById('authBtnText');
-            const authBtn = document.getElementById('authBtn');
-
-            if (user) {
-                window.handleUserAuthenticated(user.email);
-                if (authBtnText) authBtnText.innerText = 'Sign Out';
-                if (authBtn) authBtn.onclick = () => window.logoutUser();
-            } else {
-                window.handleUserAuthenticated(null);
-                if (authBtnText) authBtnText.innerText = 'Sign In';
-                if (authBtn) authBtn.onclick = () => openModal('authModal');
-            }
-        });
-    </script>
-
-    <!-- MAIN APP SCRIPT -->
+    <!-- MAIN SCRIPT (GLOBAL FUNCTIONS DEFINED FIRST) -->
     <script>
         const ADMIN_EXECUTIVE_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates'];
         const HOSTEL_EXECUTIVE_AREAS = ['Boys Hostel', 'Girls Hostel', 'Compound Area', 'Najmi Bldg'];
@@ -702,6 +617,37 @@
             ]
         };
 
+        // EXPLICITLY BIND FOR FIREBASE MODULE ACCESSIBILITY
+        window.handleUserAuthenticated = function(email) {
+            if (!email) {
+                currentUser = null;
+            } else {
+                const normalizedEmail = email.toLowerCase().trim();
+                const matchedUser = userRegistry.find(u => u.email.toLowerCase() === normalizedEmail);
+
+                if (matchedUser) {
+                    currentUser = { ...matchedUser };
+                } else {
+                    currentUser = {
+                        email: normalizedEmail,
+                        role: 'Supervisor',
+                        areas: ['Admin Phase 1'],
+                        allowedModules: ['inventory', 'hr', 'cleaning']
+                    };
+                }
+            }
+
+            updateUserDisplay();
+            
+            if (currentUser) {
+                closeModal('authModal');
+                switchModule('inventory');
+            } else {
+                renderUnauthenticatedGate();
+                openModal('authModal');
+            }
+        };
+
         function initApp() {
             updateUserDisplay();
         }
@@ -752,36 +698,6 @@
             });
 
             return current;
-        }
-
-        function handleUserAuthenticated(email) {
-            if (!email) {
-                currentUser = null;
-            } else {
-                const normalizedEmail = email.toLowerCase().trim();
-                const matchedUser = userRegistry.find(u => u.email.toLowerCase() === normalizedEmail);
-
-                if (matchedUser) {
-                    currentUser = { ...matchedUser };
-                } else {
-                    currentUser = {
-                        email: normalizedEmail,
-                        role: 'Supervisor',
-                        areas: ['Admin Phase 1'],
-                        allowedModules: ['inventory', 'hr', 'cleaning']
-                    };
-                }
-            }
-
-            updateUserDisplay();
-            
-            if (currentUser) {
-                closeModal('authModal');
-                switchModule('inventory');
-            } else {
-                renderUnauthenticatedGate();
-                openModal('authModal');
-            }
         }
 
         function renderUnauthenticatedGate() {
@@ -949,7 +865,7 @@
                     alert("Imported file is empty or invalid format.");
                 }
             };
-            reader.readAsBuffer(file);
+            reader.readAsArrayBuffer(file);
         }
 
         function switchModule(moduleId) {
@@ -1344,9 +1260,7 @@
                     totalRepairExpenses += breakdownCost;
 
                     return `
-                        <!-- SINGLE BREAKDOWN & REPAIRS CARD -->
                         <div class="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
-                            <!-- TOP BREAKDOWN LOG HEADER -->
                             <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                 <div class="space-y-1">
                                     <div class="flex items-center space-x-2">
@@ -1369,7 +1283,6 @@
                                 </div>
                             </div>
 
-                            <!-- BENEATH REPAIR LOGS CONTAINER -->
                             <div class="p-3.5 bg-slate-50/40 space-y-2">
                                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Associated Repair Logs (${repairs.length}):</span>
                                 ${repairs.length > 0 ? repairs.map(rep => `
@@ -1803,6 +1716,97 @@
         }
 
         function exportCurrentModule(type) { alert(`Exporting data to ${type.toUpperCase()}`); }
+    </script>
+
+    <!-- FIREBASE MODULE INTEGRATION SCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPGqD2emtRMEMFd02UoC2iGRyFDbmBVxU",
+            authDomain: "siyanat-housekeeping.firebaseapp.com",
+            projectId: "siyanat-housekeeping",
+            storageBucket: "siyanat-housekeeping.firebasestorage.app",
+            messagingSenderId: "290263999867",
+            appId: "1:290263999867:web:94c15947934039de8589de"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        window.loginWithGoogle = async function() {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                if (typeof window.handleUserAuthenticated === 'function') {
+                    window.handleUserAuthenticated(result.user.email);
+                }
+            } catch (error) {
+                console.error("Google Auth Error:", error);
+                alert("Google Sign-In failed: " + error.message);
+            }
+        };
+
+        window.handleEmailLogin = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                if (typeof window.handleUserAuthenticated === 'function') {
+                    window.handleUserAuthenticated(userCredential.user.email);
+                }
+            } catch (error) {
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                    try {
+                        const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+                        if (typeof window.handleUserAuthenticated === 'function') {
+                            window.handleUserAuthenticated(newUserCredential.user.email);
+                        }
+                        alert("Account created and signed in!");
+                    } catch (createErr) {
+                        alert("Sign in error: " + createErr.message);
+                    }
+                } else {
+                    alert("Authentication Error: " + error.message);
+                }
+            }
+        };
+
+        window.logoutUser = function() {
+            signOut(auth).then(() => {
+                location.reload();
+            });
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            const authBtnText = document.getElementById('authBtnText');
+            const authBtn = document.getElementById('authBtn');
+
+            if (user) {
+                if (typeof window.handleUserAuthenticated === 'function') {
+                    window.handleUserAuthenticated(user.email);
+                }
+                if (authBtnText) authBtnText.innerText = 'Sign Out';
+                if (authBtn) authBtn.onclick = () => window.logoutUser();
+            } else {
+                if (typeof window.handleUserAuthenticated === 'function') {
+                    window.handleUserAuthenticated(null);
+                }
+                if (authBtnText) authBtnText.innerText = 'Sign In';
+                if (authBtn) authBtn.onclick = () => openModal('authModal');
+            }
+        });
     </script>
 </body>
 </html>
