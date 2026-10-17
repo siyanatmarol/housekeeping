@@ -617,7 +617,6 @@
             ]
         };
 
-        // EXPLICITLY ATTACH HANDLER FOR MODULE ACCESSIBILITY
         window.handleUserAuthenticated = function(email) {
             if (!email) {
                 currentUser = null;
@@ -1729,7 +1728,7 @@
             createUserWithEmailAndPassword, 
             signOut, 
             onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBPGqD2emtRMEMFd02UoC2iGRyFDbmBVxU",
