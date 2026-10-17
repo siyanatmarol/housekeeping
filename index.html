@@ -296,7 +296,7 @@
         </div>
     </div>
 
-    <!-- 4. ADD / EDIT MACHINERY MODAL (WITH DIRECT FILE UPLOAD) -->
+    <!-- 4. ADD / EDIT MACHINERY MODAL (WITH PHOTO DELETE OPTION) -->
     <div id="machineryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -349,13 +349,17 @@
                     </div>
                 </div>
 
-                <!-- DIRECT FILE UPLOAD FOR MACHINERY PHOTO -->
+                <!-- DIRECT FILE UPLOAD WITH PHOTO DELETE OPTION -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Upload Photo of Machine (Saved to fm.marol Drive)</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Machinery Photo</label>
                     <input type="file" id="machineryPhotoFileInput" accept="image/*" onchange="previewFileToBase64(this, 'machineryPhotoData')" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg bg-slate-50 cursor-pointer">
                     <input type="hidden" id="machineryPhotoData">
-                    <div id="machineryPhotoPreviewBox" class="mt-2 hidden">
-                        <img id="machineryPhotoImg" class="h-20 object-cover rounded-lg border border-slate-200">
+                    <div id="machineryPhotoPreviewBox" class="mt-2.5 hidden flex items-center space-x-3 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <img id="machineryPhotoImg" class="h-16 w-16 object-cover rounded-lg border border-slate-300">
+                        <button type="button" onclick="deleteMachineryPhoto()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 transition flex items-center space-x-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>Remove Photo</span>
+                        </button>
                     </div>
                 </div>
 
@@ -382,17 +386,18 @@
             </div>
 
             <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
-                <!-- ADD BREAKDOWN FORM -->
+                <!-- ADD / EDIT BREAKDOWN FORM -->
                 <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-4">
-                    <h4 class="font-bold text-xs text-amber-900 mb-2 flex items-center space-x-1.5">
+                    <h4 id="breakdownFormHeading" class="font-bold text-xs text-amber-900 mb-2 flex items-center space-x-1.5">
                         <i class="fa-solid fa-circle-exclamation text-amber-600"></i>
                         <span>Log New Machine Breakdown</span>
                     </h4>
                     <form onsubmit="handleSaveBreakdown(event)" class="space-y-2.5">
                         <input type="hidden" id="breakdownMachineId">
+                        <input type="hidden" id="breakdownEditId">
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-700 mb-1">Describe Issue</label>
-                            <textarea id="breakdownIssue" required rows="2" placeholder="Describe mechanical fault or electrical issue..." class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500"></textarea>
+                            <textarea id="breakdownIssue" required rows="2" placeholder="Describe mechanical fault or electrical issue..." class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"></textarea>
                         </div>
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex-1">
@@ -400,24 +405,26 @@
                                 <input type="file" id="breakdownPhotoInput" accept="image/*" onchange="previewFileToBase64(this, 'breakdownPhotoData')" class="w-full text-xs px-2 py-1 border border-slate-300 rounded-lg bg-white">
                                 <input type="hidden" id="breakdownPhotoData">
                             </div>
-                            <div class="sm:self-end">
-                                <button type="submit" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow">Log Breakdown Issue</button>
+                            <div class="sm:self-end flex space-x-2">
+                                <button type="button" id="cancelBreakdownEditBtn" onclick="resetBreakdownForm()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-3 py-2 rounded-lg font-semibold">Cancel Edit</button>
+                                <button type="submit" id="saveBreakdownSubmitBtn" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow">Log Breakdown Issue</button>
                             </div>
                         </div>
                     </form>
                 </div>
 
-                <!-- ADD REPAIR FORM -->
+                <!-- ADD / EDIT REPAIR FORM -->
                 <div id="addRepairBox" class="hidden bg-emerald-50/60 border border-emerald-200 rounded-xl p-4">
-                    <h4 class="font-bold text-xs text-emerald-900 mb-2 flex items-center space-x-1.5">
+                    <h4 id="repairFormHeading" class="font-bold text-xs text-emerald-900 mb-2 flex items-center space-x-1.5">
                         <i class="fa-solid fa-wrench text-emerald-600"></i>
                         <span>Record Repair Activity</span>
                     </h4>
                     <form onsubmit="handleSaveRepair(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                         <input type="hidden" id="repairBreakdownId">
+                        <input type="hidden" id="repairEditId">
                         <div>
                             <label class="block text-[10px] font-semibold text-slate-700 mb-1">Date of Repair</label>
-                            <input type="date" id="repairDate" required class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
+                            <input type="date" id="repairDate" required class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
                         </div>
                         <div>
                             <label class="block text-[10px] font-semibold text-slate-700 mb-1">Repair Done By</label>
@@ -428,11 +435,11 @@
                         </div>
                         <div>
                             <label class="block text-[10px] font-semibold text-slate-700 mb-1">Cost of Repair (₹)</label>
-                            <input type="number" id="repairCost" min="0" required placeholder="0" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
+                            <input type="number" id="repairCost" min="0" required placeholder="0" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
                         </div>
                         <div class="sm:col-span-2">
                             <label class="block text-[10px] font-semibold text-slate-700 mb-1">Remarks & Details</label>
-                            <input type="text" id="repairRemarks" placeholder="Parts replaced, motor serviced..." class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg">
+                            <input type="text" id="repairRemarks" placeholder="Parts replaced, motor serviced..." class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
                         </div>
                         <div>
                             <label class="block text-[10px] font-semibold text-slate-700 mb-1">Upload After Repair Photo</label>
@@ -440,15 +447,15 @@
                             <input type="hidden" id="repairAfterPhotoData">
                         </div>
                         <div class="sm:col-span-3 flex justify-end space-x-2 pt-1">
-                            <button type="button" onclick="document.getElementById('addRepairBox').classList.add('hidden')" class="bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg">Cancel</button>
-                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg shadow">Submit Repair Entry</button>
+                            <button type="button" onclick="cancelRepairForm()" class="bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-medium">Cancel</button>
+                            <button type="submit" id="saveRepairSubmitBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg shadow">Submit Repair Entry</button>
                         </div>
                     </form>
                 </div>
 
                 <div class="space-y-3">
-                    <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider">Breakdowns & Maintenance Logs</h4>
-                    <div id="breakdownListContainer" class="space-y-3"></div>
+                    <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider">Breakdowns & Maintenance Cards</h4>
+                    <div id="breakdownListContainer" class="space-y-4"></div>
                 </div>
             </div>
 
@@ -488,7 +495,7 @@
         </div>
     </div>
 
-    <!-- 8. ADMIN USER ACCESS CONTROL MODAL (PERMISSIONS FORM FIXED) -->
+    <!-- 8. ADMIN USER ACCESS CONTROL MODAL -->
     <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -522,7 +529,6 @@
                             <select id="accessArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
                         </div>
 
-                        <!-- MODULE PERMISSION CHECKBOXES WITH PROPER ID BINDING -->
                         <div class="pt-2 border-t border-slate-200">
                             <label class="block text-[11px] font-bold text-slate-700 mb-2">Module Access Rights (4 to 9):</label>
                             <p class="text-[10px] text-slate-400 mb-2">Note: Inventory, HR, and Cleaning are automatically accessible to all users as per assigned areas.</p>
@@ -644,7 +650,6 @@
             'Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Boys Hostel', 'Girls Hostel', 'Compound Area'
         ];
 
-        // CONFIGURABLE SYSTEM USERS WITH ACCURATE MODULE RIGHTS
         let userRegistry = [
             { email: 'murtaza.kheraluwala@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
             { email: 'fm.marol@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
@@ -701,7 +706,6 @@
             updateUserDisplay();
         }
 
-        // COMPUTE FILE TO BASE64 ENCODING
         function previewFileToBase64(inputEl, targetHiddenId) {
             const file = inputEl.files[0];
             if (!file) return;
@@ -715,6 +719,13 @@
                 }
             };
             reader.readAsDataURL(file);
+        }
+
+        function deleteMachineryPhoto() {
+            document.getElementById('machineryPhotoData').value = '';
+            document.getElementById('machineryPhotoFileInput').value = '';
+            document.getElementById('machineryPhotoImg').src = '';
+            document.getElementById('machineryPhotoPreviewBox').classList.add('hidden');
         }
 
         function expandPhotoModal(src, caption) {
@@ -938,7 +949,7 @@
                     alert("Imported file is empty or invalid format.");
                 }
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsBuffer(file);
         }
 
         function switchModule(moduleId) {
@@ -1150,7 +1161,7 @@
                                     <th class="p-3">Assigned Area</th>
                                     <th class="p-3">Purchase & Warranty</th>
                                     <th class="p-3 text-center">Breakdown / Maintenance Details</th>
-                                    <th class="p-3 text-center">Edit</th>
+                                    <th class="p-3 text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-slate-700">
@@ -1165,7 +1176,7 @@
                                                 ${mac.photo ? `
                                                     <img src="${mac.photo}" onclick="expandPhotoModal('${mac.photo}', '${mac.brand} ${mac.model}')" class="w-12 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-80 transition shadow-sm">
                                                 ` : `
-                                                    <div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-lg">
+                                                    <div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-lg border border-slate-200">
                                                         <i class="fa-solid fa-gears"></i>
                                                     </div>
                                                 `}
@@ -1189,7 +1200,10 @@
                                                 </button>
                                             </td>
                                             <td class="p-3 text-center">
-                                                <button onclick="openMachineryModal('${mac.id}')" class="text-indigo-600 hover:text-indigo-800 font-semibold"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                <div class="flex items-center justify-center space-x-2">
+                                                    <button onclick="openMachineryModal('${mac.id}')" class="text-indigo-600 hover:text-indigo-800 font-semibold px-1.5 py-1" title="Edit Machinery"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                    <button onclick="deleteMachineryRecord('${mac.id}')" class="text-red-600 hover:text-red-800 font-semibold px-1.5 py-1" title="Delete Machinery"><i class="fa-solid fa-trash-can"></i></button>
+                                                </div>
                                             </td>
                                         </tr>
                                     `;
@@ -1208,8 +1222,7 @@
             areaSelect.innerHTML = ALL_AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
             catSelect.innerHTML = machineryCategories.map(c => `<option value="${c}">${c}</option>`).join('');
 
-            document.getElementById('machineryPhotoData').value = '';
-            document.getElementById('machineryPhotoPreviewBox').classList.add('hidden');
+            deleteMachineryPhoto();
 
             if (editId) {
                 const mac = dbData.machinery.find(m => m.id === editId);
@@ -1278,6 +1291,17 @@
             switchModule('machinery');
         }
 
+        function deleteMachineryRecord(macId) {
+            const mac = dbData.machinery.find(m => m.id === macId);
+            if (!mac) return;
+
+            if (confirm(`Are you sure you want to delete ${mac.brand} ${mac.model}? All associated breakdown and repair logs will also be deleted.`)) {
+                dbData.machinery = dbData.machinery.filter(m => m.id !== macId);
+                dbData.breakdowns = dbData.breakdowns.filter(b => b.machineId !== macId);
+                switchModule('machinery');
+            }
+        }
+
         // ================= BREAKDOWN & REPAIR LOGS =================
         function openBreakdownModal(machineId) {
             const mac = dbData.machinery.find(m => m.id === machineId);
@@ -1287,8 +1311,20 @@
             document.getElementById('breakdownMachineTitle').innerText = `${mac.brand} ${mac.model} (${mac.category})`;
             document.getElementById('breakdownMachineSubtitle').innerText = `Assigned Area: ${mac.area} | Log breakdowns & repairs`;
 
+            resetBreakdownForm();
+            cancelRepairForm();
             renderBreakdownList(machineId);
             openModal('breakdownModal');
+        }
+
+        function resetBreakdownForm() {
+            document.getElementById('breakdownEditId').value = '';
+            document.getElementById('breakdownIssue').value = '';
+            document.getElementById('breakdownPhotoData').value = '';
+            document.getElementById('breakdownPhotoInput').value = '';
+            document.getElementById('breakdownFormHeading').innerText = 'Log New Machine Breakdown';
+            document.getElementById('saveBreakdownSubmitBtn').innerText = 'Log Breakdown Issue';
+            document.getElementById('cancelBreakdownEditBtn').classList.add('hidden');
         }
 
         function renderBreakdownList(machineId) {
@@ -1300,7 +1336,7 @@
             let totalRepairExpenses = 0;
 
             if (breakdowns.length === 0) {
-                listContainer.innerHTML = `<p class="text-xs text-slate-400 italic">No breakdown logs recorded for this machine yet.</p>`;
+                listContainer.innerHTML = `<p class="text-xs text-slate-400 italic bg-slate-50 p-4 rounded-xl text-center border border-slate-200">No breakdown logs recorded for this machine yet.</p>`;
             } else {
                 listContainer.innerHTML = breakdowns.map((brk, idx) => {
                     const repairs = brk.repairs || [];
@@ -1308,37 +1344,55 @@
                     totalRepairExpenses += breakdownCost;
 
                     return `
-                        <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50 space-y-2">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Fault #${idx+1}</span>
-                                    <p class="text-xs font-semibold text-slate-800 mt-1">${brk.issue}</p>
+                        <!-- SINGLE BREAKDOWN & REPAIRS CARD -->
+                        <div class="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
+                            <!-- TOP BREAKDOWN LOG HEADER -->
+                            <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div class="space-y-1">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">Fault #${idx+1}</span>
+                                        <span class="text-[11px] font-bold text-slate-500">Breakdown Log</span>
+                                    </div>
+                                    <p class="text-xs font-bold text-slate-900">${brk.issue}</p>
+                                    ${brk.photo ? `
+                                        <div class="pt-1">
+                                            <img src="${brk.photo}" onclick="expandPhotoModal('${brk.photo}', 'Breakdown Photo')" class="h-12 w-12 object-cover rounded-lg border border-slate-300 cursor-pointer hover:opacity-80">
+                                        </div>
+                                    ` : ''}
                                 </div>
-                                <button onclick="openAddRepairBox('${brk.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold px-2.5 py-1 rounded shadow flex items-center space-x-1">
-                                    <i class="fa-solid fa-plus text-[10px]"></i><span>Add Repair</span>
-                                </button>
+                                <div class="flex items-center space-x-2 self-start sm:self-center">
+                                    <button onclick="openAddRepairBox('${brk.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold px-2.5 py-1 rounded-lg shadow flex items-center space-x-1">
+                                        <i class="fa-solid fa-plus text-[10px]"></i><span>Add Repair</span>
+                                    </button>
+                                    <button onclick="editBreakdownLog('${brk.id}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold px-1.5 py-1" title="Edit Breakdown"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    <button onclick="deleteBreakdownLog('${brk.id}')" class="text-red-600 hover:text-red-800 text-xs font-semibold px-1.5 py-1" title="Delete Breakdown & Repairs"><i class="fa-solid fa-trash-can"></i></button>
+                                </div>
                             </div>
 
-                            ${brk.photo ? `<div class="mt-1"><img src="${brk.photo}" onclick="expandPhotoModal('${brk.photo}', 'Breakdown Photo')" class="h-16 object-cover rounded border cursor-pointer hover:opacity-80"></div>` : ''}
-
-                            ${repairs.length > 0 ? `
-                                <div class="mt-2 pt-2 border-t border-slate-200 space-y-1.5">
-                                    <span class="text-[10px] font-bold uppercase text-slate-500">Repair History Logs:</span>
-                                    ${repairs.map(rep => `
-                                        <div class="bg-white p-2 rounded-lg border border-slate-200 text-xs flex justify-between items-center">
-                                            <div>
-                                                <span class="font-bold text-slate-700">${rep.date}</span> - 
-                                                <span class="text-slate-600">${rep.doneBy}</span>
-                                                <p class="text-[11px] text-slate-500">${rep.remarks || 'No remarks'}</p>
-                                                ${rep.afterPhoto ? `<div class="mt-1"><img src="${rep.afterPhoto}" onclick="expandPhotoModal('${rep.afterPhoto}', 'After Repair Photo')" class="h-10 object-cover rounded border cursor-pointer"></div>` : ''}
+                            <!-- BENEATH REPAIR LOGS CONTAINER -->
+                            <div class="p-3.5 bg-slate-50/40 space-y-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Associated Repair Logs (${repairs.length}):</span>
+                                ${repairs.length > 0 ? repairs.map(rep => `
+                                    <div class="bg-white p-2.5 rounded-lg border border-slate-200 text-xs flex justify-between items-center shadow-2xs">
+                                        <div class="space-y-0.5">
+                                            <div class="font-bold text-slate-800 flex items-center space-x-2">
+                                                <span>${rep.date}</span>
+                                                <span class="text-[10px] px-2 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">${rep.doneBy}</span>
                                             </div>
-                                            <div class="text-right">
-                                                <span class="font-extrabold text-emerald-700">₹${rep.cost}</span>
-                                            </div>
+                                            <p class="text-[11px] text-slate-600">${rep.remarks \vert{}\vert{} 'No remarks provided'}</p>${rep.afterPhoto ? `
+                                                <div class="pt-1">
+                                                    <img src="${rep.afterPhoto}" onclick="expandPhotoModal('${rep.afterPhoto}', 'After Repair Photo')" class="h-10 w-10 object-cover rounded border border-slate-300 cursor-pointer">
+                                                </div>
+                                            ` : ''}
                                         </div>
-                                    `).join('')}
-                                </div>
-                            ` : '<p class="text-[11px] text-slate-400 italic">No repair activity recorded yet.</p>'}
+                                        <div class="flex items-center space-x-3">
+                                            <span class="font-extrabold text-emerald-700 text-xs">₹${rep.cost}</span>
+                                            <button onclick="editRepairLog('${brk.id}', '${rep.id}')" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold" title="Edit Repair"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button onclick="deleteRepairLog('${brk.id}', '${rep.id}')" class="text-red-600 hover:text-red-800 text-xs font-semibold" title="Delete Repair"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
+                                    </div>
+                                `).join('') : '<p class="text-[11px] text-slate-400 italic">No repair entries recorded for this breakdown yet.</p>'}
+                            </div>
                         </div>
                     `;
                 }).join('');
@@ -1347,32 +1401,94 @@
             if (totalCostEl) totalCostEl.innerText = `₹${totalRepairExpenses}`;
         }
 
+        function editBreakdownLog(brkId) {
+            const brk = dbData.breakdowns.find(b => b.id === brkId);
+            if (!brk) return;
+
+            document.getElementById('breakdownEditId').value = brk.id;
+            document.getElementById('breakdownIssue').value = brk.issue;
+            document.getElementById('breakdownPhotoData').value = brk.photo || '';
+            document.getElementById('breakdownFormHeading').innerText = 'Edit Machine Breakdown Issue';
+            document.getElementById('saveBreakdownSubmitBtn').innerText = 'Update Breakdown';
+            document.getElementById('cancelBreakdownEditBtn').classList.remove('hidden');
+        }
+
         function handleSaveBreakdown(e) {
             e.preventDefault();
             const machineId = document.getElementById('breakdownMachineId').value;
+            const editId = document.getElementById('breakdownEditId').value;
             const issue = document.getElementById('breakdownIssue').value.trim();
             const photo = document.getElementById('breakdownPhotoData').value.trim();
 
-            dbData.breakdowns.unshift({
-                id: 'BRK-' + Date.now(),
-                machineId, issue, photo, repairs: []
-            });
+            if (editId) {
+                const brk = dbData.breakdowns.find(b => b.id === editId);
+                if (brk) {
+                    brk.issue = issue;
+                    if (photo) brk.photo = photo;
+                }
+            } else {
+                dbData.breakdowns.unshift({
+                    id: 'BRK-' + Date.now(),
+                    machineId, issue, photo, repairs: []
+                });
+            }
 
-            document.getElementById('breakdownIssue').value = '';
-            document.getElementById('breakdownPhotoData').value = '';
-            document.getElementById('breakdownPhotoInput').value = '';
-
+            resetBreakdownForm();
             renderBreakdownList(machineId);
         }
 
+        function deleteBreakdownLog(brkId) {
+            const brk = dbData.breakdowns.find(b => b.id === brkId);
+            if (!brk) return;
+
+            if (confirm('Are you sure you want to delete this breakdown log? Its connected repair logs will also be permanently deleted.')) {
+                dbData.breakdowns = dbData.breakdowns.filter(b => b.id !== brkId);
+                renderBreakdownList(brk.machineId);
+            }
+        }
+
         function openAddRepairBox(breakdownId) {
+            cancelRepairForm();
             document.getElementById('repairBreakdownId').value = breakdownId;
             document.getElementById('addRepairBox').classList.remove('hidden');
+        }
+
+        function editRepairLog(brkId, repId) {
+            const brk = dbData.breakdowns.find(b => b.id === brkId);
+            if (!brk || !brk.repairs) return;
+
+            const rep = brk.repairs.find(r => r.id === repId);
+            if (!rep) return;
+
+            document.getElementById('repairBreakdownId').value = brkId;
+            document.getElementById('repairEditId').value = rep.id;
+            document.getElementById('repairDate').value = rep.date;
+            document.getElementById('repairDoneBy').value = rep.doneBy;
+            document.getElementById('repairCost').value = rep.cost;
+            document.getElementById('repairRemarks').value = rep.remarks || '';
+            document.getElementById('repairAfterPhotoData').value = rep.afterPhoto || '';
+
+            document.getElementById('repairFormHeading').innerText = 'Edit Repair Activity Log';
+            document.getElementById('saveRepairSubmitBtn').innerText = 'Update Repair';
+            document.getElementById('addRepairBox').classList.remove('hidden');
+        }
+
+        function cancelRepairForm() {
+            document.getElementById('addRepairBox').classList.add('hidden');
+            document.getElementById('repairBreakdownId').value = '';
+            document.getElementById('repairEditId').value = '';
+            document.getElementById('repairCost').value = '';
+            document.getElementById('repairRemarks').value = '';
+            document.getElementById('repairAfterPhotoData').value = '';
+            document.getElementById('repairAfterPhotoInput').value = '';
+            document.getElementById('repairFormHeading').innerText = 'Record Repair Activity';
+            document.getElementById('saveRepairSubmitBtn').innerText = 'Submit Repair Entry';
         }
 
         function handleSaveRepair(e) {
             e.preventDefault();
             const breakdownId = document.getElementById('repairBreakdownId').value;
+            const editId = document.getElementById('repairEditId').value;
             const date = document.getElementById('repairDate').value;
             const doneBy = document.getElementById('repairDoneBy').value;
             const cost = parseInt(document.getElementById('repairCost').value) || 0;
@@ -1382,13 +1498,27 @@
             const brk = dbData.breakdowns.find(b => b.id === breakdownId);
             if (brk) {
                 if (!brk.repairs) brk.repairs = [];
-                brk.repairs.push({ id: 'REP-' + Date.now(), date, doneBy, cost, remarks, afterPhoto });
 
-                document.getElementById('addRepairBox').classList.add('hidden');
-                document.getElementById('repairCost').value = '';
-                document.getElementById('repairRemarks').value = '';
-                document.getElementById('repairAfterPhotoData').value = '';
+                if (editId) {
+                    const rep = brk.repairs.find(r => r.id === editId);
+                    if (rep) {
+                        Object.assign(rep, { date, doneBy, cost, remarks, afterPhoto });
+                    }
+                } else {
+                    brk.repairs.push({ id: 'REP-' + Date.now(), date, doneBy, cost, remarks, afterPhoto });
+                }
 
+                cancelRepairForm();
+                renderBreakdownList(brk.machineId);
+            }
+        }
+
+        function deleteRepairLog(brkId, repId) {
+            const brk = dbData.breakdowns.find(b => b.id === brkId);
+            if (!brk || !brk.repairs) return;
+
+            if (confirm('Are you sure you want to delete this repair log entry?')) {
+                brk.repairs = brk.repairs.filter(r => r.id !== repId);
                 renderBreakdownList(brk.machineId);
             }
         }
@@ -1498,7 +1628,6 @@
             } else {
                 areaGroup.classList.remove('hidden');
                 
-                // BOTH EXECUTIVES HAVE ISSUE ACCESS TO ALL 9 AREAS
                 if (type === 'ISSUE' && (isExec || isAdmin)) {
                     areaSelect.innerHTML = ALL_AREAS.map(a => `<option value="${a}">${a}</option>`).join('');
                 } else {
