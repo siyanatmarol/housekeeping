@@ -36,7 +36,7 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen flex flex-col" onload="initApp()">
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
     <!-- TOP HEADER -->
     <header class="bg-[#004d3d] text-white sticky top-0 z-40 shadow-md">
@@ -393,10 +393,18 @@
                     <form onsubmit="handleSaveBreakdown(event)" class="space-y-2.5">
                         <input type="hidden" id="breakdownMachineId">
                         <input type="hidden" id="breakdownEditId">
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-700 mb-1">Describe Issue</label>
-                            <textarea id="breakdownIssue" required rows="2" placeholder="Describe mechanical fault or electrical issue..." class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"></textarea>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Breakdown Date</label>
+                                <input type="date" id="breakdownDate" required class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Describe Issue</label>
+                                <textarea id="breakdownIssue" required rows="2" placeholder="Describe mechanical fault or electrical issue..." class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"></textarea>
+                            </div>
                         </div>
+
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex-1">
                                 <label class="block text-[11px] font-semibold text-slate-700 mb-1">Upload Breakdown Photo</label>
@@ -462,7 +470,6 @@
             </div>
         </div>
     </div>
-
     <!-- 6. EXPANDABLE PHOTO LIGHTBOX MODAL -->
     <div id="photoPreviewModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4" onclick="closeModal('photoPreviewModal')">
         <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onclick="event.stopPropagation()">
@@ -609,7 +616,7 @@
                 { id: 'MAC-02', category: 'Surface Cleaning', brand: 'Taski', model: 'ergodisc 165', area: 'Boys Hostel', purchaseDate: '2024-11-20', warranty: '1 Year', photo: '' }
             ],
             breakdowns: [
-                { id: 'BRK-101', machineId: 'MAC-01', issue: 'Suction motor making abnormal noise and losing power', photo: '', repairs: [
+                { id: 'BRK-101', machineId: 'MAC-01', date: '2026-09-10', issue: 'Suction motor making abnormal noise and losing power', photo: '', repairs: [
                     { id: 'REP-1', date: '2026-09-12', doneBy: 'Company Technician', cost: 1200, remarks: 'Replaced carbon brushes and cleaned filter', afterPhoto: '' }
                 ]}
             ]
@@ -632,7 +639,6 @@
                 if (matchedUser) {
                     currentUser = matchedUser;
                 } else {
-                    // Default fallback: Give full Administrator rights to fm.marol and murtaza
                     var isAdminEmail = normalizedEmail.includes('fm.marol') || normalizedEmail.includes('murtaza');
                     currentUser = {
                         email: normalizedEmail,
@@ -658,7 +664,6 @@
             if (!currentUser) { openModal('authModal'); return; }
             
             if (tabName === 'admin') {
-                // Ensure admins can open panel even if role string has slight formatting differences
                 var isUserAdmin = currentUser.role === 'Administrator' || currentUser.email.toLowerCase().includes('fm.marol') || currentUser.email.toLowerCase().includes('murtaza');
                 
                 if (!isUserAdmin) {
@@ -675,6 +680,7 @@
             currentPrimaryTab = tabName;
             switchModule(activeModule);
         }
+
         function previewFileToBase64(inputEl, targetHiddenId) {
             var file = inputEl.files[0];
             if (!file) return;
@@ -739,24 +745,6 @@
             document.getElementById(id).classList.add('hidden');
         }
         function toggleDropdown(id) { document.getElementById(id).classList.toggle('hidden'); }
-
-        function switchPrimaryTab(tabName) {
-            if (!currentUser) { openModal('authModal'); return; }
-            
-            if (tabName === 'admin') {
-                if (currentUser.role !== 'Administrator') {
-                    alert('Access Denied: Admin Access is strictly restricted to Administrators.');
-                    return;
-                }
-                renderUserAccessList();
-                updateAccessAreaDropdown();
-                openModal('adminModal');
-                return;
-            }
-
-            currentPrimaryTab = tabName;
-            switchModule(activeModule);
-        }
 
         function updateUserDisplay() {
             var emailEl = document.getElementById('userEmailDisplay');
@@ -908,6 +896,7 @@
                 actions.innerHTML = '';
             }
         }
+
         // ================= INVENTORY MODULE =================
         function renderInventoryModule(container, actions) {
             var isAdmin = currentUser.role === 'Administrator';
@@ -1143,6 +1132,7 @@
 
         function resetBreakdownForm() {
             document.getElementById('breakdownEditId').value = '';
+            document.getElementById('breakdownDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('breakdownIssue').value = '';
             document.getElementById('breakdownPhotoData').value = '';
             document.getElementById('breakdownPhotoInput').value = '';
@@ -1171,7 +1161,7 @@
 
                     html += '<div class="border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">';
                     html += '<div class="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
-                    html += '<div class="space-y-1"><div class="flex items-center space-x-2"><span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">Fault #' + (idx+1) + '</span><span class="text-[11px] font-bold text-slate-500">Breakdown Log</span></div><p class="text-xs font-bold text-slate-900">' + brk.issue + '</p>';
+                    html += '<div class="space-y-1"><div class="flex items-center space-x-2"><span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">Fault #' + (idx+1) + '</span><span class="text-[11px] font-semibold text-slate-500 font-mono">Date: ' + (brk.date || 'N/A') + '</span></div><p class="text-xs font-bold text-slate-900">' + brk.issue + '</p>';
                     if (brk.photo) {
                         html += '<div class="pt-1"><img src="' + brk.photo + '" onclick="expandPhotoModal(\'' + brk.photo + '\', \'Breakdown Photo\')" class="h-12 w-12 object-cover rounded-lg border border-slate-300 cursor-pointer hover:opacity-80"></div>';
                     }
@@ -1209,6 +1199,7 @@
             if (!brk) return;
 
             document.getElementById('breakdownEditId').value = brk.id;
+            document.getElementById('breakdownDate').value = brk.date || '';
             document.getElementById('breakdownIssue').value = brk.issue;
             document.getElementById('breakdownPhotoData').value = brk.photo || '';
             document.getElementById('breakdownFormHeading').innerText = 'Edit Machine Breakdown Issue';
@@ -1220,6 +1211,7 @@
             e.preventDefault();
             var machineId = document.getElementById('breakdownMachineId').value;
             var editId = document.getElementById('breakdownEditId').value;
+            var date = document.getElementById('breakdownDate').value;
             var issue = document.getElementById('breakdownIssue').value.trim();
             var photo = document.getElementById('breakdownPhotoData').value.trim();
 
@@ -1229,13 +1221,14 @@
                     if (dbData.breakdowns[i].id === editId) { brk = dbData.breakdowns[i]; break; }
                 }
                 if (brk) {
+                    brk.date = date;
                     brk.issue = issue;
                     if (photo) brk.photo = photo;
                 }
             } else {
                 dbData.breakdowns.unshift({
                     id: 'BRK-' + Date.now(),
-                    machineId: machineId, issue: issue, photo: photo, repairs: []
+                    machineId: machineId, date: date, issue: issue, photo: photo, repairs: []
                 });
             }
 
@@ -1509,6 +1502,32 @@
         }
 
         // ================= ADMIN USER ACCESS CONTROL =================
+        function renderUserAccessList() {
+            var listContainer = document.getElementById('userAccessList');
+            if (!listContainer) return;
+
+            if (!userRegistry || userRegistry.length === 0) {
+                listContainer.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-4">No users configured in access list.</p>';
+                return;
+            }
+
+            var html = '';
+            userRegistry.forEach(function(u, idx) {
+                var areaStr = u.role === 'Administrator' ? 'All Areas' : (u.areas ? u.areas.join(', ') : 'None');
+                var modulesCount = u.role === 'Administrator' ? 'All (9)' : ((u.allowedModules ? u.allowedModules.length : 0) + ' Modules');
+
+                html += '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between shadow-2xs">';
+                html += '<div><div class="flex items-center space-x-2"><span class="font-bold text-xs text-slate-900">' + u.email + '</span>';
+                html += '<span class="text-[10px] px-2 py-0.2 rounded-full font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">' + u.role + '</span></div>';
+                html += '<div class="text-[11px] text-slate-500 mt-0.5">Areas: ' + areaStr + ' | Rights: ' + modulesCount + '</div></div>';
+                html += '<div class="flex items-center space-x-2">';
+                html += '<button onclick="editUserAccess(\'' + u.email + '\')" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold px-2 py-1"><i class="fa-solid fa-pen-to-square"></i> Edit</button>';
+                html += '<button onclick="removeUserAccess(' + idx + ')" class="text-red-600 hover:text-red-800 text-xs font-semibold px-2 py-1"><i class="fa-solid fa-trash-can"></i> Delete</button>';
+                html += '</div></div>';
+            });
+            listContainer.innerHTML = html;
+        }
+
         function updateAccessAreaDropdown() {
             var role = document.getElementById('accessRole').value;
             var areaSelect = document.getElementById('accessArea');
@@ -1599,7 +1618,6 @@
                 userRegistry.push(newUserObj);
             }
 
-            // Sync with Firestore Cloud Database
             if (typeof window.saveUserToFirebase === 'function') {
                 window.saveUserToFirebase(newUserObj);
             }
@@ -1617,7 +1635,6 @@
                 var emailToRemove = targetUser.email;
                 userRegistry.splice(idx, 1);
 
-                // Sync deletion with Firestore Cloud Database
                 if (typeof window.removeUserFromFirebase === 'function') {
                     window.removeUserFromFirebase(emailToRemove);
                 }
@@ -1629,7 +1646,7 @@
         function exportCurrentModule(type) { alert("Exporting data to " + type.toUpperCase()); }
     </script>
 
- <!-- FIREBASE AUTH & FIRESTORE DATABASE MODULE -->
+    <!-- FIREBASE AUTH & FIRESTORE DATABASE MODULE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
@@ -1664,7 +1681,6 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // --- REAL-TIME FIRESTORE USER SYNC ---
         onSnapshot(collection(db, "users"), (snapshot) => {
             const firebaseUsers = [];
             snapshot.forEach((docSnap) => {
@@ -1682,7 +1698,6 @@
             }
         });
 
-        // --- FIRESTORE DATABASE HELPERS ---
         window.saveUserToFirebase = async function(userData) {
             try {
                 const docId = userData.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
@@ -1705,7 +1720,6 @@
             }
         };
 
-        // --- AUTHENTICATION HANDLERS ---
         window.loginWithGoogle = async function() {
             try {
                 const result = await signInWithPopup(auth, provider);
