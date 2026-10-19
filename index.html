@@ -110,7 +110,7 @@
             <div class="flex items-center space-x-2 sm:space-x-3 flex-wrap gap-y-2">
                 <div id="moduleImportContainer"></div>
 
-                <div class="relative inline-block text-left">
+                <div id="moduleExportContainer" class="relative inline-block text-left">
                     <button onclick="toggleDropdown('exportDropdown')" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-2">
                         <i class="fa-solid fa-file-export text-slate-500"></i>
                         <span>Export Data</span>
@@ -178,7 +178,93 @@
         </div>
     </div>
 
-    <!-- 2. INVENTORY TRANSACTION MODAL -->
+    <!-- HR STAFF FORM MODAL -->
+    <div id="hrStaffModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 id="hrModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-user-plus text-emerald-600"></i>
+                    <span>HR Staff Form</span>
+                </h3>
+                <button onclick="closeModal('hrStaffModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form onsubmit="handleSaveHrStaff(event)" class="space-y-3.5">
+                <input type="hidden" id="hrStaffEditId">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Role / Designation</label>
+                        <select id="hrRole" onchange="toggleHrRoleFields()" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
+                            <option value="Staff">Housekeeping Staff</option>
+                            <option value="Supervisor">Supervisor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Assigned Area</label>
+                        <select id="hrArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Staff ID</label>
+                        <input type="text" id="hrStaffIdCode" required placeholder="e.g. STF-101" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
+                        <input type="text" id="hrName" required placeholder="Staff Full Name" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Contact Number</label>
+                        <input type="tel" id="hrContact" required placeholder="+91 9876543210" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Locker Number</label>
+                        <input type="text" id="hrLocker" placeholder="e.g. L-42" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Category</label>
+                        <select id="hrCategory" onchange="handleCategoryChange(this.value)" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
+                            <option value="Aljamea">Aljamea</option>
+                            <option value="United">United</option>
+                            <option value="Dynamic">Dynamic</option>
+                            <option value="Swar Group">Swar Group</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Uniform Issued</label>
+                        <select id="hrUniformIssued" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Conditional Field: Visible ONLY for Aljamea & Swar Group -->
+                <div id="uniformIssuedDateContainer" class="transition-all duration-300">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1 flex items-center justify-between">
+                        <span>Uniform Issued Date</span>
+                        <span class="text-[10px] text-emerald-600 font-normal">(Required for Aljamea & Swar Group)</span>
+                    </label>
+                    <input type="date" id="hrUniformIssuedDate" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-slate-50">
+                </div>
+
+                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('hrStaffModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow transition">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- INVENTORY TRANSACTION MODAL -->
     <div id="invTransactionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -222,7 +308,7 @@
         </div>
     </div>
 
-    <!-- 3. OPENING STOCK & ITEM MANAGEMENT MODAL -->
+    <!-- OPENING STOCK MODAL -->
     <div id="openingStockModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-5xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -296,7 +382,7 @@
         </div>
     </div>
 
-    <!-- 4. ADD / EDIT MACHINERY MODAL -->
+    <!-- MACHINERY MODAL -->
     <div id="machineryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -370,7 +456,7 @@
         </div>
     </div>
 
-    <!-- 5. BREAKDOWN DETAILS & REPAIRS MODAL -->
+    <!-- BREAKDOWN DETAILS & REPAIRS MODAL -->
     <div id="breakdownModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -470,7 +556,8 @@
             </div>
         </div>
     </div>
-    <!-- 6. EXPANDABLE PHOTO LIGHTBOX MODAL -->
+
+    <!-- PHOTO LIGHTBOX MODAL -->
     <div id="photoPreviewModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4" onclick="closeModal('photoPreviewModal')">
         <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onclick="event.stopPropagation()">
             <button onclick="closeModal('photoPreviewModal')" class="absolute -top-10 right-0 text-white hover:text-slate-300 text-2xl font-bold">
@@ -481,7 +568,7 @@
         </div>
     </div>
 
-    <!-- 7. EDIT ARCHIVE MODAL -->
+    <!-- EDIT ARCHIVE MODAL -->
     <div id="editArchiveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 border border-slate-100">
             <div class="flex justify-between items-center mb-3">
@@ -499,7 +586,7 @@
         </div>
     </div>
 
-    <!-- 8. ADMIN USER ACCESS CONTROL MODAL -->
+    <!-- ADMIN USER ACCESS CONTROL MODAL -->
     <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
@@ -566,6 +653,18 @@
         var HOSTEL_EXECUTIVE_AREAS = ['Boys Hostel', 'Girls Hostel', 'Compound Area', 'Najmi Bldg'];
         var ALL_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates', 'Boys Hostel', 'Girls Hostel', 'Compound Area', 'Najmi Bldg'];
 
+        var AREA_EXECUTIVE_MAP = {
+            'Admin Phase 1': 'Executive – Admin',
+            'Admin Phase 3': 'Executive – Admin',
+            'Mahad Bldg': 'Executive – Admin',
+            'Religious Block': 'Executive – Admin',
+            'Estates': 'Executive – Admin',
+            'Boys Hostel': 'Executive – Hostels',
+            'Girls Hostel': 'Executive – Hostels',
+            'Compound Area': 'Executive – Hostels',
+            'Najmi Bldg': 'Executive – Hostels'
+        };
+
         var SUPERVISOR_ASSIGNED_AREAS = [
             'Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Boys Hostel', 'Girls Hostel', 'Compound Area'
         ];
@@ -597,6 +696,71 @@
         var searchSearchTerm = '';
         var selectedCategoryFilter = 'All';
 
+        // HR Specific Filters
+        var hrSearchTerm = '';
+        var hrCategoryFilter = 'All';
+        var hrUniformFilter = 'All';
+
+        // Helper to generate seed staff array
+        function generatePreseededStaff() {
+            var staffList = [];
+            var idCounter = 100;
+
+            var seedSpecs = [
+                { area: 'Admin Phase 1', staffCount: 12, hasSup: true, supName: 'Mustafa Supervisor' },
+                { area: 'Admin Phase 3', staffCount: 13, hasSup: true, supName: 'Yusuf Supervisor' },
+                { area: 'Mahad Bldg', staffCount: 6, hasSup: true, supName: 'Shabbir Supervisor' },
+                { area: 'Religious Block', staffCount: 10, hasSup: true, supName: 'Huzoifa Supervisor' },
+                { area: 'Estates', staffCount: 2, hasSup: false },
+                { area: 'Boys Hostel', staffCount: 12, hasSup: true, supName: 'Taha Supervisor' },
+                { area: 'Girls Hostel', staffCount: 13, hasSup: true, supName: 'Fatema Supervisor' },
+                { area: 'Najmi Bldg', staffCount: 2, hasSup: false },
+                { area: 'Compound Area', staffCount: 20, hasSup: true, supName: 'Ali Asgar Supervisor' }
+            ];
+
+            var categories = ['Aljamea', 'United', 'Dynamic', 'Swar Group'];
+
+            seedSpecs.forEach(function(spec) {
+                if (spec.hasSup) {
+                    idCounter++;
+                    staffList.push({
+                        id: 'SUP-' + idCounter,
+                        staffCode: 'SUP-' + idCounter,
+                        name: spec.supName,
+                        role: 'Supervisor',
+                        area: spec.area,
+                        contact: '+91 98200' + idCounter,
+                        locker: 'L-SUP-' + idCounter,
+                        category: 'Aljamea',
+                        uniformIssued: 'Yes',
+                        uniformIssuedDate: '2026-01-15'
+                    });
+                }
+
+                for (var i = 1; i <= spec.staffCount; i++) {
+                    idCounter++;
+                    var cat = categories[(i + idCounter) % categories.length];
+                    var isUniformYes = (i % 2 === 0) ? 'Yes' : 'No';
+                    var uniformDate = (isUniformYes === 'Yes' && (cat === 'Aljamea' || cat === 'Swar Group')) ? '2026-02-10' : '';
+
+                    staffList.push({
+                        id: 'STF-' + idCounter,
+                        staffCode: 'STF-' + idCounter,
+                        name: 'Staff ' + spec.area.substring(0,3).toUpperCase() + ' ' + i,
+                        role: 'Staff',
+                        area: spec.area,
+                        contact: '+91 98700' + idCounter,
+                        locker: 'L-' + idCounter,
+                        category: cat,
+                        uniformIssued: isUniformYes,
+                        uniformIssuedDate: uniformDate
+                    });
+                }
+            });
+
+            return staffList;
+        }
+
         var dbData = {
             inventory: [
                 { 
@@ -611,6 +775,7 @@
             inventoryArchive: [
                 { id: 'ARC-101', date: '2026-10-16 09:30', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Main Store', type: 'PURCHASE', qty: 50, user: 'fm.marol@jameasaifiyah.edu', remarks: 'Vendor Delivery' }
             ],
+            hrStaff: generatePreseededStaff(),
             machinery: [
                 { id: 'MAC-01', category: 'Vacuum Cleaner', brand: 'Kärcher', model: 'WD 3 V-17/4/20', area: 'Mahad Bldg', purchaseDate: '2025-05-10', warranty: '2 Years', photo: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=300&q=80' },
                 { id: 'MAC-02', category: 'Surface Cleaning', brand: 'Taski', model: 'ergodisc 165', area: 'Boys Hostel', purchaseDate: '2024-11-20', warranty: '1 Year', photo: '' }
@@ -799,14 +964,28 @@
             });
         }
 
+        // ONLY ADMINISTRATOR CAN SEE IMPORT & EXPORT BUTTONS
         function renderImportButton() {
             var importContainer = document.getElementById('moduleImportContainer');
+            var exportContainer = document.getElementById('moduleExportContainer');
             if (!importContainer) return;
             
-            if (activeModule === 'inventory' || activeModule === 'hr') {
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+
+            // Restrict Import
+            if (isAdmin && (activeModule === 'inventory' || activeModule === 'hr')) {
                 importContainer.innerHTML = '<label class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-2 cursor-pointer"><i class="fa-solid fa-file-import text-emerald-300"></i><span>Import Excel</span><input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelImport(event)"></label>';
             } else {
                 importContainer.innerHTML = '';
+            }
+
+            // Restrict Export
+            if (exportContainer) {
+                if (isAdmin) {
+                    exportContainer.classList.remove('hidden');
+                } else {
+                    exportContainer.classList.add('hidden');
+                }
             }
         }
 
@@ -856,6 +1035,23 @@
 
                     alert("Successfully imported " + jsonData.length + " items & opening stocks!");
                     switchModule('inventory');
+                } else if (jsonData.length > 0 && activeModule === 'hr') {
+                    jsonData.forEach(function(row, idx) {
+                        dbData.hrStaff.push({
+                            id: 'STF-' + Date.now() + idx,
+                            staffCode: row['ID'] || row['Staff ID'] || ('STF-' + (idx+1)),
+                            name: row['Name'] || 'Imported Staff',
+                            role: row['Role'] || 'Staff',
+                            area: row['Area'] || ALL_AREAS[0],
+                            contact: row['Contact Number'] || row['Contact'] || 'N/A',
+                            locker: row['Locker Number'] || row['Locker'] || 'N/A',
+                            category: row['Category'] || 'Aljamea',
+                            uniformIssued: row['Uniform Issued'] || 'No',
+                            uniformIssuedDate: row['Uniform Issued Date'] || ''
+                        });
+                    });
+                    alert("Successfully imported " + jsonData.length + " HR Staff records!");
+                    switchModule('hr');
                 } else if (jsonData.length > 0) {
                     alert("Imported " + jsonData.length + " records into " + activeModule.toUpperCase() + "!");
                 } else {
@@ -889,11 +1085,246 @@
 
             if (moduleId === 'inventory') {
                 renderInventoryModule(container, actions);
+            } else if (moduleId === 'hr') {
+                renderHrModule(container, actions);
             } else if (moduleId === 'machinery') {
                 renderMachineryModule(container, actions);
             } else {
                 container.innerHTML = '<div class="p-6 bg-white rounded-xl shadow-sm text-xs text-slate-600">Module view rendering standard layout...</div>';
                 actions.innerHTML = '';
+            }
+        }
+
+        // ================= HR MODULE =================
+        function renderHrModule(container, actions) {
+            var isAdmin = currentUser.role === 'Administrator';
+            var isExec = currentUser.role.indexOf('Executive') === 0;
+            var isSup = currentUser.role === 'Supervisor';
+
+            actions.innerHTML = '<button onclick="openHrStaffModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-user-plus"></i><span>Add HR Staff</span></button>';
+
+            var visibleAreas = (isAdmin) ? ALL_AREAS : currentUser.areas;
+
+            // Filter staff list according to user RBAC
+            var allowedStaff = dbData.hrStaff.filter(function(stf) {
+                return visibleAreas.indexOf(stf.area) !== -1;
+            });
+
+            // Summary cards statistics
+            var totalHeadcount = allowedStaff.filter(s => s.role === 'Staff').length;
+            var totalSupervisors = allowedStaff.filter(s => s.role === 'Supervisor').length;
+
+            // Apply Search & Filter controls
+            var filteredStaff = allowedStaff.filter(function(stf) {
+                var matchSearch = hrSearchTerm === '' || 
+                    stf.staffCode.toLowerCase().includes(hrSearchTerm.toLowerCase()) || 
+                    stf.name.toLowerCase().includes(hrSearchTerm.toLowerCase()) || 
+                    stf.area.toLowerCase().includes(hrSearchTerm.toLowerCase());
+                
+                var matchCategory = hrCategoryFilter === 'All' || stf.category === hrCategoryFilter;
+                var matchUniform = hrUniformFilter === 'All' || stf.uniformIssued === hrUniformFilter;
+
+                return matchSearch && matchCategory && matchUniform;
+            });
+
+            var html = '<div class="space-y-6">';
+
+            // SUMMARY CARDS DASHBOARD
+            html += '<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">';
+            html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><div class="text-[11px] font-semibold text-slate-500">Overall Staff Headcount</div><div class="text-2xl font-extrabold text-slate-900 mt-1">' + totalHeadcount + '</div><div class="text-[10px] text-emerald-600 mt-1"><i class="fa-solid fa-users"></i> Active Staff</div></div>';
+            html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><div class="text-[11px] font-semibold text-slate-500">Total Supervisors</div><div class="text-2xl font-extrabold text-slate-900 mt-1">' + totalSupervisors + '</div><div class="text-[10px] text-blue-600 mt-1"><i class="fa-solid fa-user-shield"></i> Site Supervisors</div></div>';
+            html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><div class="text-[11px] font-semibold text-slate-500">Areas Covered</div><div class="text-2xl font-extrabold text-slate-900 mt-1">' + visibleAreas.length + '</div><div class="text-[10px] text-indigo-600 mt-1"><i class="fa-solid fa-location-dot"></i> Designated Sites</div></div>';
+            html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"><div class="text-[11px] font-semibold text-slate-500">Uniforms Issued</div><div class="text-2xl font-extrabold text-slate-900 mt-1">' + allowedStaff.filter(s => s.uniformIssued === 'Yes').length + '</div><div class="text-[10px] text-amber-600 mt-1"><i class="fa-solid fa-shirt"></i> Kit Allocated</div></div>';
+            html += '</div>';
+
+            // FILTER & SEARCH TOOLBAR
+            html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">';
+            html += '<div class="relative w-full sm:w-72"><i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
+            html += '<input type="text" placeholder="Search by ID, Name, Area..." value="' + hrSearchTerm + '" oninput="handleHrSearch(this.value)" class="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>';
+
+            html += '<div class="flex items-center space-x-3 w-full sm:w-auto justify-end flex-wrap gap-y-2">';
+            html += '<div class="flex items-center space-x-1.5"><span class="text-xs text-slate-500 font-medium">Category:</span>';
+            html += '<select onchange="handleHrCategoryFilter(this.value)" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none">';
+            ['All', 'Aljamea', 'United', 'Dynamic', 'Swar Group'].forEach(function(c) {
+                html += '<option value="' + c + '" ' + (hrCategoryFilter === c ? 'selected' : '') + '>' + c + '</option>';
+            });
+            html += '</select></div>';
+
+            html += '<div class="flex items-center space-x-1.5"><span class="text-xs text-slate-500 font-medium">Uniform:</span>';
+            html += '<select onchange="handleHrUniformFilter(this.value)" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none">';
+            ['All', 'Yes', 'No'].forEach(function(u) {
+                html += '<option value="' + u + '" ' + (hrUniformFilter === u ? 'selected' : '') + '>' + (u === 'All' ? 'All Uniforms' : u) + '</option>';
+            });
+            html += '</select></div></div></div>';
+
+            // HIERARCHICAL AREA WISE CARDS / ACCORDIONS
+            visibleAreas.forEach(function(areaName) {
+                var areaStaff = filteredStaff.filter(s => s.area === areaName && s.role === 'Staff');
+                var areaSupervisors = filteredStaff.filter(s => s.area === areaName && s.role === 'Supervisor');
+                var assignedExecName = AREA_EXECUTIVE_MAP[areaName] || 'Executive Desk';
+
+                html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
+                
+                // EXECUTIVE OVER AREA PROMINENT HEADER
+                html += '<div class="px-5 py-3 bg-emerald-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-900">';
+                html += '<div class="flex items-center space-x-3"><div class="w-8 h-8 rounded-lg bg-emerald-800 flex items-center justify-center text-emerald-300 font-bold"><i class="fa-solid fa-sitemap"></i></div>';
+                html += '<div><h3 class="font-bold text-sm text-white">' + areaName + '</h3>';
+                html += '<p class="text-[11px] text-emerald-300 font-medium"><i class="fa-solid fa-user-tie text-[10px] mr-1"></i> Assigned Executive: <span class="text-white font-bold">' + assignedExecName + '</span></p></div></div>';
+                html += '<div class="flex items-center space-x-3"><span class="px-2.5 py-1 rounded-full text-[10px] bg-emerald-800/80 text-emerald-200 border border-emerald-700 font-semibold">Staff: ' + areaStaff.length + ' | Sup: ' + areaSupervisors.length + '</span></div>';
+                html += '</div>';
+
+                // SUPERVISOR BANNER
+                if (areaSupervisors.length > 0) {
+                    html += '<div class="px-5 py-2.5 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between text-xs text-emerald-900 font-semibold">';
+                    html += '<div class="flex items-center space-x-2"><i class="fa-solid fa-user-shield text-emerald-700"></i><span>Area Supervisor: <strong class="text-slate-900 font-bold">' + areaSupervisors[0].name + '</strong> (' + areaSupervisors[0].contact + ')</span></div>';
+                    html += '<div class="flex items-center space-x-2"><span class="text-[10px] px-2 py-0.5 rounded bg-emerald-200 text-emerald-900 font-medium">Locker: ' + areaSupervisors[0].locker + '</span>';
+                    if (isAdmin || isExec) {
+                        html += '<button onclick="openHrStaffModal(\'' + areaSupervisors[0].id + '\')" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold ml-2"><i class="fa-solid fa-pen-to-square"></i></button>';
+                    }
+                    html += '</div></div>';
+                } else {
+                    html += '<div class="px-5 py-2 bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500 italic"><i class="fa-solid fa-info-circle mr-1"></i> No supervisor assigned for this area.</div>';
+                }
+
+                // HOUSEKEEPING STAFF TABLE UNDER SUPERVISOR
+                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+                html += '<th class="p-3">Staff ID</th><th class="p-3">Name</th><th class="p-3">Contact</th><th class="p-3">Locker No</th><th class="p-3">Category</th><th class="p-3">Uniform Issued</th><th class="p-3">Uniform Issued Date</th><th class="p-3 text-center">Actions</th>';
+                html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
+
+                if (areaStaff.length === 0) {
+                    html += '<tr><td colspan="8" class="p-4 text-center text-slate-400 italic">No staff members found matching search/filter.</td></tr>';
+                } else {
+                    areaStaff.forEach(function(stf) {
+                        var isConditionalCat = (stf.category === 'Aljamea' || stf.category === 'Swar Group');
+                        var uniformBadge = stf.uniformIssued === 'Yes' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-red-100 text-red-800 border-red-300';
+
+                        html += '<tr class="hover:bg-slate-50 transition"><td class="p-3 font-mono font-bold text-slate-800">' + stf.staffCode + '</td>';
+                        html += '<td class="p-3 font-bold text-slate-900">' + stf.name + '</td>';
+                        html += '<td class="p-3 text-slate-600">' + stf.contact + '</td>';
+                        html += '<td class="p-3 font-mono text-slate-500">' + stf.locker + '</td>';
+                        html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">' + stf.category + '</span></td>';
+                        html += '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + uniformBadge + '">' + stf.uniformIssued + '</span></td>';
+                        html += '<td class="p-3 font-mono text-slate-600">' + (isConditionalCat ? (stf.uniformIssuedDate || 'N/A') : '<span class="text-slate-400 italic font-sans text-[11px]">N/A (Exempt)</span>') + '</td>';
+                        html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-2">';
+                        html += '<button onclick="openHrStaffModal(\'' + stf.id + '\')" class="text-indigo-600 hover:text-indigo-800 font-semibold px-1.5 py-1"><i class="fa-solid fa-pen-to-square"></i></button>';
+                        html += '<button onclick="deleteHrStaffRecord(\'' + stf.id + '\')" class="text-red-600 hover:text-red-800 font-semibold px-1.5 py-1"><i class="fa-solid fa-trash-can"></i></button>';
+                        html += '</div></td></tr>';
+                    });
+                }
+
+                html += '</tbody></table></div></div>';
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Search & Filter event handlers for HR
+        function handleHrSearch(val) { hrSearchTerm = val; switchModule('hr'); }
+        function handleHrCategoryFilter(val) { hrCategoryFilter = val; switchModule('hr'); }
+        function handleHrUniformFilter(val) { hrUniformFilter = val; switchModule('hr'); }
+
+        // CONDITIONAL FORM LOGIC FOR UNIFORM ISSUED DATE
+        function handleCategoryChange(catValue) {
+            var container = document.getElementById('uniformIssuedDateContainer');
+            var dateInput = document.getElementById('hrUniformIssuedDate');
+
+            if (catValue === 'Aljamea' || catValue === 'Swar Group') {
+                container.classList.remove('opacity-40', 'pointer-events-none');
+                dateInput.disabled = false;
+            } else {
+                container.classList.add('opacity-40', 'pointer-events-none');
+                dateInput.disabled = true;
+                dateInput.value = '';
+            }
+        }
+
+        function toggleHrRoleFields() {
+            var role = document.getElementById('hrRole').value;
+            var areaSelect = document.getElementById('hrArea');
+            if (role === 'Supervisor') {
+                areaSelect.innerHTML = SUPERVISOR_ASSIGNED_AREAS.map(function(a) { return '<option value="' + a + '">' + a + '</option>'; }).join('');
+            } else {
+                areaSelect.innerHTML = ALL_AREAS.map(function(a) { return '<option value="' + a + '">' + a + '</option>'; }).join('');
+            }
+        }
+
+        function openHrStaffModal(editId) {
+            var areaSelect = document.getElementById('hrArea');
+            var visibleAreas = (currentUser.role === 'Administrator') ? ALL_AREAS : currentUser.areas;
+            areaSelect.innerHTML = visibleAreas.map(function(a) { return '<option value="' + a + '">' + a + '</option>'; }).join('');
+
+            if (editId) {
+                var stf = dbData.hrStaff.find(s => s.id === editId);
+                if (stf) {
+                    document.getElementById('hrStaffEditId').value = stf.id;
+                    document.getElementById('hrRole').value = stf.role;
+                    document.getElementById('hrArea').value = stf.area;
+                    document.getElementById('hrStaffIdCode').value = stf.staffCode;
+                    document.getElementById('hrName').value = stf.name;
+                    document.getElementById('hrContact').value = stf.contact;
+                    document.getElementById('hrLocker').value = stf.locker;
+                    document.getElementById('hrCategory').value = stf.category;
+                    document.getElementById('hrUniformIssued').value = stf.uniformIssued;
+                    document.getElementById('hrUniformIssuedDate').value = stf.uniformIssuedDate || '';
+                    handleCategoryChange(stf.category);
+                }
+            } else {
+                document.getElementById('hrStaffEditId').value = '';
+                document.getElementById('hrRole').value = 'Staff';
+                document.getElementById('hrStaffIdCode').value = '';
+                document.getElementById('hrName').value = '';
+                document.getElementById('hrContact').value = '';
+                document.getElementById('hrLocker').value = '';
+                document.getElementById('hrCategory').value = 'Aljamea';
+                document.getElementById('hrUniformIssued').value = 'Yes';
+                document.getElementById('hrUniformIssuedDate').value = '';
+                handleCategoryChange('Aljamea');
+            }
+
+            openModal('hrStaffModal');
+        }
+
+        function handleSaveHrStaff(e) {
+            e.preventDefault();
+            var editId = document.getElementById('hrStaffEditId').value;
+            var role = document.getElementById('hrRole').value;
+            var area = document.getElementById('hrArea').value;
+            var staffCode = document.getElementById('hrStaffIdCode').value.trim();
+            var name = document.getElementById('hrName').value.trim();
+            var contact = document.getElementById('hrContact').value.trim();
+            var locker = document.getElementById('hrLocker').value.trim();
+            var category = document.getElementById('hrCategory').value;
+            var uniformIssued = document.getElementById('hrUniformIssued').value;
+            var uniformIssuedDate = (category === 'Aljamea' || category === 'Swar Group') ? document.getElementById('hrUniformIssuedDate').value : '';
+
+            if (editId) {
+                var stf = dbData.hrStaff.find(s => s.id === editId);
+                if (stf) {
+                    stf.role = role; stf.area = area; stf.staffCode = staffCode; stf.name = name;
+                    stf.contact = contact; stf.locker = locker; stf.category = category;
+                    stf.uniformIssued = uniformIssued; stf.uniformIssuedDate = uniformIssuedDate;
+                }
+            } else {
+                dbData.hrStaff.push({
+                    id: 'STF-' + Date.now(),
+                    role: role, area: area, staffCode: staffCode, name: name,
+                    contact: contact, locker: locker, category: category,
+                    uniformIssued: uniformIssued, uniformIssuedDate: uniformIssuedDate
+                });
+            }
+
+            closeModal('hrStaffModal');
+            switchModule('hr');
+        }
+
+        function deleteHrStaffRecord(stfId) {
+            var stf = dbData.hrStaff.find(s => s.id === stfId);
+            if (!stf) return;
+
+            if (confirm("Are you sure you want to delete staff member: " + stf.name + " (" + stf.staffCode + ")?")) {
+                dbData.hrStaff = dbData.hrStaff.filter(s => s.id !== stfId);
+                switchModule('hr');
             }
         }
 
@@ -1643,7 +2074,7 @@
             }
         }
 
-        function exportCurrentModule(type) { alert("Exporting data to " + type.toUpperCase()); }
+        function exportCurrentModule(type) { alert("Exporting " + activeModule.toUpperCase() + " data to " + type.toUpperCase()); }
     </script>
 
     <!-- FIREBASE AUTH & FIRESTORE DATABASE MODULE -->
