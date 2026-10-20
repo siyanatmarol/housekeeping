@@ -852,20 +852,24 @@
             var adminCap = calculateTotalCapacity(ADMIN_EXECUTIVE_AREAS);
             var hostelCap = calculateTotalCapacity(HOSTEL_EXECUTIVE_AREAS);
 
-            var totalExecs = 2;
-            var totalSupCount = dbData.hrStaff.filter(s => s.role === 'Supervisor').length;
-            var totalStaffCount = dbData.hrStaff.filter(s => s.role === 'Staff').length;
-            var totalCapacity = adminCap + hostelCap;
+           var totalExecs = 2;
+var totalSupCount = dbData.hrStaff.filter(s => s.role === 'Supervisor').length;
+var totalSupCapacity = SUPERVISOR_ASSIGNED_AREAS.length; // 7 designated supervisor areas
+var totalStaffCount = dbData.hrStaff.filter(s => s.role === 'Staff').length;
+var totalCapacity = adminCap + hostelCap;
 
-            html += '<div class="bg-slate-900 text-white rounded-2xl p-5 shadow-md border border-slate-800 space-y-3">';
-            html += '<div class="flex items-center justify-between border-b border-slate-800 pb-3"><h3 class="text-base font-bold text-emerald-400 flex items-center space-x-2"><i class="fa-solid fa-sitemap"></i><span>Overall Department Hierarchy & Capacity Overview</span></h3>';
-            html += '<span class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-medium">All Units Active</span></div>';
-            
-            html += '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">';
-            html += '<div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60"><div class="text-[11px] text-slate-400 font-semibold uppercase">Executives</div><div class="text-lg font-extrabold text-white mt-0.5">' + totalExecs + ' / ' + totalExecs + '</div></div>';
-            html += '<div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60"><div class="text-[11px] text-slate-400 font-semibold uppercase">Supervisors</div><div class="text-lg font-extrabold text-emerald-400 mt-0.5">' + totalSupCount + ' Active</div></div>';
-            html += '<div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60"><div class="text-[11px] text-slate-400 font-semibold uppercase">Staff Capacity</div><div class="text-lg font-extrabold text-indigo-400 mt-0.5">' + totalStaffCount + ' / ' + totalCapacity + '</div></div>';
-            html += '</div></div>';
+html += '<div class="bg-slate-900 text-white rounded-2xl p-5 shadow-md border border-slate-800 space-y-3">';
+html += '<div class="flex items-center justify-between border-b border-slate-800 pb-3"><h3 class="text-base font-bold text-emerald-400 flex items-center space-x-2"><i class="fa-solid fa-sitemap"></i><span>Overall Department Hierarchy & Capacity Overview</span></h3>';
+html += '<span class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-medium">All Units Active</span></div>';
+
+html += '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">';
+html += '<div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60"><div class="text-[11px] text-slate-400 font-semibold uppercase">Executives</div><div class="text-lg font-extrabold text-white mt-0.5">' + totalExecs + ' / ' + totalExecs + '</div></div>';
+
+// UPDATED SUPERVISORS CARD DISPLAY FORMAT:
+html += '<div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60"><div class="text-[11px] text-slate-400 font-semibold uppercase">Supervisors</div><div class="text-lg font-extrabold text-emerald-400 mt-0.5">' + totalSupCount + ' / ' + totalSupCapacity + '</div></div>';
+
+html += '<div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60"><div class="text-[11px] text-slate-400 font-semibold uppercase">Staff Capacity</div><div class="text-lg font-extrabold text-indigo-400 mt-0.5">' + totalStaffCount + ' / ' + totalCapacity + '</div></div>';
+html += '</div></div>';
 
             // Executive Admin Hierarchy
             html += renderExecutiveHierarchyBlock('Executive – Admin', 'Admin Department Structure', ADMIN_EXECUTIVE_AREAS, adminStaff, adminCap);
