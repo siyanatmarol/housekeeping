@@ -586,7 +586,7 @@
 
     <!-- MODULE 5: ADD / EDIT DRY WASTE OFFLOADING MODAL -->
     <div id="wasteOffloadModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
                 <h3 id="offloadModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
                     <i class="fa-solid fa-truck-ramp-box text-orange-600"></i>
@@ -595,46 +595,76 @@
                 <button onclick="closeModal('wasteOffloadModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <form onsubmit="handleSaveWasteOffloading(event)" class="space-y-3.5">
+            <form onsubmit="handleSaveWasteOffloading(event)" class="space-y-4">
                 <input type="hidden" id="offloadEditDocId">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Date</label>
                     <input type="date" id="offloadDate" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
                 </div>
 
-                <div class="space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                    <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider mb-2">Item Quantities (KG) & Live Receipt Calculation</h4>
+                <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider">Item Quantities (KG), Auto Rates & Calculated Amounts</h4>
                     
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                            <label class="block text-[11px] font-medium text-slate-600">Soft Plastic (KG)</label>
-                            <input type="number" step="0.1" min="0" value="0" id="offloadQtySoftPlastic" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1.5 rounded border border-slate-300 font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-medium text-slate-600">Hard Plastic (KG)</label>
-                            <input type="number" step="0.1" min="0" value="0" id="offloadQtyHardPlastic" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1.5 rounded border border-slate-300 font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-medium text-slate-600">Cardboard (KG)</label>
-                            <input type="number" step="0.1" min="0" value="0" id="offloadQtyCardboard" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1.5 rounded border border-slate-300 font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-medium text-slate-600">Colour Paper (KG)</label>
-                            <input type="number" step="0.1" min="0" value="0" id="offloadQtyColourPaper" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1.5 rounded border border-slate-300 font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-medium text-slate-600">Metal / Tin (KG)</label>
-                            <input type="number" step="0.1" min="0" value="0" id="offloadQtyMetalTin" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1.5 rounded border border-slate-300 font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-medium text-slate-600">Glass (KG)</label>
-                            <input type="number" step="0.1" min="0" value="0" id="offloadQtyGlass" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1.5 rounded border border-slate-300 font-mono">
-                        </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-200/70 text-slate-700 font-bold uppercase text-[10px]">
+                                <tr>
+                                    <th class="p-2">Waste Material</th>
+                                    <th class="p-2 w-28">Qty (KG)</th>
+                                    <th class="p-2 w-24 text-right">Rate (₹)</th>
+                                    <th class="p-2 w-28 text-right">Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-700">
+                                <tr>
+                                    <td class="p-2 font-semibold">Soft Plastic</td>
+                                    <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtySoftPlastic" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
+                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateSoftPlastic">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtSoftPlastic">₹0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold">Hard Plastic</td>
+                                    <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtyHardPlastic" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
+                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateHardPlastic">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtHardPlastic">₹0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold">Cardboard</td>
+                                    <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtyCardboard" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
+                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateCardboard">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtCardboard">₹0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold">Colour Paper</td>
+                                    <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtyColourPaper" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
+                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateColourPaper">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtColourPaper">₹0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold">Metal / Tin</td>
+                                    <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtyMetalTin" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
+                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateMetalTin">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtMetalTin">₹0.00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-2 font-semibold">Glass</td>
+                                    <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtyGlass" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
+                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateGlass">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtGlass">₹0.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
-                    <div class="pt-2 border-t border-slate-200 grid grid-cols-2 gap-2 text-xs font-bold">
-                        <div class="bg-white p-2 rounded border text-slate-700">Total Weight: <span id="liveOffloadTotalQty" class="text-orange-600 font-mono">0 KG</span></div>
-                        <div class="bg-white p-2 rounded border text-slate-700">Total Amount: <span id="liveOffloadTotalAmt" class="text-emerald-600 font-mono">₹0.00</span></div>
+                    <div class="pt-2.5 border-t border-slate-300 grid grid-cols-2 gap-2 text-xs font-bold">
+                        <div class="bg-white p-2.5 rounded-lg border text-slate-700 flex justify-between items-center">
+                            <span>Total Weight:</span>
+                            <span id="liveOffloadTotalQty" class="text-orange-600 font-mono text-sm">0.0 KG</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded-lg border text-slate-700 flex justify-between items-center">
+                            <span>Total Amount:</span>
+                            <span id="liveOffloadTotalAmt" class="text-emerald-600 font-mono text-sm">₹0.00</span>
+                        </div>
                     </div>
                 </div>
 
@@ -2459,6 +2489,7 @@
             html += '<td class="p-3 font-mono text-emerald-800 text-sm">₹' + periodTotalAmt.toFixed(2) + '</td>';
             html += '</tr></tfoot></table></div></div>';
 
+           // 4. Offloading Archive List
             html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-800 flex justify-between items-center">';
             html += '<span>Offloading Historical Receipts Archive</span>';
@@ -2469,7 +2500,7 @@
             } else {
                 html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
                 html += '<th class="p-3">Receipt Date</th><th class="p-3 font-mono">Total Weight</th><th class="p-3 font-mono">Grand Total</th><th class="p-3">Logged By</th>';
-                if (isAdmin) html += '<th class="p-3 text-center">Admin Controls</th>';
+                html += '<th class="p-3 text-center">Actions</th>';
                 html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
                 dbWasteOffloadings.forEach(function(off) {
@@ -2479,12 +2510,14 @@
                     html += '<td class="p-3 font-mono font-bold text-emerald-700">₹' + (off.totalAmt || 0).toFixed(2) + '</td>';
                     html += '<td class="p-3 text-slate-500">' + (off.loggedBy || 'System') + '</td>';
 
+                    html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-3">';
+                    html += '<button onclick="downloadWasteReceiptPDF(\'' + off.id + '\')" class="text-emerald-700 hover:text-emerald-900 font-bold text-xs flex items-center space-x-1" title="Download PDF Receipt"><i class="fa-solid fa-file-pdf text-red-600"></i><span>PDF</span></button>';
+                    
                     if (isAdmin) {
-                        html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-2">';
                         html += '<button onclick="openWasteOffloadModal(\'' + off.id + '\')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs"><i class="fa-solid fa-pen-to-square"></i> Edit</button>';
                         html += '<button onclick="deleteWasteOffloadRecord(\'' + off.id + '\')" class="text-red-600 hover:text-red-800 font-bold text-xs"><i class="fa-solid fa-trash-can"></i></button>';
-                        html += '</div></td>';
                     }
+                    html += '</div></td>';
                     html += '</tr>';
                 });
 
@@ -2568,14 +2601,39 @@
             var qMetal = parseFloat(document.getElementById('offloadQtyMetalTin').value) || 0;
             var qGlass = parseFloat(document.getElementById('offloadQtyGlass').value) || 0;
 
-            var totalQty = qSoft + qHard + qCard + qPaper + qMetal + qGlass;
+            var rSoft = dbWasteRates.SoftPlastic || 0;
+            var rHard = dbWasteRates.HardPlastic || 0;
+            var rCard = dbWasteRates.Cardboard || 0;
+            var rPaper = dbWasteRates.ColourPaper || 0;
+            var rMetal = dbWasteRates.MetalTin || 0;
+            var rGlass = dbWasteRates.Glass || 0;
 
-            var totalAmt = (qSoft * (dbWasteRates.SoftPlastic || 0)) +
-                           (qHard * (dbWasteRates.HardPlastic || 0)) +
-                           (qCard * (dbWasteRates.Cardboard || 0)) +
-                           (qPaper * (dbWasteRates.ColourPaper || 0)) +
-                           (qMetal * (dbWasteRates.MetalTin || 0)) +
-                           (qGlass * (dbWasteRates.Glass || 0));
+            var aSoft = qSoft * rSoft;
+            var aHard = qHard * rHard;
+            var aCard = qCard * rCard;
+            var aPaper = qPaper * rPaper;
+            var aMetal = qMetal * rMetal;
+            var aGlass = qGlass * rGlass;
+
+            // Display Unit Rates
+            document.getElementById('dispRateSoftPlastic').innerText = '₹' + rSoft.toFixed(2);
+            document.getElementById('dispRateHardPlastic').innerText = '₹' + rHard.toFixed(2);
+            document.getElementById('dispRateCardboard').innerText = '₹' + rCard.toFixed(2);
+            document.getElementById('dispRateColourPaper').innerText = '₹' + rPaper.toFixed(2);
+            document.getElementById('dispRateMetalTin').innerText = '₹' + rMetal.toFixed(2);
+            document.getElementById('dispRateGlass').innerText = '₹' + rGlass.toFixed(2);
+
+            // Display Row Amounts
+            document.getElementById('dispAmtSoftPlastic').innerText = '₹' + aSoft.toFixed(2);
+            document.getElementById('dispAmtHardPlastic').innerText = '₹' + aHard.toFixed(2);
+            document.getElementById('dispAmtCardboard').innerText = '₹' + aCard.toFixed(2);
+            document.getElementById('dispAmtColourPaper').innerText = '₹' + aPaper.toFixed(2);
+            document.getElementById('dispAmtMetalTin').innerText = '₹' + aMetal.toFixed(2);
+            document.getElementById('dispAmtGlass').innerText = '₹' + aGlass.toFixed(2);
+
+            // Bottom Aggregate Summary
+            var totalQty = qSoft + qHard + qCard + qPaper + qMetal + qGlass;
+            var totalAmt = aSoft + aHard + aCard + aPaper + aMetal + aGlass;
 
             document.getElementById('liveOffloadTotalQty').innerText = totalQty.toFixed(1) + ' KG';
             document.getElementById('liveOffloadTotalAmt').innerText = '₹' + totalAmt.toFixed(2);
@@ -3198,6 +3256,111 @@
         }
     </script>
 
+// Download Single Receipt PDF
+        function downloadWasteReceiptPDF(docId) {
+            var rec = dbWasteOffloadings.find(r => r.id === docId);
+            if (!rec) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'a4');
+
+            doc.setFontSize(14);
+            doc.text("Dry Waste Offloading Receipt", 40, 40);
+            doc.setFontSize(10);
+            doc.text("Receipt Date: " + rec.date, 40, 58);
+            doc.text("Logged By: " + (rec.loggedBy || "System"), 40, 72);
+
+            var rows = [];
+            if (rec.breakdown) {
+                Object.keys(rec.breakdown).forEach(function(k) {
+                    var item = rec.breakdown[k];
+                    rows.push([k, (item.qty || 0).toFixed(1) + " KG", "Rs. " + (item.rate || 0).toFixed(2), "Rs. " + (item.amt || 0).toFixed(2)]);
+                });
+            }
+
+            doc.autoTable({
+                head: [["Material Type", "Quantity", "Unit Rate", "Subtotal Amount"]],
+                body: rows,
+                startY: 90,
+                styles: { fontSize: 9 }
+            });
+
+            var finalY = doc.lastAutoTable.finalY + 20;
+            doc.setFontSize(11);
+            doc.text("Total Weight: " + (rec.totalQty || 0).toFixed(1) + " KG", 40, finalY);
+            doc.text("Grand Total: Rs. " + (rec.totalAmt || 0).toFixed(2), 250, finalY);
+
+            doc.save("Dry_Waste_Receipt_" + rec.date + ".pdf");
+        }
+
+        // Updated Export Handler for Dry Waste Module based on View (Monthly, Quarterly, Yearly)
+        function exportCurrentModule(type) {
+            if (activeModule === 'waste') {
+                var filteredOffloads = dbWasteOffloadings.filter(function(rec) {
+                    if (!rec.date) return false;
+                    var recDate = new Date(rec.date);
+                    var recYear = recDate.getFullYear().toString();
+                    var recMonth = (recDate.getMonth() + 1).toString().padStart(2, '0');
+
+                    if (wasteViewType === 'Monthly') {
+                        return recYear === wasteSelectedYear && recMonth === wasteSelectedMonth;
+                    } else if (wasteViewType === 'Quarterly') {
+                        var monthNum = recDate.getMonth() + 1;
+                        var q = 'Q1';
+                        if (monthNum >= 4 && monthNum <= 6) q = 'Q2';
+                        else if (monthNum >= 7 && monthNum <= 9) q = 'Q3';
+                        else if (monthNum >= 10 && monthNum <= 12) q = 'Q4';
+
+                        return recYear === wasteSelectedYear && q === wasteSelectedQuarter;
+                    } else if (wasteViewType === 'Yearly') {
+                        return recYear === wasteSelectedYear;
+                    }
+                    return true;
+                });
+
+                if (filteredOffloads.length === 0) {
+                    alert("No data available to export for the selected " + wasteViewType + " filter.");
+                    return;
+                }
+
+                var exportRows = filteredOffloads.map(function(r) {
+                    return {
+                        'Receipt Date': r.date,
+                        'Total Weight (KG)': (r.totalQty || 0).toFixed(1),
+                        'Grand Total Amount (₹)': (r.totalAmt || 0).toFixed(2),
+                        'Logged By': r.loggedBy || 'System'
+                    };
+                });
+
+                var periodLabel = wasteViewType === 'Monthly' ? (wasteSelectedMonth + '-' + wasteSelectedYear) : (wasteViewType === 'Quarterly' ? (wasteSelectedQuarter + '-' + wasteSelectedYear) : wasteSelectedYear);
+
+                if (type === 'excel') {
+                    var ws = XLSX.utils.json_to_sheet(exportRows);
+                    var wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Dry Waste Report");
+                    XLSX.writeFile(wb, "Dry_Waste_Report_" + periodLabel + ".xlsx");
+                } else if (type === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF('p', 'pt', 'a4');
+                    doc.text("Dry Waste Summary Report (" + wasteViewType + " View: " + periodLabel + ")", 40, 40);
+
+                    var tableHeaders = [Object.keys(exportRows[0])];
+                    var tableBody = exportRows.map(d => Object.values(d));
+
+                    doc.autoTable({
+                        head: tableHeaders,
+                        body: tableBody,
+                        startY: 60,
+                        styles: { fontSize: 9 }
+                    });
+
+                    doc.save("Dry_Waste_Report_" + periodLabel + ".pdf");
+                }
+            } else {
+                alert("Exporting " + activeModule.toUpperCase() + " data to " + type.toUpperCase());
+            }
+        }
+    
     <!-- FIREBASE AUTH & FIRESTORE DATABASE MODULE -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
