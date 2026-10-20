@@ -848,20 +848,21 @@
 
         // ================= HR MODULE REFACTORED =================
         function renderHrModule(container, actions) {
-            var isAdmin = currentUser.role === 'Administrator';
-            var isExec = currentUser.role.indexOf('Executive') === 0;
-            var isSup = currentUser.role === 'Supervisor';
+    var isAdmin = currentUser.role === 'Administrator';
+    var isExec = currentUser.role.indexOf('Executive') === 0;
+    var isSup = currentUser.role === 'Supervisor';
 
-            var actionButtons = '<div class="flex items-center space-x-2">';
-            
-            if (isAdmin || isExec) {
-                actionButtons += '<button onclick="openTransferModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>Transfer Staff</span></button>';
-            }
-            
-            actionButtons += '<button onclick="openHrStaffModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-user-plus"></i><span>Add Staff / Executive</span></button>';
-            actionButtons += '</div>';
+    var actionButtons = '<div class="flex items-center space-x-2">';
+    
+    // Both Transfer Staff & Add Staff buttons are strictly restricted to Admin & Executive
+    if (isAdmin || isExec) {
+        actionButtons += '<button onclick="openTransferModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>Transfer Staff</span></button>';
+        actionButtons += '<button onclick="openHrStaffModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-user-plus"></i><span>Add Staff / Executive</span></button>';
+    }
+    
+    actionButtons += '</div>';
 
-            actions.innerHTML = actionButtons;
+    actions.innerHTML = actionButtons;
 
             var html = '<div class="space-y-6">';
 
