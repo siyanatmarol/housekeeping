@@ -267,6 +267,40 @@
         </div>
     </div>
 
+    <!-- OUTSOURCED STAFF MODAL -->
+    <div id="outsourcedModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-users-gear text-amber-600"></i>
+                    <span>Outsourced Staff Directory (United & Dynamic)</span>
+                </h3>
+                <button onclick="closeModal('outsourcedModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="outsourcedModalBody" class="flex-1 overflow-y-auto custom-scrollbar space-y-4"></div>
+            <div class="pt-3 border-t border-slate-100 flex justify-end">
+                <button onclick="closeModal('outsourcedModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UNIFORM STATUS MODAL -->
+    <div id="uniformStatusModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-shirt text-indigo-600"></i>
+                    <span>In-House Uniform Issuance Log (Excluding Outsourced)</span>
+                </h3>
+                <button onclick="closeModal('uniformStatusModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="uniformStatusModalBody" class="flex-1 overflow-y-auto custom-scrollbar"></div>
+            <div class="pt-3 border-t border-slate-100 flex justify-end">
+                <button onclick="closeModal('uniformStatusModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- STAFF TRANSFER MODAL -->
     <div id="transferModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100">
@@ -348,389 +382,6 @@
             </div>
         </div>
     </div>
-
-    <!-- INVENTORY TRANSACTION MODAL -->
-    <div id="invTransactionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                <h3 id="invModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
-                    <i class="fa-solid fa-boxes-packing text-emerald-600"></i>
-                    <span>Inventory Action Window</span>
-                </h3>
-                <button onclick="closeModal('invTransactionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <form onsubmit="handleInventoryTransactionSubmit(event)" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Transaction Type</label>
-                    <select id="invTxType" onchange="toggleInvModalFields()" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Select Item</label>
-                    <select id="invTxItem" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
-                </div>
-
-                <div id="invTxAreaGroup">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Target Area Store</label>
-                    <select id="invTxArea" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Quantity</label>
-                    <input type="number" id="invTxQty" min="1" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Remarks / Notes</label>
-                    <input type="text" id="invTxRemarks" placeholder="Optional transaction note" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300">
-                </div>
-
-                <div class="pt-2">
-                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 rounded-lg shadow transition">Submit Inventory Action</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- OPENING STOCK MODAL -->
-    <div id="openingStockModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-5xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                <div>
-                    <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
-                        <i class="fa-solid fa-warehouse text-emerald-600"></i>
-                        <span>Opening Stock & Item Management (Admin Only)</span>
-                    </h3>
-                    <p class="text-[11px] text-slate-500 mt-0.5">Define starting stock levels for Main Store and 9 Area Stores or manage inventory master list.</p>
-                </div>
-                <button onclick="closeModal('openingStockModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 mb-4">
-                <h4 class="font-bold text-xs text-slate-700 mb-2 flex items-center space-x-1.5">
-                    <i class="fa-solid fa-plus-circle text-emerald-600"></i>
-                    <span>Add New Item to Inventory Master</span>
-                </h4>
-                <form onsubmit="handleAddNewItem(event)" class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 items-end">
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">Item Code</label>
-                        <input type="text" id="newItemCode" required placeholder="e.g. CHM-03" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">Item Name</label>
-                        <input type="text" id="newItemName" required placeholder="e.g. Glass Cleaner" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">Category</label>
-                        <input type="text" id="newItemCategory" required placeholder="e.g. Chemicals" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-semibold text-slate-600 mb-1">Unit</label>
-                        <input type="text" id="newItemUnit" required placeholder="e.g. Ltr / Pcs" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg">
-                    </div>
-                    <div>
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-1.5 rounded-lg shadow transition">
-                            <i class="fa-solid fa-plus mr-1"></i> Add Item
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="flex-1 overflow-auto border border-slate-200 rounded-xl custom-scrollbar">
-                <table class="w-full text-left text-xs">
-                    <thead class="bg-slate-100 text-slate-700 uppercase font-bold sticky top-0 border-b border-slate-200 z-10">
-                        <tr>
-                            <th class="p-2.5">Code / Item</th>
-                            <th class="p-2.5 text-blue-700">Main Store</th>
-                            <th class="p-2.5">Admin P1</th>
-                            <th class="p-2.5">Admin P3</th>
-                            <th class="p-2.5">Mahad</th>
-                            <th class="p-2.5">Religious</th>
-                            <th class="p-2.5">Estates</th>
-                            <th class="p-2.5">Boys H.</th>
-                            <th class="p-2.5">Girls H.</th>
-                            <th class="p-2.5">Compound</th>
-                            <th class="p-2.5">Najmi</th>
-                            <th class="p-2.5 text-center">Delete</th>
-                        </tr>
-                    </thead>
-                    <tbody id="openingStockTableBody" class="divide-y divide-slate-200 bg-white"></tbody>
-                </table>
-            </div>
-
-            <div class="mt-4 flex justify-end">
-                <button onclick="closeModal('openingStockModal'); switchModule('inventory');" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-5 py-2 rounded-xl shadow">
-                    Save & Close
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MACHINERY MODAL -->
-    <div id="machineryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                <h3 id="machineryModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
-                    <i class="fa-solid fa-gears text-indigo-600"></i>
-                    <span>Machinery Details Form</span>
-                </h3>
-                <button onclick="closeModal('machineryModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <form onsubmit="handleSaveMachinery(event)" class="space-y-3.5">
-                <input type="hidden" id="machineryEditId">
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Category</label>
-                        <div class="flex space-x-1.5">
-                            <select id="machineryCategory" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
-                            <button type="button" onclick="addNewMachineryCategoryPrompt()" class="bg-slate-100 hover:bg-slate-200 px-2.5 py-2 rounded-lg text-xs font-bold border border-slate-300" title="Add Custom Category">+</button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Brand Name</label>
-                        <input type="text" id="machineryBrand" required placeholder="e.g. Kärcher / Taski" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Model Name & Number</label>
-                        <input type="text" id="machineryModel" required placeholder="e.g. WD 3 Super 1000W" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Assigned Area</label>
-                        <select id="machineryArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Date of Purchase (Optional)</label>
-                        <input type="date" id="machineryPurchaseDate" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Warranty Period (Optional)</label>
-                        <input type="text" id="machineryWarranty" placeholder="e.g. 2 Years (Till Oct 2027)" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Machinery Photo</label>
-                    <input type="file" id="machineryPhotoFileInput" accept="image/*" onchange="previewFileToBase64(this, 'machineryPhotoData')" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg bg-slate-50 cursor-pointer">
-                    <input type="hidden" id="machineryPhotoData">
-                    <div id="machineryPhotoPreviewBox" class="mt-2.5 hidden flex items-center space-x-3 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                        <img id="machineryPhotoImg" class="h-16 w-16 object-cover rounded-lg border border-slate-300">
-                        <button type="button" onclick="deleteMachineryPhoto()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 transition flex items-center space-x-1">
-                            <i class="fa-solid fa-trash-can"></i>
-                            <span>Remove Photo</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="pt-2 flex justify-end space-x-2">
-                    <button type="button" onclick="closeModal('machineryModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow">Save Machinery Record</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- BREAKDOWN DETAILS & REPAIRS MODAL -->
-    <div id="breakdownModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                <div>
-                    <h3 id="breakdownMachineTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
-                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
-                        <span>Breakdown & Repair History</span>
-                    </h3>
-                    <p id="breakdownMachineSubtitle" class="text-xs text-slate-500 mt-0.5">Machine breakdown logs and associated maintenance expenses</p>
-                </div>
-                <button onclick="closeModal('breakdownModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
-                <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-4">
-                    <h4 id="breakdownFormHeading" class="font-bold text-xs text-amber-900 mb-2 flex items-center space-x-1.5">
-                        <i class="fa-solid fa-circle-exclamation text-amber-600"></i>
-                        <span>Log New Machine Breakdown</span>
-                    </h4>
-                    <form onsubmit="handleSaveBreakdown(event)" class="space-y-2.5">
-                        <input type="hidden" id="breakdownMachineId">
-                        <input type="hidden" id="breakdownEditId">
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Breakdown Date</label>
-                                <input type="date" id="breakdownDate" required class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white">
-                            </div>
-                            <div class="sm:col-span-2">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Describe Issue</label>
-                                <textarea id="breakdownIssue" required rows="2" placeholder="Describe mechanical fault or electrical issue..." class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white"></textarea>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div class="flex-1">
-                                <label class="block text-[11px] font-semibold text-slate-700 mb-1">Upload Breakdown Photo</label>
-                                <input type="file" id="breakdownPhotoInput" accept="image/*" onchange="previewFileToBase64(this, 'breakdownPhotoData')" class="w-full text-xs px-2 py-1 border border-slate-300 rounded-lg bg-white">
-                                <input type="hidden" id="breakdownPhotoData">
-                            </div>
-                            <div class="sm:self-end flex space-x-2">
-                                <button type="button" id="cancelBreakdownEditBtn" onclick="resetBreakdownForm()" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-3 py-2 rounded-lg font-semibold">Cancel Edit</button>
-                                <button type="submit" id="saveBreakdownSubmitBtn" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow">Log Breakdown Issue</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                <div id="addRepairBox" class="hidden bg-emerald-50/60 border border-emerald-200 rounded-xl p-4">
-                    <h4 id="repairFormHeading" class="font-bold text-xs text-emerald-900 mb-2 flex items-center space-x-1.5">
-                        <i class="fa-solid fa-wrench text-emerald-600"></i>
-                        <span>Record Repair Activity</span>
-                    </h4>
-                    <form onsubmit="handleSaveRepair(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                        <input type="hidden" id="repairBreakdownId">
-                        <input type="hidden" id="repairEditId">
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">Date of Repair</label>
-                            <input type="date" id="repairDate" required class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">Repair Done By</label>
-                            <select id="repairDoneBy" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
-                                <option value="In-house Technician">In-house Technician</option>
-                                <option value="Company Technician">Company Technician / Vendor</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">Cost of Repair (₹)</label>
-                            <input type="number" id="repairCost" min="0" required placeholder="0" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">Remarks & Details</label>
-                            <input type="text" id="repairRemarks" placeholder="Parts replaced, motor serviced..." class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold text-slate-700 mb-1">Upload After Repair Photo</label>
-                            <input type="file" id="repairAfterPhotoInput" accept="image/*" onchange="previewFileToBase64(this, 'repairAfterPhotoData')" class="w-full text-xs px-2 py-1 border border-slate-300 rounded-lg bg-white">
-                            <input type="hidden" id="repairAfterPhotoData">
-                        </div>
-                        <div class="sm:col-span-3 flex justify-end space-x-2 pt-1">
-                            <button type="button" onclick="cancelRepairForm()" class="bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-lg font-medium">Cancel</button>
-                            <button type="submit" id="saveRepairSubmitBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg shadow">Submit Repair Entry</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="space-y-3">
-                    <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider">Breakdowns & Maintenance Cards</h4>
-                    <div id="breakdownListContainer" class="space-y-4"></div>
-                </div>
-            </div>
-
-            <div class="pt-3 mt-3 border-t border-slate-200 flex justify-between items-center bg-slate-50 p-3 rounded-xl">
-                <span class="text-xs font-bold text-slate-700">Total Machinery Repairs Expense:</span>
-                <span id="totalMachineRepairCost" class="text-sm font-extrabold text-emerald-700">₹0</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- PHOTO LIGHTBOX MODAL -->
-    <div id="photoPreviewModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4" onclick="closeModal('photoPreviewModal')">
-        <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center" onclick="event.stopPropagation()">
-            <button onclick="closeModal('photoPreviewModal')" class="absolute -top-10 right-0 text-white hover:text-slate-300 text-2xl font-bold">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <img id="photoPreviewImage" src="" class="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl border border-slate-700">
-            <p id="photoPreviewCaption" class="text-white text-xs mt-3 font-semibold text-center bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-700"></p>
-        </div>
-    </div>
-
-    <!-- EDIT ARCHIVE MODAL -->
-    <div id="editArchiveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 border border-slate-100">
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="text-sm font-bold text-slate-900">Correct Archive Quantity</h3>
-                <button onclick="closeModal('editArchiveModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form onsubmit="saveArchiveCorrection(event)" class="space-y-3">
-                <input type="hidden" id="editArchiveId">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Correct Quantity</label>
-                    <input type="number" id="editArchiveQty" min="0" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300">
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-lg shadow">Update Record</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- ADMIN USER ACCESS CONTROL MODAL -->
-    <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
-                    <i class="fa-solid fa-users-gear text-emerald-600"></i>
-                    <span>User Role & Module Access Management</span>
-                </h3>
-                <button onclick="closeModal('adminModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 overflow-hidden">
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 overflow-y-auto custom-scrollbar">
-                    <h4 id="userAccessFormTitle" class="font-bold text-xs text-slate-700 uppercase tracking-wider mb-3">Grant / Edit User Access</h4>
-                    <form onsubmit="saveUserAccess(event)" class="space-y-3">
-                        <input type="hidden" id="editingUserEmail">
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">User Email ID</label>
-                            <input type="email" id="accessEmail" required placeholder="user@domain.com" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">User Role</label>
-                            <select id="accessRole" onchange="updateAccessAreaDropdown()" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
-                                <option value="Administrator">Administrator (Full Access)</option>
-                                <option value="Executive – Admin">Executive – Admin</option>
-                                <option value="Executive – Hostels">Executive – Hostels</option>
-                                <option value="Supervisor">Supervisor</option>
-                            </select>
-                        </div>
-                        <div id="areaSelectGroup">
-                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Assigned Area</label>
-                            <select id="accessArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
-                        </div>
-
-                        <div class="pt-2 border-t border-slate-200">
-                            <label class="block text-[11px] font-bold text-slate-700 mb-2">Module Access Rights (4 to 9):</label>
-                            <p class="text-[10px] text-slate-400 mb-2">Note: Inventory, HR, and Cleaning are automatically accessible to all users as per assigned areas.</p>
-                            <div class="space-y-1.5 text-xs text-slate-700" id="moduleCheckboxesContainer">
-                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_pest" class="rounded text-emerald-600"> <span>4. Pest Control</span></label>
-                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_waste" class="rounded text-emerald-600"> <span>5. Dry Waste Management</span></label>
-                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_compost" class="rounded text-emerald-600"> <span>6. Compost Operations</span></label>
-                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_water" class="rounded text-emerald-600"> <span>7. Water Tanks Cleaning</span></label>
-                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_procurement" class="rounded text-emerald-600"> <span>8. Procurement & Rates</span></label>
-                                <label class="flex items-center space-x-2"><input type="checkbox" id="mod_machinery" class="rounded text-emerald-600"> <span>9. Machinery</span></label>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 rounded-lg shadow transition">Save User Permissions</button>
-                    </form>
-                </div>
-
-                <div class="md:col-span-2 border border-slate-200 rounded-xl overflow-hidden flex flex-col">
-                    <div class="bg-slate-100 px-4 py-2.5 text-xs font-bold text-slate-700 border-b border-slate-200 flex justify-between items-center">
-                        <span>Configured Portal Users</span>
-                    </div>
-                    <div class="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar" id="userAccessList"></div>
-                </div>
-            </div>
-        </div>
-    </div>
     <!-- MAIN APPLICATION SCRIPT -->
     <script>
         var ADMIN_EXECUTIVE_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates'];
@@ -808,10 +459,8 @@
         var searchSearchTerm = '';
         var selectedCategoryFilter = 'All';
 
-        // HR Specific Filters & Selection State
+        // HR Specific State
         var hrSearchTerm = '';
-        var hrCategoryFilter = 'All';
-        var hrUniformFilter = 'All';
         var selectedAreaCard = null;
 
         function generatePreseededStaff() {
@@ -1090,7 +739,7 @@
             }
 
             if (exportContainer) {
-                if (isAdmin) {
+                if (isAdmin || (currentUser && currentUser.role.indexOf('Executive') === 0)) {
                     exportContainer.classList.remove('hidden');
                 } else {
                     exportContainer.classList.add('hidden');
@@ -1140,12 +789,10 @@
 
             var actionButtons = '<div class="flex items-center space-x-2">';
             
-            // Edit 6: Transfer button visible ONLY to Admin & Executives
             if (isAdmin || isExec) {
                 actionButtons += '<button onclick="openTransferModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-arrow-right-arrow-left"></i><span>Transfer Staff</span></button>';
             }
             
-            // Edit 3: Option to add Executive or Staff/Supervisor
             actionButtons += '<button onclick="openHrStaffModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-user-plus"></i><span>Add Staff / Executive</span></button>';
             actionButtons += '</div>';
 
@@ -1153,25 +800,31 @@
 
             var html = '<div class="space-y-6">';
 
-            // SEARCH & FILTER TOOLBAR
-            html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">';
-            html += '<div class="relative w-full sm:w-72"><i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
-            html += '<input type="text" placeholder="Search Staff by ID, Name, Area..." value="' + hrSearchTerm + '" oninput="handleHrSearch(this.value)" class="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>';
+            // SEARCH BAR & POPUP BUTTONS (Strictly for Admin & Executives)
+            if (isAdmin || isExec) {
+                html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">';
+                html += '<div class="relative w-full sm:w-96"><i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
+                html += '<input type="text" id="hrGlobalSearchInput" placeholder="Search Staff by Name or ID..." value="' + hrSearchTerm + '" oninput="handleHrSearchInput(this.value)" class="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>';
 
-            html += '<div class="flex items-center space-x-3 w-full sm:w-auto justify-end flex-wrap gap-y-2">';
-            html += '<div class="flex items-center space-x-1.5"><span class="text-xs text-slate-500 font-medium">Category:</span>';
-            html += '<select onchange="handleHrCategoryFilter(this.value)" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none">';
-            ['All', 'Aljamea', 'United', 'Dynamic', 'Swar Group'].forEach(function(c) {
-                html += '<option value="' + c + '" ' + (hrCategoryFilter === c ? 'selected' : '') + '>' + c + '</option>';
-            });
-            html += '</select></div>';
+                html += '<div class="flex items-center space-x-3 w-full sm:w-auto justify-end flex-wrap gap-y-2">';
+                html += '<button onclick="openOutsourcedModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-users-gear"></i><span>Outsourced Staff</span></button>';
+                html += '<button onclick="openUniformStatusModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-shirt"></i><span>Uniform Status</span></button>';
+                html += '</div></div>';
 
-            html += '<div class="flex items-center space-x-1.5"><span class="text-xs text-slate-500 font-medium">Uniform:</span>';
-            html += '<select onchange="handleHrUniformFilter(this.value)" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none">';
-            ['All', 'Yes', 'No'].forEach(function(u) {
-                html += '<option value="' + u + '" ' + (hrUniformFilter === u ? 'selected' : '') + '>' + (u === 'All' ? 'All Uniforms' : u) + '</option>';
-            });
-            html += '</select></div></div></div>';
+                // Real-time Search Result Table Container
+                if (hrSearchTerm.trim() !== '') {
+                    var searchResults = dbData.hrStaff.filter(function(s) {
+                        return s.name.toLowerCase().includes(hrSearchTerm.toLowerCase()) || 
+                               s.staffCode.toLowerCase().includes(hrSearchTerm.toLowerCase());
+                    });
+
+                    html += '<div class="bg-white rounded-xl border border-emerald-500 shadow-md p-4 space-y-3">';
+                    html += '<div class="flex justify-between items-center pb-2 border-b border-slate-200"><h4 class="font-bold text-xs text-slate-800 flex items-center space-x-2"><i class="fa-solid fa-magnifying-glass text-emerald-600"></i><span>Search Results (' + searchResults.length + ' Staff Found)</span></h4>';
+                    html += '<button onclick="clearHrSearch()" class="text-[11px] font-bold text-slate-400 hover:text-slate-600">Clear Search</button></div>';
+                    html += renderStaffTableForArea('Search Results', searchResults, true);
+                    html += '</div>';
+                }
+            }
 
             // SUPERVISOR VIEW: Directly display supervisor's area staff details, current count/capacity, and executive name
             if (isSup) {
@@ -1193,7 +846,6 @@
             }
 
             // ADMIN & EXECUTIVE HIERARCHICAL VIEW
-            // Edit 5: Top Main Overhead Card for overall statistics
             var adminStaff = getFilteredStaffByAreas(ADMIN_EXECUTIVE_AREAS);
             var hostelStaff = getFilteredStaffByAreas(HOSTEL_EXECUTIVE_AREAS);
             
@@ -1215,13 +867,13 @@
             html += '<div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700/60"><div class="text-[11px] text-slate-400 font-semibold uppercase">Staff Capacity</div><div class="text-lg font-extrabold text-indigo-400 mt-0.5">' + totalStaffCount + ' / ' + totalCapacity + '</div></div>';
             html += '</div></div>';
 
-            // Edit 5: Structure 1 - Executive Admin Hierarchy
+            // Executive Admin Hierarchy
             html += renderExecutiveHierarchyBlock('Executive – Admin', 'Admin Department Structure', ADMIN_EXECUTIVE_AREAS, adminStaff, adminCap);
 
-            // Edit 5: Structure 2 - Executive Hostels Hierarchy
+            // Executive Hostels Hierarchy
             html += renderExecutiveHierarchyBlock('Executive – Hostels', 'Hostels Department Structure', HOSTEL_EXECUTIVE_AREAS, hostelStaff, hostelCap);
 
-            // If an area card was clicked, display only that area's staff table underneath (Edit 2)
+            // Selected Area Card Table View
             if (selectedAreaCard) {
                 var selectedAreaStaff = getFilteredStaffByArea(selectedAreaCard);
                 html += '<div id="selectedAreaTableSection" class="pt-4 space-y-3">';
@@ -1237,7 +889,27 @@
             container.innerHTML = html;
         }
 
-        // Helper to render Executive Hierarchy Section
+        // Search Input Handler
+        var searchDebounceTimer = null;
+        function handleHrSearchInput(val) {
+            hrSearchTerm = val;
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+                switchModule('hr');
+                var input = document.getElementById('hrGlobalSearchInput');
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(val.length, val.length);
+                }
+            }, 250);
+        }
+
+        function clearHrSearch() {
+            hrSearchTerm = '';
+            switchModule('hr');
+        }
+
+        // Helper to render Executive Hierarchy Section with font size increased by 1 pt (+1px: text-base / 16px)
         function renderExecutiveHierarchyBlock(execRoleKey, titleLabel, areasList, staffArray, totalCap) {
             var execInfo = executivesData[execRoleKey] || { name: 'Executive Officer', staffId: 'EXEC-00', email: 'exec@domain.com', contact: 'N/A' };
             var currentStaffCount = staffArray.length;
@@ -1252,10 +924,10 @@
             
             html += '<div class="flex items-center space-x-3">';
             html += '<span class="px-3 py-1.5 rounded-lg bg-emerald-900 border border-emerald-700 text-xs font-bold text-emerald-200">Current Staff: ' + currentStaffCount + ' / Total Capacity: ' + totalCap + '</span>';
-            html += '<button onclick="openExecutiveDetailModal(\'' + execRoleKey + '\')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition flex items-center space-x-1" title="Enlarge & Edit Details"><i class="fa-solid fa-up-right-and-from-square"></i><span>Enlarge</span></button>';
+            html += '<button onclick="openExecutiveDetailModal(\'' + execRoleKey + '\')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition flex items-center space-x-1"><i class="fa-solid fa-up-right-and-from-square"></i><span>Enlarge</span></button>';
             html += '</div></div>';
 
-            // Area Cards Grid (Edit 1 & Edit 4)
+            // Area Cards Grid - Font size increased by 1pt (text-base / 16px)
             html += '<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5 pt-1">';
 
             areasList.forEach(function(areaName) {
@@ -1268,9 +940,8 @@
 
                 html += '<div onclick="selectAreaCard(\'' + areaName + '\')" class="p-4 rounded-xl border transition cursor-pointer shadow-2xs relative flex flex-col justify-between ' + cardBg + '">';
                 
-                // Edit 4: Capacity Edit Button on Area Card
                 html += '<div class="flex justify-between items-start mb-2">';
-                html += '<h5 class="font-bold text-sm text-slate-900 flex items-center space-x-1.5"><i class="fa-solid fa-building text-emerald-600 text-xs"></i><span>' + areaName + '</span></h5>';
+                html += '<h5 class="font-extrabold text-base text-slate-900 flex items-center space-x-1.5"><i class="fa-solid fa-building text-emerald-600 text-xs"></i><span>' + areaName + '</span></h5>';
                 html += '<button onclick="event.stopPropagation(); openCapacityModal(\'' + areaName + '\')" class="text-slate-400 hover:text-emerald-700 p-1 rounded hover:bg-white transition" title="Edit Area Capacity"><i class="fa-solid fa-gear text-xs"></i></button>';
                 html += '</div>';
 
@@ -1289,6 +960,62 @@
             });
 
             html += '</div></div>';
+            return html;
+        }
+
+        // Outsourced Staff Modal Generator
+        function openOutsourcedModal() {
+            var modalBody = document.getElementById('outsourcedModalBody');
+            var unitedStaff = dbData.hrStaff.filter(s => s.category === 'United');
+            var dynamicStaff = dbData.hrStaff.filter(s => s.category === 'Dynamic');
+
+            var html = '';
+
+            // United Section
+            html += '<div class="border border-slate-200 rounded-xl overflow-hidden"><div class="bg-blue-900 text-white px-4 py-2.5 font-bold text-xs flex justify-between items-center"><span>United Agency Staff (' + unitedStaff.length + ' Members)</span><span class="text-[10px] bg-blue-800 px-2 py-0.5 rounded text-blue-200">Outsourced Vendor</span></div>';
+            html += renderMiniStaffListTable(unitedStaff);
+            html += '</div>';
+
+            // Dynamic Section
+            html += '<div class="border border-slate-200 rounded-xl overflow-hidden"><div class="bg-indigo-900 text-white px-4 py-2.5 font-bold text-xs flex justify-between items-center"><span>Dynamic Agency Staff (' + dynamicStaff.length + ' Members)</span><span class="text-[10px] bg-indigo-800 px-2 py-0.5 rounded text-indigo-200">Outsourced Vendor</span></div>';
+            html += renderMiniStaffListTable(dynamicStaff);
+            html += '</div>';
+
+            modalBody.innerHTML = html;
+            openModal('outsourcedModal');
+        }
+
+        // Uniform Status Modal Generator
+        function openUniformStatusModal() {
+            var modalBody = document.getElementById('uniformStatusModalBody');
+            var inHouseStaff = dbData.hrStaff.filter(s => s.category !== 'United' && s.category !== 'Dynamic');
+
+            var html = '<table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+            html += '<th class="p-3">Staff ID</th><th class="p-3">Name</th><th class="p-3">Area</th><th class="p-3">Category</th><th class="p-3">Uniform Issued</th><th class="p-3">Uniform Date</th></tr></thead>';
+            html += '<tbody class="divide-y divide-slate-100 text-slate-700">';
+
+            inHouseStaff.forEach(function(stf) {
+                var uniformBadge = stf.uniformIssued === 'Yes' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-red-100 text-red-800 border-red-300';
+                html += '<tr class="hover:bg-slate-50"><td class="p-3 font-mono font-bold text-slate-800">' + stf.staffCode + '</td>';
+                html += '<td class="p-3 font-bold text-slate-900">' + stf.name + '</td>';
+                html += '<td class="p-3 font-semibold text-slate-600">' + stf.area + '</td>';
+                html += '<td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-100 border text-[10px] font-medium">' + stf.category + '</span></td>';
+                html += '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + uniformBadge + '">' + stf.uniformIssued + '</span></td>';
+                html += '<td class="p-3 font-mono text-slate-600">' + (stf.uniformIssuedDate || 'N/A') + '</td></tr>';
+            });
+
+            html += '</tbody></table>';
+            modalBody.innerHTML = html;
+            openModal('uniformStatusModal');
+        }
+
+        function renderMiniStaffListTable(list) {
+            if (list.length === 0) return '<div class="p-4 text-xs text-slate-400 italic text-center">No staff found for this vendor.</div>';
+            var html = '<table class="w-full text-left text-xs"><thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200"><tr><th class="p-2.5">Staff ID</th><th class="p-2.5">Name</th><th class="p-2.5">Assigned Area</th><th class="p-2.5">Contact</th></tr></thead><tbody class="divide-y divide-slate-100">';
+            list.forEach(function(s) {
+                html += '<tr><td class="p-2.5 font-mono font-bold text-slate-800">' + s.staffCode + '</td><td class="p-2.5 font-bold text-slate-900">' + s.name + '</td><td class="p-2.5 text-slate-700 font-semibold">' + s.area + '</td><td class="p-2.5 text-slate-500">' + s.contact + '</td></tr>';
+            });
+            html += '</tbody></table>';
             return html;
         }
 
@@ -1356,16 +1083,7 @@
 
         function getFilteredStaffByArea(areaName) {
             return dbData.hrStaff.filter(function(stf) {
-                if (stf.area !== areaName) return false;
-                
-                var matchSearch = hrSearchTerm === '' || 
-                    stf.staffCode.toLowerCase().includes(hrSearchTerm.toLowerCase()) || 
-                    stf.name.toLowerCase().includes(hrSearchTerm.toLowerCase());
-                
-                var matchCategory = hrCategoryFilter === 'All' || stf.category === hrCategoryFilter;
-                var matchUniform = hrUniformFilter === 'All' || stf.uniformIssued === hrUniformFilter;
-
-                return matchSearch && matchCategory && matchUniform;
+                return stf.area === areaName;
             });
         }
 
@@ -1381,7 +1099,6 @@
             return sum;
         }
 
-        // Edit 4: Capacity Modal Handlers
         function openCapacityModal(areaName) {
             document.getElementById('capacityAreaName').value = areaName;
             document.getElementById('capacityAreaDisp').value = areaName;
@@ -1398,7 +1115,6 @@
             switchModule('hr');
         }
 
-        // Executive Enlarge Modal Details
         function openExecutiveDetailModal(execRoleKey) {
             var exec = executivesData[execRoleKey];
             if (!exec) return;
@@ -1446,7 +1162,6 @@
             openModal('hrStaffModal');
         }
 
-        // Edit 6: Transfer Button and Logic
         function openTransferModal() {
             var datalist = document.getElementById('transferStaffDatalist');
             datalist.innerHTML = '';
@@ -1498,12 +1213,6 @@
             }
         }
 
-        // Search & Filter event handlers for HR
-        function handleHrSearch(val) { hrSearchTerm = val; switchModule('hr'); }
-        function handleHrCategoryFilter(val) { hrCategoryFilter = val; switchModule('hr'); }
-        function handleHrUniformFilter(val) { hrUniformFilter = val; switchModule('hr'); }
-
-        // CONDITIONAL FORM LOGIC FOR UNIFORM ISSUED DATE
         function handleCategoryChange(catValue) {
             var container = document.getElementById('uniformIssuedDateContainer');
             var dateInput = document.getElementById('hrUniformIssuedDate');
@@ -1618,6 +1327,69 @@
             if (confirm("Are you sure you want to delete staff member: " + stf.name + " (" + stf.staffCode + ")?")) {
                 dbData.hrStaff = dbData.hrStaff.filter(s => s.id !== stfId);
                 switchModule('hr');
+            }
+        }
+
+        // Complete Module Export Functionality (Excel & PDF)
+        function exportCurrentModule(type) {
+            if (activeModule === 'hr') {
+                var fullExportData = [];
+
+                // 1. Executives
+                Object.keys(executivesData).forEach(function(key) {
+                    var ex = executivesData[key];
+                    fullExportData.push({
+                        'Role Level': 'Executive',
+                        'Staff ID': ex.staffId,
+                        'Full Name': ex.name,
+                        'Area Name / Division': ex.role,
+                        'Contact': ex.contact,
+                        'Locker No': 'N/A',
+                        'Category': 'Aljamea',
+                        'Uniform Issued': 'N/A',
+                        'Uniform Date': 'N/A'
+                    });
+                });
+
+                // 2. Supervisors & Staff
+                dbData.hrStaff.forEach(function(stf) {
+                    fullExportData.push({
+                        'Role Level': stf.role,
+                        'Staff ID': stf.staffCode,
+                        'Full Name': stf.name,
+                        'Area Name / Division': stf.area,
+                        'Contact': stf.contact,
+                        'Locker No': stf.locker,
+                        'Category': stf.category,
+                        'Uniform Issued': stf.uniformIssued,
+                        'Uniform Date': stf.uniformIssuedDate || 'N/A'
+                    });
+                });
+
+                if (type === 'excel') {
+                    var ws = XLSX.utils.json_to_sheet(fullExportData);
+                    var wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "HR Staff Master");
+                    XLSX.writeFile(wb, "Siyanat_HR_Staff_Master_Report.xlsx");
+                } else if (type === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF('p', 'pt', 'a4');
+                    doc.text("Siyanat Marol - Complete HR Staff Directory", 40, 40);
+
+                    var rows = fullExportData.map(d => Object.values(d));
+                    var headers = [Object.keys(fullExportData[0])];
+
+                    doc.autoTable({
+                        head: headers,
+                        body: rows,
+                        startY: 60,
+                        styles: { fontSize: 8 }
+                    });
+
+                    doc.save("Siyanat_HR_Staff_Master_Report.pdf");
+                }
+            } else {
+                alert("Exporting " + activeModule.toUpperCase() + " data to " + type.toUpperCase());
             }
         }
 
@@ -2366,8 +2138,6 @@
                 renderUserAccessList();
             }
         }
-
-        function exportCurrentModule(type) { alert("Exporting " + activeModule.toUpperCase() + " data to " + type.toUpperCase()); }
     </script>
 
     <!-- FIREBASE AUTH & FIRESTORE DATABASE MODULE -->
