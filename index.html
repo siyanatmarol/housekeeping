@@ -382,6 +382,71 @@
             </div>
         </div>
     </div>
+
+<!-- ADMIN USER ACCESS MANAGEMENT MODAL -->
+<div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+            <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                <i class="fa-solid fa-user-shield text-emerald-600"></i>
+                <span>Admin User Access Control</span>
+            </h3>
+            <button onclick="closeModal('adminModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto custom-scrollbar p-1">
+            <!-- Left Panel: User Access Form -->
+            <form onsubmit="saveUserAccess(event)" class="space-y-3.5 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <h4 id="userAccessFormTitle" class="font-bold text-xs text-slate-800 uppercase tracking-wider">Grant / Edit User Access</h4>
+                <input type="hidden" id="editingUserEmail">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">User Email Address</label>
+                    <input type="email" id="accessEmail" required placeholder="user@domain.com" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Access Role Level</label>
+                    <select id="accessRole" onchange="updateAccessAreaDropdown()" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
+                        <option value="Administrator">Administrator (Full Rights)</option>
+                        <option value="Executive – Admin">Executive – Admin</option>
+                        <option value="Executive – Hostels">Executive – Hostels</option>
+                        <option value="Supervisor">Supervisor</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Assigned Areas</label>
+                    <select id="accessArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Module Permissions</label>
+                    <div class="space-y-1.5 text-xs text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200">
+                        <label class="flex items-center space-x-2"><input type="checkbox" id="mod_pest" checked class="rounded text-emerald-600"> <span>Pest Control</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" id="mod_waste" checked class="rounded text-emerald-600"> <span>Dry Waste</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" id="mod_compost" checked class="rounded text-emerald-600"> <span>Compost Operations</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" id="mod_water" checked class="rounded text-emerald-600"> <span>Water Tanks</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" id="mod_procurement" checked class="rounded text-emerald-600"> <span>Procurement</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" id="mod_machinery" checked class="rounded text-emerald-600"> <span>Machinery</span></label>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-2">
+                    <button type="button" onclick="resetUserAccessForm()" class="text-xs text-slate-500 hover:text-slate-800">Reset Form</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition">Save User Permissions</button>
+                </div>
+            </form>
+
+            <!-- Right Panel: Existing Users List -->
+            <div class="space-y-3">
+                <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider">Authorized System Users</h4>
+                <div id="userAccessList" class="space-y-2 max-h-[380px] overflow-y-auto custom-scrollbar pr-1"></div>
+            </div>
+        </div>
+    </div>
+</div>
+    
     <!-- MAIN APPLICATION SCRIPT -->
     <script>
         var ADMIN_EXECUTIVE_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates'];
