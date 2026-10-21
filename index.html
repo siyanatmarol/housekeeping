@@ -4672,16 +4672,13 @@
             });
         }
 
-        // ================= MODULE 8: PROCUREMENT & VENDOR RATES =================
+       // ================= MODULE 8: PROCUREMENT & VENDOR RATES =================
         var DEFAULT_PROCUREMENT_VENDORS = ['Diversey', 'Raj Traders', 'Anjum Sutterwala'];
         var dbProcurementVendors = DEFAULT_PROCUREMENT_VENDORS.slice();
         var dbVendorRates = {}; // { [itemId]: { [vendorName]: number } }
         var dbProcurements = []; // Array of saved procurement order documents from Firestore
 
-        // Active sub-view inside Module 8: 'new_procurement' or 'vendor_rate'
-        var procurementSubView = 'new_procurement';
-
-        // Form state for "New Procurement" (preserved across live searches)
+        // Form state for "New Procurement" modal (preserved across live searches)
         var procFormState = {
             editId: '',
             date: new Date().toISOString().split('T')[0],
@@ -4689,6 +4686,117 @@
             searchTerm: '',
             selectedItems: {} // { [itemId]: { checked: boolean, qty: number } }
         };
+
+        // Dynamically injects the Vendor Rate & New Procurement pop-up modals into the DOM once
+        function ensureProcurementModalsExist() {
+            if (!document.getElementById('vendorRateModal')) {
+                var vrModal = document.createElement('div');
+                vrModal.id = 'vendorRateModal';
+                vrModal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4';
+                vrModal.innerHTML =
+                    '<div class="bg-white rounded-2xl shadow-xl max-w-5xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">' +
+                        '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">' +
+                            '<div>' +
+                                '<h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">' +
+                                    '<i class="fa-solid fa-tags text-purple-600"></i>' +
+                                    '<span>Vendor Rate Master Configuration</span>' +
+                                '</h3>' +
+                                '<p class="text-xs text-slate-500 mt-0.5">Edit vendor rates directly to save to Firestore, or add/remove vendor columns.</p>' +
+                            '</div>' +
+                            '<div class="flex items-center space-x-2">' +
+                                '<button type="button" onclick="openAddVendorPrompt()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                                    '<i class="fa-solid fa-user-plus"></i><span>Add Vendor</span>' +
+                                '</button>' +
+                                '<button type="button" onclick="saveAllVendorRatesManual()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                                    '<i class="fa-solid fa-floppy-disk"></i><span>Save All Rates</span>' +
+                                '</button>' +
+                                '<button type="button" onclick="closeModal(\'vendorRateModal\')" class="text-slate-400 hover:text-slate-600 pl-2">' +
+                                    '<i class="fa-solid fa-xmark text-lg"></i>' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div id="vendorRateModalBody" class="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 rounded-xl"></div>' +
+                        '<div class="pt-3 mt-3 border-t border-slate-100 flex justify-end">' +
+                            '<button type="button" onclick="closeModal(\'vendorRateModal\')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Close</button>' +
+                        '</div>' +
+                    '</div>';
+                document.body.appendChild(vrModal);
+            }
+
+            if (!document.getElementById('newProcurementModal')) {
+                var npModal = document.createElement('div');
+                npModal.id = 'newProcurementModal';
+                npModal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4';
+                npModal.innerHTML =
+                    '<div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">' +
+                        '<div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">' +
+                            '<div>' +
+                                '<h3 id="newProcurementModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">' +
+                                    '<i class="fa-solid fa-cart-plus text-purple-600"></i>' +
+                                    '<span>New Procurement Order</span>' +
+                                '</h3>' +
+                                '<p class="text-xs text-slate-500 mt-0.5">Select items via checkbox to unlock Procurement Qty. Totals calculate automatically from the selected vendor\'s rate.</p>' +
+                            '</div>' +
+                            '<button type="button" onclick="closeModal(\'newProcurementModal\')" class="text-slate-400 hover:text-slate-600">' +
+                                '<i class="fa-solid fa-xmark text-lg"></i>' +
+                            '</button>' +
+                        '</div>' +
+                        '<form onsubmit="handleSaveProcurementOrder(event)" class="flex-1 flex flex-col min-h-0 space-y-4">' +
+                            '<div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">' +
+                                '<div>' +
+                                    '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-regular fa-calendar text-purple-600 mr-1"></i>Date</label>' +
+                                    '<input type="date" id="procOrderDateInput" required onchange="handleProcDateChange(this.value)" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">' +
+                                '</div>' +
+                                '<div>' +
+                                    '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-solid fa-truck-field text-purple-600 mr-1"></i>Vendor</label>' +
+                                    '<select id="procVendorSelectInput" required onchange="handleProcVendorChange(this.value)" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"></select>' +
+                                '</div>' +
+                                '<div>' +
+                                    '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-solid fa-magnifying-glass text-purple-600 mr-1"></i>Search Item</label>' +
+                                    '<div class="relative">' +
+                                        '<i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>' +
+                                        '<input type="text" id="procLiveSearchInput" placeholder="Filter by Item Name..." oninput="handleProcLiveSearch(this.value)" class="w-full pl-8 pr-8 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">' +
+                                        '<button type="button" id="procClearSearchBtn" onclick="handleProcLiveSearch(\'\')" class="hidden absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-circle-xmark text-xs"></i></button>' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 rounded-xl min-h-[240px]">' +
+                                '<table class="w-full text-left text-xs whitespace-nowrap">' +
+                                    '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0 z-10">' +
+                                        '<tr>' +
+                                            '<th class="p-3 w-16 text-center">Select</th>' +
+                                            '<th class="p-3">Item Name</th>' +
+                                            '<th class="p-3 text-center bg-blue-50 text-blue-900">Main Store Qty</th>' +
+                                            '<th class="p-3 w-36">Procurement Qty</th>' +
+                                            '<th class="p-3 w-28 text-right">Rate (₹)</th>' +
+                                            '<th class="p-3 w-32 text-right">Total (₹)</th>' +
+                                        '</tr>' +
+                                    '</thead>' +
+                                    '<tbody id="procItemSelectionTbody" class="divide-y divide-slate-100 text-slate-700"></tbody>' +
+                                '</table>' +
+                            '</div>' +
+                            '<div class="px-4 py-3 bg-slate-900 text-white rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
+                                '<div class="flex items-center space-x-4 text-xs">' +
+                                    '<span>Selected Items: <strong id="procSelectedCountDisp" class="font-mono text-purple-300 text-sm">0</strong></span>' +
+                                    '<span class="text-slate-500">|</span>' +
+                                    '<span>Vendor: <strong id="procFooterVendorDisp" class="text-emerald-300">-</strong></span>' +
+                                '</div>' +
+                                '<div class="flex items-center space-x-3 self-end sm:self-auto">' +
+                                    '<div class="text-right mr-2">' +
+                                        '<span class="text-[10px] uppercase tracking-wider text-slate-400 block">Grand Total</span>' +
+                                        '<span id="procGrandTotalDisp" class="text-base font-extrabold font-mono text-emerald-400">₹0.00</span>' +
+                                    '</div>' +
+                                    '<button type="button" onclick="closeModal(\'newProcurementModal\')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-4 py-2 rounded-lg transition">Cancel</button>' +
+                                    '<button type="submit" id="saveProcurementSubmitBtn" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                                        '<i class="fa-solid fa-floppy-disk"></i><span>Save Procurement</span>' +
+                                    '</button>' +
+                                '</div>' +
+                            '</div>' +
+                        '</form>' +
+                    '</div>';
+                document.body.appendChild(npModal);
+            }
+        }
 
         function getVendorItemRate(itemId, vendorName) {
             if (!itemId || !vendorName) return 0;
@@ -4706,96 +4814,55 @@
             });
         }
 
-        function switchProcurementSubView(viewName) {
-            procurementSubView = viewName;
-            if (viewName === 'new_procurement' && !procFormState.vendorName && dbProcurementVendors.length > 0) {
-                procFormState.vendorName = dbProcurementVendors[0];
-            }
-            switchModule('procurement');
-        }
-
+        // Main Module 8 View: Renders ONLY the Dashboard (Procurement Orders List) and puts [Vendor Rate] & [New Procurement] buttons in header
         function renderProcurementModule(container, actions) {
+            ensureProcurementModalsExist();
+
             if (!dbProcurementVendors || dbProcurementVendors.length === 0) {
                 dbProcurementVendors = DEFAULT_PROCUREMENT_VENDORS.slice();
             }
-            if (!procFormState.vendorName || dbProcurementVendors.indexOf(procFormState.vendorName) === -1) {
-                procFormState.vendorName = dbProcurementVendors[0] || '';
-            }
-            if (!procFormState.date) {
-                procFormState.date = new Date().toISOString().split('T')[0];
-            }
 
-            var isVendorRateActive = procurementSubView === 'vendor_rate';
-            var isNewProcActive = procurementSubView === 'new_procurement';
-
+            // 1. Header Navigation Buttons: [Vendor Rate] and [New Procurement] (Both open Pop-Up Modals)
             actions.innerHTML =
                 '<div class="flex items-center space-x-2 flex-wrap gap-y-2">' +
-                    '<button type="button" onclick="switchProcurementSubView(\'vendor_rate\')" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ' +
-                        (isVendorRateActive ? 'bg-purple-700 text-white shadow' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50') + '">' +
+                    '<button type="button" onclick="openVendorRateModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">' +
                         '<i class="fa-solid fa-tags"></i><span>Vendor Rate</span>' +
                     '</button>' +
-                    '<button type="button" onclick="switchProcurementSubView(\'new_procurement\')" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ' +
-                        (isNewProcActive ? 'bg-purple-700 text-white shadow' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50') + '">' +
-                        '<i class="fa-solid fa-cart-plus"></i><span>New Procurement</span>' +
+                    '<button type="button" onclick="openNewProcurementModal()" class="bg-[#004d3d] hover:bg-[#00382c] text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">' +
+                        '<i class="fa-solid fa-cart-plus text-emerald-300"></i><span>New Procurement</span>' +
                     '</button>' +
                 '</div>';
 
             var sortedOrders = getSortedProcurements();
-            var totalSpendAllTime = sortedOrders.reduce(function(sum, ord) {
-                return sum + (parseFloat(ord.grandTotal) || 0);
-            }, 0);
 
-            var html = '<div class="space-y-6">';
+            // 2. Main Module View: Dashboard showing ONLY Procurement Orders List
+            container.innerHTML = renderProcurementOrdersListHtml(sortedOrders);
 
-            // 1. PROMINENT TOP NAVIGATION BAR & KPI SUMMARY
-            html += '<div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">';
-            html += '<div class="flex items-center space-x-3">';
-            html += '<span class="text-xs font-bold text-slate-500 uppercase tracking-wider"><i class="fa-solid fa-compass text-purple-600 mr-1"></i>Module View:</span>';
-            html += '<div class="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 space-x-1">';
-            html += '<button type="button" onclick="switchProcurementSubView(\'vendor_rate\')" class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 ' +
-                (isVendorRateActive ? 'bg-[#004d3d] text-white shadow-sm' : 'text-slate-700 hover:bg-slate-200/70') + '">' +
-                '<i class="fa-solid fa-tags ' + (isVendorRateActive ? 'text-emerald-300' : 'text-purple-600') + '"></i><span>[Vendor Rate]</span></button>';
-            html += '<button type="button" onclick="switchProcurementSubView(\'new_procurement\')" class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 ' +
-                (isNewProcActive ? 'bg-[#004d3d] text-white shadow-sm' : 'text-slate-700 hover:bg-slate-200/70') + '">' +
-                '<i class="fa-solid fa-file-circle-plus ' + (isNewProcActive ? 'text-emerald-300' : 'text-purple-600') + '"></i><span>[New Procurement]</span></button>';
-            html += '</div></div>';
-
-            html += '<div class="flex items-center space-x-3 flex-wrap gap-y-2 text-xs">';
-            html += '<div class="px-3 py-1.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-semibold">Active Vendors: <strong class="font-mono">' + dbProcurementVendors.length + '</strong></div>';
-            html += '<div class="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 font-semibold">Saved Orders: <strong class="font-mono">' + sortedOrders.length + '</strong></div>';
-            html += '<div class="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-semibold">Cumulative Spend: <strong class="font-mono">₹' + totalSpendAllTime.toFixed(2) + '</strong></div>';
-            html += '</div></div>';
-
-            // 2. RENDER SELECTED SUB-VIEW ("Vendor Rate" OR "New Procurement")
-            if (isVendorRateActive) {
-                html += renderVendorRateSectionHtml();
-            } else {
-                html += renderNewProcurementFormSectionHtml();
+            // If either modal is currently open while a Firestore snapshot arrives, refresh its contents live
+            var vrModal = document.getElementById('vendorRateModal');
+            if (vrModal && !vrModal.classList.contains('hidden')) {
+                renderVendorRateModalTable();
             }
-
-            // 3. PROCUREMENT ORDERS LIST (MAIN MODULE VIEW / DASHBOARD)
-            html += renderProcurementOrdersListHtml(sortedOrders);
-
-            html += '</div>';
-            container.innerHTML = html;
+            var npModal = document.getElementById('newProcurementModal');
+            if (npModal && !npModal.classList.contains('hidden')) {
+                populateVendorDropdownInModal();
+                renderNewProcurementModalRows();
+            }
         }
 
-        // ----------------- SUB-VIEW 1: "VENDOR RATE" VIEW -----------------
-        function renderVendorRateSectionHtml() {
-            var html = '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
-            html += '<div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
-            html += '<div>';
-            html += '<h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-tags text-purple-600"></i><span>Vendor Rate Master Configuration</span></h3>';
-            html += '<p class="text-xs text-slate-500 mt-0.5">All inventory items dynamically synced from Firestore. Edit rates directly under any vendor column to auto-save to Firestore.</p>';
-            html += '</div>';
-            html += '<div class="flex items-center space-x-2">';
-            html += '<button type="button" onclick="openAddVendorPrompt()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-user-plus"></i><span>Add Vendor</span></button>';
-            html += '<button type="button" onclick="saveAllVendorRatesManual()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-floppy-disk"></i><span>Save All Rates</span></button>';
-            html += '</div></div>';
+        // ----------------- POP-UP 1: "VENDOR RATE" MODAL -----------------
+        function openVendorRateModal() {
+            ensureProcurementModalsExist();
+            renderVendorRateModalTable();
+            openModal('vendorRateModal');
+        }
 
-            html += '<div class="overflow-x-auto custom-scrollbar">';
-            html += '<table class="w-full text-left text-xs whitespace-nowrap">';
-            html += '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">';
+        function renderVendorRateModalTable() {
+            var bodyEl = document.getElementById('vendorRateModalBody');
+            if (!bodyEl) return;
+
+            var html = '<table class="w-full text-left text-xs whitespace-nowrap">';
+            html += '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0 z-10">';
             html += '<tr>';
             html += '<th class="p-3 w-28">Item Code</th>';
             html += '<th class="p-3 min-w-[200px]">Item Name</th>';
@@ -4804,7 +4871,7 @@
 
             dbProcurementVendors.forEach(function(vendorName, vIdx) {
                 var safeVendor = vendorName.replace(/'/g, "\\'");
-                html += '<th class="p-3 bg-purple-50/70 text-purple-950 border-l border-slate-200 min-w-[160px]">';
+                html += '<th class="p-3 bg-purple-50 text-purple-950 border-l border-slate-200 min-w-[160px]">';
                 html += '<div class="flex items-center justify-between space-x-2">';
                 html += '<span class="truncate font-extrabold">' + (vIdx + 1) + '. ' + vendorName + ' (₹)</span>';
                 html += '<button type="button" onclick="deleteProcurementVendorColumn(\'' + safeVendor + '\')" class="text-red-500 hover:text-red-700 hover:bg-red-100 p-1 rounded transition" title="Delete Vendor Column: ' + vendorName + '"><i class="fa-solid fa-trash-can text-[11px]"></i></button>';
@@ -4815,7 +4882,7 @@
             html += '<tbody class="divide-y divide-slate-100 text-slate-700">';
 
             if (dbData.inventory.length === 0) {
-                html += '<tr><td colspan="' + (4 + dbProcurementVendors.length) + '" class="p-6 text-center text-slate-400 italic">No items found in inventory collection. Add items in Module 1 (Inventory) first.</td></tr>';
+                html += '<tr><td colspan="' + (4 + dbProcurementVendors.length) + '" class="p-6 text-center text-slate-400 italic">No items found in inventory collection.</td></tr>';
             } else {
                 dbData.inventory.forEach(function(item) {
                     html += '<tr class="hover:bg-slate-50 transition">';
@@ -4840,8 +4907,8 @@
                 });
             }
 
-            html += '</tbody></table></div></div>';
-            return html;
+            html += '</tbody></table>';
+            bodyEl.innerHTML = html;
         }
 
         function openAddVendorPrompt() {
@@ -4859,7 +4926,7 @@
                 if (window.saveProcurementVendorsToFirestore) {
                     await window.saveProcurementVendorsToFirestore(dbProcurementVendors);
                 }
-                switchModule('procurement');
+                renderVendorRateModalTable();
                 showAppNotification('Vendor "' + cleanName + '" added and synced to Firestore!', 'success');
             });
         }
@@ -4878,7 +4945,7 @@
                 if (window.deleteVendorColumnFromFirestore) {
                     await window.deleteVendorColumnFromFirestore(vendorName, dbProcurementVendors);
                 }
-                switchModule('procurement');
+                renderVendorRateModalTable();
                 showAppNotification('Vendor "' + vendorName + '" removed.', 'info');
             });
         }
@@ -4904,11 +4971,67 @@
             showAppNotification('All vendor rates synced to Firestore!', 'success');
         }
 
-        // ----------------- SUB-VIEW 2: "NEW PROCUREMENT" FORM VIEW -----------------
-        function renderNewProcurementFormSectionHtml() {
-            var isEditing = !!procFormState.editId;
-            var currentVendor = procFormState.vendorName || (dbProcurementVendors[0] || '');
+        // ----------------- POP-UP 2: "NEW PROCUREMENT" MODAL -----------------
+        function openNewProcurementModal() {
+            ensureProcurementModalsExist();
+            procFormState = {
+                editId: '',
+                date: new Date().toISOString().split('T')[0],
+                vendorName: dbProcurementVendors[0] || 'Diversey',
+                searchTerm: '',
+                selectedItems: {}
+            };
+            syncNewProcurementModalUI();
+            openModal('newProcurementModal');
+        }
 
+        function populateVendorDropdownInModal() {
+            var vendorSelect = document.getElementById('procVendorSelectInput');
+            if (!vendorSelect) return;
+            if (!procFormState.vendorName || dbProcurementVendors.indexOf(procFormState.vendorName) === -1) {
+                procFormState.vendorName = dbProcurementVendors[0] || '';
+            }
+            vendorSelect.innerHTML = dbProcurementVendors.map(function(vName) {
+                return '<option value="' + vName + '" ' + (procFormState.vendorName === vName ? 'selected' : '') + '>' + vName + '</option>';
+            }).join('');
+            var footerVendor = document.getElementById('procFooterVendorDisp');
+            if (footerVendor) footerVendor.innerText = procFormState.vendorName || 'None';
+        }
+
+        function syncNewProcurementModalUI() {
+            var isEditing = !!procFormState.editId;
+            var titleEl = document.getElementById('newProcurementModalTitle');
+            if (titleEl) {
+                titleEl.innerHTML = isEditing
+                    ? '<i class="fa-solid fa-pen-to-square text-amber-600"></i><span>Edit Procurement Order (' + procFormState.editId + ')</span>'
+                    : '<i class="fa-solid fa-cart-plus text-purple-600"></i><span>New Procurement Order</span>';
+            }
+            var submitBtn = document.getElementById('saveProcurementSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span>' + (isEditing ? 'Update Procurement' : 'Save Procurement') + '</span>';
+            }
+            var dateInput = document.getElementById('procOrderDateInput');
+            if (dateInput) dateInput.value = procFormState.date;
+
+            var searchInput = document.getElementById('procLiveSearchInput');
+            if (searchInput) searchInput.value = procFormState.searchTerm || '';
+
+            var clearBtn = document.getElementById('procClearSearchBtn');
+            if (clearBtn) {
+                if (procFormState.searchTerm) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
+
+            populateVendorDropdownInModal();
+            renderNewProcurementModalRows();
+        }
+
+        function renderNewProcurementModalRows() {
+            var tbody = document.getElementById('procItemSelectionTbody');
+            if (!tbody) return;
+
+            var currentVendor = procFormState.vendorName || (dbProcurementVendors[0] || '');
             var filteredInventory = dbData.inventory.filter(function(item) {
                 if (!procFormState.searchTerm) return true;
                 var q = procFormState.searchTerm.toLowerCase();
@@ -4916,83 +5039,9 @@
                        (item.code && item.code.toLowerCase().indexOf(q) !== -1);
             });
 
-            var liveGrandTotal = 0;
-            var selectedCount = 0;
-            dbData.inventory.forEach(function(item) {
-                var st = procFormState.selectedItems[item.id];
-                if (st && st.checked) {
-                    var q = parseFloat(st.qty) || 0;
-                    var r = getVendorItemRate(item.id, currentVendor);
-                    liveGrandTotal += (q * r);
-                    selectedCount++;
-                }
-            });
-
-            var html = '<div id="procurementFormCard" class="bg-white rounded-2xl border ' + (isEditing ? 'border-amber-500 ring-2 ring-amber-300/60' : 'border-slate-200') + ' shadow-sm overflow-hidden">';
-            html += '<div class="px-5 py-4 ' + (isEditing ? 'bg-amber-50/80 border-b border-amber-200' : 'bg-slate-50 border-b border-slate-200') + ' flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
-            html += '<div>';
-            html += '<h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">';
-            html += '<i class="fa-solid ' + (isEditing ? 'fa-pen-to-square text-amber-600' : 'fa-cart-plus text-purple-600') + '"></i>';
-            html += '<span>' + (isEditing ? 'Edit Procurement Order (' + procFormState.editId + ')' : 'New Procurement Requisition Form') + '</span>';
-            html += '</h3>';
-            html += '<p class="text-xs text-slate-500 mt-0.5">Select items via checkbox to unlock Procurement Qty. Totals calculate automatically from the selected vendor\'s rate.</p>';
-            html += '</div>';
-            if (isEditing) {
-                html += '<button type="button" onclick="resetProcurementForm()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition self-start sm:self-auto"><i class="fa-solid fa-xmark mr-1"></i>Cancel Edit</button>';
-            }
-            html += '</div>';
-
-            html += '<form onsubmit="handleSaveProcurementOrder(event)" class="p-5 space-y-5">';
-
-            // Form Top Controls: Date Picker, Vendor Dropdown, Live Search Bar
-            html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50/80 p-4 rounded-xl border border-slate-200">';
-
-            // 1. Date Picker
-            html += '<div>';
-            html += '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-regular fa-calendar text-purple-600 mr-1"></i>Procurement Date</label>';
-            html += '<input type="date" id="procOrderDateInput" required value="' + procFormState.date + '" onchange="handleProcDateChange(this.value)" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">';
-            html += '</div>';
-
-            // 2. Vendor Dropdown
-            html += '<div>';
-            html += '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-solid fa-truck-field text-purple-600 mr-1"></i>Select Vendor</label>';
-            html += '<select id="procVendorSelectInput" required onchange="handleProcVendorChange(this.value)" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">';
-            dbProcurementVendors.forEach(function(vName) {
-                html += '<option value="' + vName + '" ' + (currentVendor === vName ? 'selected' : '') + '>' + vName + '</option>';
-            });
-            html += '</select>';
-            html += '</div>';
-
-            // 3. Live Search Bar
-            html += '<div>';
-            html += '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-solid fa-magnifying-glass text-purple-600 mr-1"></i>Live Item Search</label>';
-            html += '<div class="relative">';
-            html += '<i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
-            html += '<input type="text" id="procLiveSearchInput" placeholder="Filter instantly by Item Name..." value="' + procFormState.searchTerm + '" oninput="handleProcLiveSearch(this.value)" class="w-full pl-8 pr-8 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">';
-            if (procFormState.searchTerm) {
-                html += '<button type="button" onclick="handleProcLiveSearch(\'\')" class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-circle-xmark text-xs"></i></button>';
-            }
-            html += '</div></div>';
-
-            html += '</div>';
-
-            // Item Selection Table
-            html += '<div class="border border-slate-200 rounded-xl overflow-hidden">';
-            html += '<div class="overflow-x-auto custom-scrollbar max-h-[420px]">';
-            html += '<table class="w-full text-left text-xs whitespace-nowrap">';
-            html += '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0 z-10">';
-            html += '<tr>';
-            html += '<th class="p-3 w-20 text-center">Select</th>';
-            html += '<th class="p-3">Item Name</th>';
-            html += '<th class="p-3 text-center bg-blue-50/80 text-blue-900">Main Store Qty</th>';
-            html += '<th class="p-3 w-40">Procurement Qty</th>';
-            html += '<th class="p-3 w-32 text-right">Rate (₹)</th>';
-            html += '<th class="p-3 w-36 text-right">Total (₹)</th>';
-            html += '</tr></thead>';
-            html += '<tbody id="procItemSelectionTbody" class="divide-y divide-slate-100 text-slate-700">';
-
+            var html = '';
             if (filteredInventory.length === 0) {
-                html += '<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">No inventory items match "' + procFormState.searchTerm + '".</td></tr>';
+                html = '<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">No inventory items match "' + procFormState.searchTerm + '".</td></tr>';
             } else {
                 filteredInventory.forEach(function(item) {
                     var itemState = procFormState.selectedItems[item.id] || { checked: false, qty: '' };
@@ -5035,28 +5084,8 @@
                 });
             }
 
-            html += '</tbody></table></div>';
-
-            // Table Footer Summary Bar
-            html += '<div class="px-5 py-3.5 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
-            html += '<div class="flex items-center space-x-4 text-xs">';
-            html += '<span>Selected Items: <strong id="procSelectedCountDisp" class="font-mono text-purple-300 text-sm">' + selectedCount + '</strong></span>';
-            html += '<span class="text-slate-400">|</span>';
-            html += '<span>Vendor: <strong class="text-emerald-300">' + (currentVendor || 'None') + '</strong></span>';
-            html += '</div>';
-            html += '<div class="flex items-center space-x-4">';
-            html += '<div class="text-right">';
-            html += '<span class="text-[10px] uppercase tracking-wider text-slate-400 block">Calculated Grand Total</span>';
-            html += '<span id="procGrandTotalDisp" class="text-lg font-extrabold font-mono text-emerald-400">₹' + liveGrandTotal.toFixed(2) + '</span>';
-            html += '</div>';
-            html += '<button type="submit" id="saveProcurementSubmitBtn" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2">';
-            html += '<i class="fa-solid fa-floppy-disk"></i><span>' + (isEditing ? 'Update Procurement' : 'Save Procurement') + '</span>';
-            html += '</button>';
-            html += '</div></div>';
-            html += '</div>';
-
-            html += '</form></div>';
-            return html;
+            tbody.innerHTML = html;
+            recalculateProcurementFormTotals();
         }
 
         function handleProcDateChange(val) {
@@ -5065,18 +5094,23 @@
 
         function handleProcVendorChange(newVendor) {
             procFormState.vendorName = newVendor;
-            switchModule('procurement');
+            var footerVendor = document.getElementById('procFooterVendorDisp');
+            if (footerVendor) footerVendor.innerText = newVendor || 'None';
+            renderNewProcurementModalRows();
         }
 
         function handleProcLiveSearch(val) {
             procFormState.searchTerm = val;
-            switchModule('procurement');
             var searchInput = document.getElementById('procLiveSearchInput');
-            if (searchInput) {
-                searchInput.focus();
-                var len = searchInput.value.length;
-                searchInput.setSelectionRange(len, len);
+            if (searchInput && searchInput.value !== val) {
+                searchInput.value = val;
             }
+            var clearBtn = document.getElementById('procClearSearchBtn');
+            if (clearBtn) {
+                if (val) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
+            renderNewProcurementModalRows();
         }
 
         function toggleProcItemSelection(itemId, isChecked) {
@@ -5152,17 +5186,6 @@
             if (grandEl) grandEl.innerText = '₹' + grandTotal.toFixed(2);
         }
 
-        function resetProcurementForm() {
-            procFormState = {
-                editId: '',
-                date: new Date().toISOString().split('T')[0],
-                vendorName: dbProcurementVendors[0] || 'Diversey',
-                searchTerm: '',
-                selectedItems: {}
-            };
-            switchModule('procurement');
-        }
-
         async function handleSaveProcurementOrder(e) {
             e.preventDefault();
             var dateVal = document.getElementById('procOrderDateInput') ? document.getElementById('procOrderDateInput').value : procFormState.date;
@@ -5205,7 +5228,7 @@
             var submitBtn = document.getElementById('saveProcurementSubmitBtn');
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Saving to Firestore...</span>';
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Saving...</span>';
             }
 
             var orderId = procFormState.editId || ('PRC-' + Date.now());
@@ -5225,11 +5248,12 @@
             }
 
             var wasEditing = !!procFormState.editId;
-            resetProcurementForm();
+            closeModal('newProcurementModal');
+            switchModule('procurement');
             showAppNotification(wasEditing ? 'Procurement order updated in Firestore!' : 'New procurement order saved to Firestore!', 'success');
         }
 
-        // ----------------- SUB-VIEW 3: PROCUREMENT ORDERS LIST (DASHBOARD) -----------------
+        // ----------------- MAIN DASHBOARD: PROCUREMENT ORDERS LIST -----------------
         function renderProcurementOrdersListHtml(sortedOrders) {
             var html = '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
@@ -5241,7 +5265,10 @@
             html += '</div>';
 
             if (sortedOrders.length === 0) {
-                html += '<div class="p-8 text-center text-xs text-slate-400 italic">No procurement orders saved in Firestore yet. Use the "New Procurement" form above to create your first order.</div>';
+                html += '<div class="p-10 text-center space-y-3">';
+                html += '<div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-cart-shopping"></i></div>';
+                html += '<p class="text-xs text-slate-500 italic">No procurement orders saved in Firestore yet. Click "New Procurement" at the top right to create your first order.</p>';
+                html += '</div>';
             } else {
                 html += '<div class="overflow-x-auto custom-scrollbar">';
                 html += '<table class="w-full text-left text-xs whitespace-nowrap">';
@@ -5281,6 +5308,7 @@
         }
 
         function editProcurementOrder(orderId) {
+            ensureProcurementModalsExist();
             var ord = dbProcurements.find(function(o) { return o.id === orderId; });
             if (!ord) return;
 
@@ -5318,13 +5346,8 @@
                 selectedItems: selectedMap
             };
 
-            procurementSubView = 'new_procurement';
-            switchModule('procurement');
-
-            setTimeout(function() {
-                var card = document.getElementById('procurementFormCard');
-                if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 80);
+            syncNewProcurementModalUI();
+            openModal('newProcurementModal');
         }
 
         function deleteProcurementOrder(orderId) {
@@ -5335,11 +5358,7 @@
                 if (window.deleteProcurementFromFirestore) {
                     await window.deleteProcurementFromFirestore(orderId);
                 }
-                if (procFormState.editId === orderId) {
-                    resetProcurementForm();
-                } else {
-                    switchModule('procurement');
-                }
+                switchModule('procurement');
                 showAppNotification('Procurement order deleted from Firestore.', 'info');
             });
         }
@@ -6100,22 +6119,22 @@
                     sheetName = "Vendor Rates";
                     fileName = "Siyanat_Vendor_Rates_Master";
                     reportTitle = "Siyanat Marol - Vendor Rates Master";
-                } else {
-                    var sortedOrders = getSortedProcurements();
-                    sortedOrders.forEach(function(ord) {
-                        exportRows.push({
-                            'Order ID': ord.id,
-                            'Date': ord.date,
-                            'Vendor Name': ord.vendorName,
-                            'Total Items': Array.isArray(ord.items) ? ord.items.length : (ord.totalItems || 0),
-                            'Grand Total (Rs)': (parseFloat(ord.grandTotal) || 0).toFixed(2),
-                            'Logged By': ord.loggedBy || 'System'
-                        });
+                } else if (activeModule === 'procurement') {
+                var sortedOrders = getSortedProcurements();
+                sortedOrders.forEach(function(ord) {
+                    exportRows.push({
+                        'Order ID': ord.id,
+                        'Date': ord.date,
+                        'Vendor Name': ord.vendorName,
+                        'Total Items': Array.isArray(ord.items) ? ord.items.length : (ord.totalItems || 0),
+                        'Grand Total (Rs)': (parseFloat(ord.grandTotal) || 0).toFixed(2),
+                        'Logged By': ord.loggedBy || 'System'
                     });
-                    sheetName = "Procurement Orders";
-                    fileName = "Siyanat_Procurement_Orders";
-                    reportTitle = "Siyanat Marol - HK Procurement Orders Summary";
-                }
+                });
+                sheetName = "Procurement Orders";
+                fileName = "Siyanat_Procurement_Orders";
+                reportTitle = "Siyanat Marol - HK Procurement Orders Summary";
+            }
             }
 
             if (exportRows.length === 0) {
