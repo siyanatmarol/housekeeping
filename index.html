@@ -1820,13 +1820,11 @@
                 var reader = new FileReader();
                 reader.onload = async function(evt) {
                     var rawDataUrl = evt.target.result;
-                    // If file is a video or document (PDF/Word), upload directly to fm.marol Drive backend without canvas rasterization
                     if (mime.indexOf('image/') !== 0) {
                         var uploadedMediaUrl = await uploadToFmMarolDriveBackend(rawDataUrl, file.name, mime, subFolderLabel);
                         resolve(uploadedMediaUrl);
                         return;
                     }
-                    // For images, optimize dimensions for fast rendering & upload to fm.marol Drive backend
                     var img = new Image();
                     img.onload = async function() {
                         var maxDim = 900;
@@ -1841,7 +1839,7 @@
                                 h = maxDim;
                             }
                         }
-                        var canvas = new OffscreenCanvas ? document.createElement('canvas') : document.createElement('canvas');
+                        var canvas = document.createElement('canvas');
                         canvas.width = w;
                         canvas.height = h;
                         var ctx = canvas.getContext('2d');
@@ -1879,7 +1877,11 @@
                             if (!dbData.inventory.find(function(i) { return i.code === code; })) {
                                 var stockObj = { 'Main Store': parseInt(r['Main Store']) || 0 };
                                 ALL_AREAS.forEach(function(a) { stockObj[a] = parseInt(r[a]) || 0; });
-                                dbData.inventory.push({ id: 'INV-' + Date.now() + '-' + idx, code: code, name: name, category: cat, unit: unit, openingStock: stockObj });
+                                var newItem = { id: 'INV-' + Date.now() + '-' + idx, code: code, name: name, category: cat, unit: unit, openingStock: stockObj };
+                                dbData.inventory.push(newItem);
+                                if (window.saveInventoryItemToFirestore) {
+                                    window.saveInventoryItemToFirestore(newItem);
+                                }
                             }
                         });
                         switchModule('inventory');
@@ -2076,6 +2078,8 @@
                 renderCompostModule(container, actions);
             } else if (moduleId === 'water') {
                 renderWaterTanksModule(container, actions);
+            } else if (moduleId === 'procurement') {
+                renderProcurementModule(container, actions);
             } else if (moduleId === 'machinery') {
                 renderMachineryModule(container, actions);
             } else {
@@ -2202,6 +2206,9 @@
             if (item) {
                 if (!item.openingStock) item.openingStock = {};
                 item.openingStock[storeKey] = parseInt(val) || 0;
+                if (window.saveInventoryItemToFirestore) {
+                    window.saveInventoryItemToFirestore(item);
+                }
             }
         }
 
@@ -2215,7 +2222,11 @@
             var openingStock = { 'Main Store': 0 };
             ALL_AREAS.forEach(function(a) { openingStock[a] = 0; });
 
-            dbData.inventory.push({ id: 'INV-' + Date.now(), code: code, name: name, category: category, unit: unit, openingStock: openingStock });
+            var newItem = { id: 'INV-' + Date.now(), code: code, name: name, category: category, unit: unit, openingStock: openingStock };
+            dbData.inventory.push(newItem);
+            if (window.saveInventoryItemToFirestore) {
+                window.saveInventoryItemToFirestore(newItem);
+            }
 
             document.getElementById('newItemCode').value = '';
             document.getElementById('newItemName').value = '';
@@ -2234,6 +2245,9 @@
             if (item) {
                 openConfirmDialog('Are you sure you want to delete "' + item.name + '"?', function() {
                     dbData.inventory = dbData.inventory.filter(function(i) { return i.id !== itemId; });
+                    if (window.deleteInventoryItemFromFirestore) {
+                        window.deleteInventoryItemFromFirestore(itemId);
+                    }
                     renderOpeningStockTable();
                     showAppNotification('Item "' + item.name + '" deleted.', 'info');
                 });
@@ -2296,7 +2310,7 @@
             var now = new Date();
             var timestamp = now.toISOString().replace('T', ' ').substring(0, 16);
 
-            dbData.inventoryArchive.unshift({
+            var newArc = {
                 id: 'ARC-' + Date.now(),
                 date: timestamp,
                 itemCode: item.code,
@@ -2306,7 +2320,11 @@
                 qty: qty,
                 user: currentUser.email,
                 remarks: remarks
-            });
+            };
+            dbData.inventoryArchive.unshift(newArc);
+            if (window.saveInventoryArchiveToFirestore) {
+                window.saveInventoryArchiveToFirestore(newArc);
+            }
 
             closeModal('invTransactionModal');
             switchModule('inventory');
@@ -2329,6 +2347,9 @@
             }
             if (record) {
                 record.qty = newQty;
+                if (window.saveInventoryArchiveToFirestore) {
+                    window.saveInventoryArchiveToFirestore(record);
+                }
                 showAppNotification("Archive record successfully updated.", "success");
                 closeModal('editArchiveModal');
                 switchModule('inventory');
@@ -3381,7 +3402,6 @@
                 }
             });
         }
-
         // ================= MODULE 6: COMPOST MANAGEMENT =================
         function computeAll90CratesState() {
             var crateMap = {};
@@ -3528,7 +3548,6 @@
             // 3. RENDER ACTIVE VIEW (VIEW A: CRATE VIEW or VIEW B: DAILY VIEW)
             if (compostViewMode === 'crate') {
                 // VIEW A: CRATE VIEW
-                // Additional Card at Top: "Shredded Wet Waste Currently in Crates"
                 html += '<div class="bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-900 text-white p-5 rounded-2xl shadow-sm border border-emerald-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
                 html += '<div class="flex items-center space-x-4">';
                 html += '<div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-2xl text-emerald-300"><i class="fa-solid fa-box-open"></i></div>';
@@ -3620,7 +3639,6 @@
 
             } else {
                 // VIEW B: DAILY VIEW
-                // Filter bar: Select Month & Select Year
                 html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
                 html += '<div class="flex items-center space-x-3 flex-wrap gap-y-2">';
                 html += '<span class="text-xs font-bold text-slate-700 uppercase"><i class="fa-solid fa-filter text-emerald-600 mr-1"></i>Select Period:</span>';
@@ -3676,7 +3694,7 @@
 
                 var selectedMonthLabel = new Date(parseInt(compostSelectedYear), parseInt(compostSelectedMonth) - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
-                // Monthly Overview Cards (3 Distinct Cards: Regular Wet Waste, Shredded Wet Waste, Compost Generated)
+                // Monthly Overview Cards
                 html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
 
                 html += '<div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm">';
@@ -3952,7 +3970,6 @@
                 return;
             }
 
-            // If user entered crate allocations but left shreddedQty as 0, sync shreddedQty to allocated total
             var allocatedSum = allocations.reduce(function(acc, item) { return acc + item.qty; }, 0);
             if (shreddedQty === 0 && allocatedSum > 0) {
                 shreddedQty = allocatedSum;
@@ -4001,7 +4018,6 @@
             var crateStateMap = computeAll90CratesState();
             var selectEl = document.getElementById('compostCrateSelect');
 
-            // Sort active crates to the top of the dropdown
             var activeCrates = [];
             var emptyCrates = [];
             ALL_CRATE_NUMBERS.forEach(function(cNum) {
@@ -4196,7 +4212,6 @@
                 html += '<button type="button" onclick="openWaterTankModal()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition inline-flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Add First Water Tank</span></button>';
                 html += '</div>';
             } else {
-                // Group by Location and sort Locations alphabetically
                 var locationGroups = {};
                 filteredTanks.forEach(function(tank) {
                     var locKey = (tank.location || 'Unspecified Location').trim();
@@ -4402,7 +4417,6 @@
             renderCleanPhotoPreviews('before');
             renderCleanPhotoPreviews('after');
 
-            // Populate Location dropdown dynamically from existing tanks
             var uniqueLocations = [];
             dbWaterTanks.forEach(function(t) {
                 if (t.location && uniqueLocations.indexOf(t.location) === -1) {
@@ -4656,6 +4670,749 @@
                 }
                 showAppNotification('Cleaning report deleted.', 'info');
             });
+        }
+
+        // ================= MODULE 8: PROCUREMENT & VENDOR RATES =================
+        var DEFAULT_PROCUREMENT_VENDORS = ['Diversey', 'Raj Traders', 'Anjum Sutterwala'];
+        var dbProcurementVendors = DEFAULT_PROCUREMENT_VENDORS.slice();
+        var dbVendorRates = {}; // { [itemId]: { [vendorName]: number } }
+        var dbProcurements = []; // Array of saved procurement order documents from Firestore
+
+        // Active sub-view inside Module 8: 'new_procurement' or 'vendor_rate'
+        var procurementSubView = 'new_procurement';
+
+        // Form state for "New Procurement" (preserved across live searches)
+        var procFormState = {
+            editId: '',
+            date: new Date().toISOString().split('T')[0],
+            vendorName: 'Diversey',
+            searchTerm: '',
+            selectedItems: {} // { [itemId]: { checked: boolean, qty: number } }
+        };
+
+        function getVendorItemRate(itemId, vendorName) {
+            if (!itemId || !vendorName) return 0;
+            if (dbVendorRates[itemId] && dbVendorRates[itemId][vendorName] !== undefined) {
+                return parseFloat(dbVendorRates[itemId][vendorName]) || 0;
+            }
+            return 0;
+        }
+
+        function getSortedProcurements() {
+            return dbProcurements.slice().sort(function(a, b) {
+                var dateDiff = new Date(b.date || 0) - new Date(a.date || 0);
+                if (dateDiff !== 0) return dateDiff;
+                return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
+            });
+        }
+
+        function switchProcurementSubView(viewName) {
+            procurementSubView = viewName;
+            if (viewName === 'new_procurement' && !procFormState.vendorName && dbProcurementVendors.length > 0) {
+                procFormState.vendorName = dbProcurementVendors[0];
+            }
+            switchModule('procurement');
+        }
+
+        function renderProcurementModule(container, actions) {
+            if (!dbProcurementVendors || dbProcurementVendors.length === 0) {
+                dbProcurementVendors = DEFAULT_PROCUREMENT_VENDORS.slice();
+            }
+            if (!procFormState.vendorName || dbProcurementVendors.indexOf(procFormState.vendorName) === -1) {
+                procFormState.vendorName = dbProcurementVendors[0] || '';
+            }
+            if (!procFormState.date) {
+                procFormState.date = new Date().toISOString().split('T')[0];
+            }
+
+            var isVendorRateActive = procurementSubView === 'vendor_rate';
+            var isNewProcActive = procurementSubView === 'new_procurement';
+
+            actions.innerHTML =
+                '<div class="flex items-center space-x-2 flex-wrap gap-y-2">' +
+                    '<button type="button" onclick="switchProcurementSubView(\'vendor_rate\')" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ' +
+                        (isVendorRateActive ? 'bg-purple-700 text-white shadow' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50') + '">' +
+                        '<i class="fa-solid fa-tags"></i><span>Vendor Rate</span>' +
+                    '</button>' +
+                    '<button type="button" onclick="switchProcurementSubView(\'new_procurement\')" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 ' +
+                        (isNewProcActive ? 'bg-purple-700 text-white shadow' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50') + '">' +
+                        '<i class="fa-solid fa-cart-plus"></i><span>New Procurement</span>' +
+                    '</button>' +
+                '</div>';
+
+            var sortedOrders = getSortedProcurements();
+            var totalSpendAllTime = sortedOrders.reduce(function(sum, ord) {
+                return sum + (parseFloat(ord.grandTotal) || 0);
+            }, 0);
+
+            var html = '<div class="space-y-6">';
+
+            // 1. PROMINENT TOP NAVIGATION BAR & KPI SUMMARY
+            html += '<div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">';
+            html += '<div class="flex items-center space-x-3">';
+            html += '<span class="text-xs font-bold text-slate-500 uppercase tracking-wider"><i class="fa-solid fa-compass text-purple-600 mr-1"></i>Module View:</span>';
+            html += '<div class="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 space-x-1">';
+            html += '<button type="button" onclick="switchProcurementSubView(\'vendor_rate\')" class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 ' +
+                (isVendorRateActive ? 'bg-[#004d3d] text-white shadow-sm' : 'text-slate-700 hover:bg-slate-200/70') + '">' +
+                '<i class="fa-solid fa-tags ' + (isVendorRateActive ? 'text-emerald-300' : 'text-purple-600') + '"></i><span>[Vendor Rate]</span></button>';
+            html += '<button type="button" onclick="switchProcurementSubView(\'new_procurement\')" class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 ' +
+                (isNewProcActive ? 'bg-[#004d3d] text-white shadow-sm' : 'text-slate-700 hover:bg-slate-200/70') + '">' +
+                '<i class="fa-solid fa-file-circle-plus ' + (isNewProcActive ? 'text-emerald-300' : 'text-purple-600') + '"></i><span>[New Procurement]</span></button>';
+            html += '</div></div>';
+
+            html += '<div class="flex items-center space-x-3 flex-wrap gap-y-2 text-xs">';
+            html += '<div class="px-3 py-1.5 rounded-xl bg-purple-50 border border-purple-200 text-purple-900 font-semibold">Active Vendors: <strong class="font-mono">' + dbProcurementVendors.length + '</strong></div>';
+            html += '<div class="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 font-semibold">Saved Orders: <strong class="font-mono">' + sortedOrders.length + '</strong></div>';
+            html += '<div class="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-semibold">Cumulative Spend: <strong class="font-mono">₹' + totalSpendAllTime.toFixed(2) + '</strong></div>';
+            html += '</div></div>';
+
+            // 2. RENDER SELECTED SUB-VIEW ("Vendor Rate" OR "New Procurement")
+            if (isVendorRateActive) {
+                html += renderVendorRateSectionHtml();
+            } else {
+                html += renderNewProcurementFormSectionHtml();
+            }
+
+            // 3. PROCUREMENT ORDERS LIST (MAIN MODULE VIEW / DASHBOARD)
+            html += renderProcurementOrdersListHtml(sortedOrders);
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // ----------------- SUB-VIEW 1: "VENDOR RATE" VIEW -----------------
+        function renderVendorRateSectionHtml() {
+            var html = '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
+            html += '<div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
+            html += '<div>';
+            html += '<h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-tags text-purple-600"></i><span>Vendor Rate Master Configuration</span></h3>';
+            html += '<p class="text-xs text-slate-500 mt-0.5">All inventory items dynamically synced from Firestore. Edit rates directly under any vendor column to auto-save to Firestore.</p>';
+            html += '</div>';
+            html += '<div class="flex items-center space-x-2">';
+            html += '<button type="button" onclick="openAddVendorPrompt()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-user-plus"></i><span>Add Vendor</span></button>';
+            html += '<button type="button" onclick="saveAllVendorRatesManual()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-floppy-disk"></i><span>Save All Rates</span></button>';
+            html += '</div></div>';
+
+            html += '<div class="overflow-x-auto custom-scrollbar">';
+            html += '<table class="w-full text-left text-xs whitespace-nowrap">';
+            html += '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">';
+            html += '<tr>';
+            html += '<th class="p-3 w-28">Item Code</th>';
+            html += '<th class="p-3 min-w-[200px]">Item Name</th>';
+            html += '<th class="p-3 w-28">Category</th>';
+            html += '<th class="p-3 w-20 text-center">Unit</th>';
+
+            dbProcurementVendors.forEach(function(vendorName, vIdx) {
+                var safeVendor = vendorName.replace(/'/g, "\\'");
+                html += '<th class="p-3 bg-purple-50/70 text-purple-950 border-l border-slate-200 min-w-[160px]">';
+                html += '<div class="flex items-center justify-between space-x-2">';
+                html += '<span class="truncate font-extrabold">' + (vIdx + 1) + '. ' + vendorName + ' (₹)</span>';
+                html += '<button type="button" onclick="deleteProcurementVendorColumn(\'' + safeVendor + '\')" class="text-red-500 hover:text-red-700 hover:bg-red-100 p-1 rounded transition" title="Delete Vendor Column: ' + vendorName + '"><i class="fa-solid fa-trash-can text-[11px]"></i></button>';
+                html += '</div></th>';
+            });
+
+            html += '</tr></thead>';
+            html += '<tbody class="divide-y divide-slate-100 text-slate-700">';
+
+            if (dbData.inventory.length === 0) {
+                html += '<tr><td colspan="' + (4 + dbProcurementVendors.length) + '" class="p-6 text-center text-slate-400 italic">No items found in inventory collection. Add items in Module 1 (Inventory) first.</td></tr>';
+            } else {
+                dbData.inventory.forEach(function(item) {
+                    html += '<tr class="hover:bg-slate-50 transition">';
+                    html += '<td class="p-3 font-mono font-semibold text-slate-500">' + item.code + '</td>';
+                    html += '<td class="p-3 font-bold text-slate-900">' + item.name + '</td>';
+                    html += '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">' + (item.category || 'General') + '</span></td>';
+                    html += '<td class="p-3 text-center font-mono text-slate-600">' + (item.unit || 'Nos') + '</td>';
+
+                    dbProcurementVendors.forEach(function(vendorName) {
+                        var safeVendor = vendorName.replace(/'/g, "\\'");
+                        var rateVal = getVendorItemRate(item.id, vendorName);
+                        html += '<td class="p-2.5 border-l border-slate-100 bg-purple-50/10">';
+                        html += '<div class="relative flex items-center">';
+                        html += '<span class="absolute left-2.5 text-slate-400 font-mono text-xs">₹</span>';
+                        html += '<input type="number" step="0.01" min="0" value="' + rateVal + '" ' +
+                            'onchange="handleVendorRateInputChange(\'' + item.id + '\', \'' + safeVendor + '\', this.value)" ' +
+                            'class="w-full pl-6 pr-2 py-1.5 text-xs font-mono font-semibold text-slate-800 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">';
+                        html += '</div></td>';
+                    });
+
+                    html += '</tr>';
+                });
+            }
+
+            html += '</tbody></table></div></div>';
+            return html;
+        }
+
+        function openAddVendorPrompt() {
+            openPromptDialog('Add New Vendor Column', 'Enter Vendor Name (e.g. Eureka Forbes)', async function(newVendorName) {
+                if (!newVendorName || !newVendorName.trim()) return;
+                var cleanName = newVendorName.trim();
+                var exists = dbProcurementVendors.some(function(v) {
+                    return v.toLowerCase() === cleanName.toLowerCase();
+                });
+                if (exists) {
+                    showAppNotification('Vendor "' + cleanName + '" already exists.', 'error');
+                    return;
+                }
+                dbProcurementVendors.push(cleanName);
+                if (window.saveProcurementVendorsToFirestore) {
+                    await window.saveProcurementVendorsToFirestore(dbProcurementVendors);
+                }
+                switchModule('procurement');
+                showAppNotification('Vendor "' + cleanName + '" added and synced to Firestore!', 'success');
+            });
+        }
+
+        function deleteProcurementVendorColumn(vendorName) {
+            openConfirmDialog('Are you sure you want to delete vendor column "' + vendorName + '" and its associated rate column?', async function() {
+                dbProcurementVendors = dbProcurementVendors.filter(function(v) { return v !== vendorName; });
+                Object.keys(dbVendorRates).forEach(function(itemId) {
+                    if (dbVendorRates[itemId] && dbVendorRates[itemId][vendorName] !== undefined) {
+                        delete dbVendorRates[itemId][vendorName];
+                    }
+                });
+                if (procFormState.vendorName === vendorName) {
+                    procFormState.vendorName = dbProcurementVendors[0] || '';
+                }
+                if (window.deleteVendorColumnFromFirestore) {
+                    await window.deleteVendorColumnFromFirestore(vendorName, dbProcurementVendors);
+                }
+                switchModule('procurement');
+                showAppNotification('Vendor "' + vendorName + '" removed.', 'info');
+            });
+        }
+
+        async function handleVendorRateInputChange(itemId, vendorName, rawValue) {
+            var numericRate = parseFloat(rawValue);
+            if (isNaN(numericRate) || numericRate < 0) numericRate = 0;
+
+            if (!dbVendorRates[itemId]) dbVendorRates[itemId] = {};
+            dbVendorRates[itemId][vendorName] = numericRate;
+
+            var itemObj = dbData.inventory.find(function(i) { return i.id === itemId; });
+            if (window.saveSingleVendorRateToFirestore) {
+                await window.saveSingleVendorRateToFirestore(itemId, itemObj, dbVendorRates[itemId]);
+            }
+            showAppNotification('Saved ' + vendorName + ' rate (₹' + numericRate.toFixed(2) + ') to Firestore.', 'success');
+        }
+
+        async function saveAllVendorRatesManual() {
+            if (window.saveAllVendorRatesToFirestore) {
+                await window.saveAllVendorRatesToFirestore(dbVendorRates);
+            }
+            showAppNotification('All vendor rates synced to Firestore!', 'success');
+        }
+
+        // ----------------- SUB-VIEW 2: "NEW PROCUREMENT" FORM VIEW -----------------
+        function renderNewProcurementFormSectionHtml() {
+            var isEditing = !!procFormState.editId;
+            var currentVendor = procFormState.vendorName || (dbProcurementVendors[0] || '');
+
+            var filteredInventory = dbData.inventory.filter(function(item) {
+                if (!procFormState.searchTerm) return true;
+                var q = procFormState.searchTerm.toLowerCase();
+                return item.name.toLowerCase().indexOf(q) !== -1 ||
+                       (item.code && item.code.toLowerCase().indexOf(q) !== -1);
+            });
+
+            var liveGrandTotal = 0;
+            var selectedCount = 0;
+            dbData.inventory.forEach(function(item) {
+                var st = procFormState.selectedItems[item.id];
+                if (st && st.checked) {
+                    var q = parseFloat(st.qty) || 0;
+                    var r = getVendorItemRate(item.id, currentVendor);
+                    liveGrandTotal += (q * r);
+                    selectedCount++;
+                }
+            });
+
+            var html = '<div id="procurementFormCard" class="bg-white rounded-2xl border ' + (isEditing ? 'border-amber-500 ring-2 ring-amber-300/60' : 'border-slate-200') + ' shadow-sm overflow-hidden">';
+            html += '<div class="px-5 py-4 ' + (isEditing ? 'bg-amber-50/80 border-b border-amber-200' : 'bg-slate-50 border-b border-slate-200') + ' flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
+            html += '<div>';
+            html += '<h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">';
+            html += '<i class="fa-solid ' + (isEditing ? 'fa-pen-to-square text-amber-600' : 'fa-cart-plus text-purple-600') + '"></i>';
+            html += '<span>' + (isEditing ? 'Edit Procurement Order (' + procFormState.editId + ')' : 'New Procurement Requisition Form') + '</span>';
+            html += '</h3>';
+            html += '<p class="text-xs text-slate-500 mt-0.5">Select items via checkbox to unlock Procurement Qty. Totals calculate automatically from the selected vendor\'s rate.</p>';
+            html += '</div>';
+            if (isEditing) {
+                html += '<button type="button" onclick="resetProcurementForm()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition self-start sm:self-auto"><i class="fa-solid fa-xmark mr-1"></i>Cancel Edit</button>';
+            }
+            html += '</div>';
+
+            html += '<form onsubmit="handleSaveProcurementOrder(event)" class="p-5 space-y-5">';
+
+            // Form Top Controls: Date Picker, Vendor Dropdown, Live Search Bar
+            html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50/80 p-4 rounded-xl border border-slate-200">';
+
+            // 1. Date Picker
+            html += '<div>';
+            html += '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-regular fa-calendar text-purple-600 mr-1"></i>Procurement Date</label>';
+            html += '<input type="date" id="procOrderDateInput" required value="' + procFormState.date + '" onchange="handleProcDateChange(this.value)" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">';
+            html += '</div>';
+
+            // 2. Vendor Dropdown
+            html += '<div>';
+            html += '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-solid fa-truck-field text-purple-600 mr-1"></i>Select Vendor</label>';
+            html += '<select id="procVendorSelectInput" required onchange="handleProcVendorChange(this.value)" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">';
+            dbProcurementVendors.forEach(function(vName) {
+                html += '<option value="' + vName + '" ' + (currentVendor === vName ? 'selected' : '') + '>' + vName + '</option>';
+            });
+            html += '</select>';
+            html += '</div>';
+
+            // 3. Live Search Bar
+            html += '<div>';
+            html += '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-solid fa-magnifying-glass text-purple-600 mr-1"></i>Live Item Search</label>';
+            html += '<div class="relative">';
+            html += '<i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
+            html += '<input type="text" id="procLiveSearchInput" placeholder="Filter instantly by Item Name..." value="' + procFormState.searchTerm + '" oninput="handleProcLiveSearch(this.value)" class="w-full pl-8 pr-8 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">';
+            if (procFormState.searchTerm) {
+                html += '<button type="button" onclick="handleProcLiveSearch(\'\')" class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-circle-xmark text-xs"></i></button>';
+            }
+            html += '</div></div>';
+
+            html += '</div>';
+
+            // Item Selection Table
+            html += '<div class="border border-slate-200 rounded-xl overflow-hidden">';
+            html += '<div class="overflow-x-auto custom-scrollbar max-h-[420px]">';
+            html += '<table class="w-full text-left text-xs whitespace-nowrap">';
+            html += '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0 z-10">';
+            html += '<tr>';
+            html += '<th class="p-3 w-20 text-center">Select</th>';
+            html += '<th class="p-3">Item Name</th>';
+            html += '<th class="p-3 text-center bg-blue-50/80 text-blue-900">Main Store Qty</th>';
+            html += '<th class="p-3 w-40">Procurement Qty</th>';
+            html += '<th class="p-3 w-32 text-right">Rate (₹)</th>';
+            html += '<th class="p-3 w-36 text-right">Total (₹)</th>';
+            html += '</tr></thead>';
+            html += '<tbody id="procItemSelectionTbody" class="divide-y divide-slate-100 text-slate-700">';
+
+            if (filteredInventory.length === 0) {
+                html += '<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">No inventory items match "' + procFormState.searchTerm + '".</td></tr>';
+            } else {
+                filteredInventory.forEach(function(item) {
+                    var itemState = procFormState.selectedItems[item.id] || { checked: false, qty: '' };
+                    var isChecked = !!itemState.checked;
+                    var qtyVal = isChecked ? (itemState.qty !== undefined ? itemState.qty : 1) : '';
+                    var mainStoreQty = calculateCurrentStock(item, 'Main Store');
+                    var vendorRate = getVendorItemRate(item.id, currentVendor);
+                    var rowTotal = isChecked ? ((parseFloat(qtyVal) || 0) * vendorRate) : 0;
+
+                    html += '<tr id="procRow_' + item.id + '" class="transition ' + (isChecked ? 'bg-purple-50/50' : 'hover:bg-slate-50') + '">';
+                    html += '<td class="p-3 text-center">';
+                    html += '<input type="checkbox" id="procCheck_' + item.id + '" ' + (isChecked ? 'checked' : '') +
+                        ' onchange="toggleProcItemSelection(\'' + item.id + '\', this.checked)" ' +
+                        ' class="w-4 h-4 rounded text-purple-600 border-slate-300 focus:ring-purple-500 cursor-pointer">';
+                    html += '</td>';
+
+                    html += '<td class="p-3">';
+                    html += '<label for="procCheck_' + item.id + '" class="font-bold text-slate-900 cursor-pointer block">' + item.name + '</label>';
+                    html += '<span class="text-[10px] font-mono text-slate-400">' + item.code + ' • ' + (item.category || 'General') + ' (' + (item.unit || 'Nos') + ')</span>';
+                    html += '</td>';
+
+                    html += '<td class="p-3 text-center bg-blue-50/30 font-mono font-bold text-blue-800">' + mainStoreQty + ' <span class="text-[10px] font-normal text-slate-500">' + (item.unit || '') + '</span></td>';
+
+                    html += '<td class="p-3">';
+                    html += '<input type="number" step="any" min="0.01" id="procQtyInput_' + item.id + '" ' +
+                        (isChecked ? '' : 'disabled') +
+                        ' value="' + qtyVal + '" ' +
+                        ' placeholder="' + (isChecked ? 'Enter Qty' : 'Select checkbox') + '" ' +
+                        ' oninput="handleProcQtyInput(\'' + item.id + '\', this.value)" ' +
+                        ' class="w-full px-2.5 py-1.5 text-xs font-mono rounded-lg border transition ' +
+                        (isChecked
+                            ? 'bg-white border-purple-400 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-purple-500'
+                            : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed') + '">';
+                    html += '</td>';
+
+                    html += '<td class="p-3 text-right font-mono font-semibold text-slate-700" id="procRateCell_' + item.id + '">₹' + vendorRate.toFixed(2) + '</td>';
+
+                    html += '<td class="p-3 text-right font-mono font-extrabold ' + (isChecked ? 'text-emerald-700' : 'text-slate-400') + '" id="procTotalCell_' + item.id + '">₹' + rowTotal.toFixed(2) + '</td>';
+                    html += '</tr>';
+                });
+            }
+
+            html += '</tbody></table></div>';
+
+            // Table Footer Summary Bar
+            html += '<div class="px-5 py-3.5 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
+            html += '<div class="flex items-center space-x-4 text-xs">';
+            html += '<span>Selected Items: <strong id="procSelectedCountDisp" class="font-mono text-purple-300 text-sm">' + selectedCount + '</strong></span>';
+            html += '<span class="text-slate-400">|</span>';
+            html += '<span>Vendor: <strong class="text-emerald-300">' + (currentVendor || 'None') + '</strong></span>';
+            html += '</div>';
+            html += '<div class="flex items-center space-x-4">';
+            html += '<div class="text-right">';
+            html += '<span class="text-[10px] uppercase tracking-wider text-slate-400 block">Calculated Grand Total</span>';
+            html += '<span id="procGrandTotalDisp" class="text-lg font-extrabold font-mono text-emerald-400">₹' + liveGrandTotal.toFixed(2) + '</span>';
+            html += '</div>';
+            html += '<button type="submit" id="saveProcurementSubmitBtn" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2">';
+            html += '<i class="fa-solid fa-floppy-disk"></i><span>' + (isEditing ? 'Update Procurement' : 'Save Procurement') + '</span>';
+            html += '</button>';
+            html += '</div></div>';
+            html += '</div>';
+
+            html += '</form></div>';
+            return html;
+        }
+
+        function handleProcDateChange(val) {
+            procFormState.date = val;
+        }
+
+        function handleProcVendorChange(newVendor) {
+            procFormState.vendorName = newVendor;
+            switchModule('procurement');
+        }
+
+        function handleProcLiveSearch(val) {
+            procFormState.searchTerm = val;
+            switchModule('procurement');
+            var searchInput = document.getElementById('procLiveSearchInput');
+            if (searchInput) {
+                searchInput.focus();
+                var len = searchInput.value.length;
+                searchInput.setSelectionRange(len, len);
+            }
+        }
+
+        function toggleProcItemSelection(itemId, isChecked) {
+            if (!procFormState.selectedItems[itemId]) {
+                procFormState.selectedItems[itemId] = { checked: false, qty: 1 };
+            }
+            procFormState.selectedItems[itemId].checked = isChecked;
+            if (isChecked && (!procFormState.selectedItems[itemId].qty || procFormState.selectedItems[itemId].qty <= 0)) {
+                procFormState.selectedItems[itemId].qty = 1;
+            }
+
+            var qtyInput = document.getElementById('procQtyInput_' + itemId);
+            var rowEl = document.getElementById('procRow_' + itemId);
+            if (qtyInput) {
+                qtyInput.disabled = !isChecked;
+                if (isChecked) {
+                    qtyInput.value = procFormState.selectedItems[itemId].qty;
+                    qtyInput.placeholder = 'Enter Qty';
+                    qtyInput.className = 'w-full px-2.5 py-1.5 text-xs font-mono rounded-lg border transition bg-white border-purple-400 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-purple-500';
+                    qtyInput.focus();
+                } else {
+                    qtyInput.value = '';
+                    qtyInput.placeholder = 'Select checkbox';
+                    qtyInput.className = 'w-full px-2.5 py-1.5 text-xs font-mono rounded-lg border transition bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed';
+                }
+            }
+            if (rowEl) {
+                rowEl.className = 'transition ' + (isChecked ? 'bg-purple-50/50' : 'hover:bg-slate-50');
+            }
+            recalculateProcurementFormTotals(itemId);
+        }
+
+        function handleProcQtyInput(itemId, rawVal) {
+            var qty = parseFloat(rawVal);
+            if (isNaN(qty) || qty < 0) qty = 0;
+            if (!procFormState.selectedItems[itemId]) {
+                procFormState.selectedItems[itemId] = { checked: true, qty: qty };
+            } else {
+                procFormState.selectedItems[itemId].qty = qty;
+            }
+            recalculateProcurementFormTotals(itemId);
+        }
+
+        function recalculateProcurementFormTotals(changedItemId) {
+            var currentVendor = procFormState.vendorName || (dbProcurementVendors[0] || '');
+            if (changedItemId) {
+                var st = procFormState.selectedItems[changedItemId];
+                var isChecked = st && st.checked;
+                var rate = getVendorItemRate(changedItemId, currentVendor);
+                var rowTot = isChecked ? ((parseFloat(st.qty) || 0) * rate) : 0;
+                var totalCell = document.getElementById('procTotalCell_' + changedItemId);
+                if (totalCell) {
+                    totalCell.innerText = '₹' + rowTot.toFixed(2);
+                    totalCell.className = 'p-3 text-right font-mono font-extrabold ' + (isChecked ? 'text-emerald-700' : 'text-slate-400');
+                }
+            }
+
+            var grandTotal = 0;
+            var count = 0;
+            dbData.inventory.forEach(function(item) {
+                var st = procFormState.selectedItems[item.id];
+                if (st && st.checked) {
+                    var q = parseFloat(st.qty) || 0;
+                    var r = getVendorItemRate(item.id, currentVendor);
+                    grandTotal += (q * r);
+                    count++;
+                }
+            });
+
+            var countEl = document.getElementById('procSelectedCountDisp');
+            var grandEl = document.getElementById('procGrandTotalDisp');
+            if (countEl) countEl.innerText = count;
+            if (grandEl) grandEl.innerText = '₹' + grandTotal.toFixed(2);
+        }
+
+        function resetProcurementForm() {
+            procFormState = {
+                editId: '',
+                date: new Date().toISOString().split('T')[0],
+                vendorName: dbProcurementVendors[0] || 'Diversey',
+                searchTerm: '',
+                selectedItems: {}
+            };
+            switchModule('procurement');
+        }
+
+        async function handleSaveProcurementOrder(e) {
+            e.preventDefault();
+            var dateVal = document.getElementById('procOrderDateInput') ? document.getElementById('procOrderDateInput').value : procFormState.date;
+            var vendorVal = document.getElementById('procVendorSelectInput') ? document.getElementById('procVendorSelectInput').value : procFormState.vendorName;
+
+            if (!dateVal || !vendorVal) {
+                showAppNotification('Please select both a Date and a Vendor.', 'error');
+                return;
+            }
+
+            var selectedOrderItems = [];
+            var grandTotal = 0;
+
+            dbData.inventory.forEach(function(item) {
+                var st = procFormState.selectedItems[item.id];
+                if (st && st.checked) {
+                    var qty = parseFloat(st.qty) || 0;
+                    if (qty > 0) {
+                        var rate = getVendorItemRate(item.id, vendorVal);
+                        var total = qty * rate;
+                        grandTotal += total;
+                        selectedOrderItems.push({
+                            itemId: item.id,
+                            itemCode: item.code,
+                            name: item.name,
+                            unit: item.unit || 'Nos',
+                            qty: qty,
+                            rate: rate,
+                            total: total
+                        });
+                    }
+                }
+            });
+
+            if (selectedOrderItems.length === 0) {
+                showAppNotification('Please select at least one item with a Procurement Qty greater than 0.', 'error');
+                return;
+            }
+
+            var submitBtn = document.getElementById('saveProcurementSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Saving to Firestore...</span>';
+            }
+
+            var orderId = procFormState.editId || ('PRC-' + Date.now());
+            var procurementDoc = {
+                id: orderId,
+                date: dateVal,
+                vendorName: vendorVal,
+                items: selectedOrderItems,
+                totalItems: selectedOrderItems.length,
+                grandTotal: grandTotal,
+                loggedBy: currentUser ? currentUser.email : 'System',
+                updatedAt: new Date().toISOString()
+            };
+
+            if (window.saveProcurementToFirestore) {
+                await window.saveProcurementToFirestore(orderId, procurementDoc);
+            }
+
+            var wasEditing = !!procFormState.editId;
+            resetProcurementForm();
+            showAppNotification(wasEditing ? 'Procurement order updated in Firestore!' : 'New procurement order saved to Firestore!', 'success');
+        }
+
+        // ----------------- SUB-VIEW 3: PROCUREMENT ORDERS LIST (DASHBOARD) -----------------
+        function renderProcurementOrdersListHtml(sortedOrders) {
+            var html = '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
+            html += '<div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
+            html += '<div>';
+            html += '<h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-clipboard-list text-purple-600"></i><span>Procurement Orders List (Dashboard)</span></h3>';
+            html += '<p class="text-xs text-slate-500 mt-0.5">All past procurement orders stored in Firestore, sorted by date (latest first).</p>';
+            html += '</div>';
+            html += '<span class="text-xs font-bold px-3 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-200 self-start sm:self-auto">' + sortedOrders.length + ' Orders</span>';
+            html += '</div>';
+
+            if (sortedOrders.length === 0) {
+                html += '<div class="p-8 text-center text-xs text-slate-400 italic">No procurement orders saved in Firestore yet. Use the "New Procurement" form above to create your first order.</div>';
+            } else {
+                html += '<div class="overflow-x-auto custom-scrollbar">';
+                html += '<table class="w-full text-left text-xs whitespace-nowrap">';
+                html += '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">';
+                html += '<tr>';
+                html += '<th class="p-3.5">Date</th>';
+                html += '<th class="p-3.5">Vendor Name</th>';
+                html += '<th class="p-3.5 text-center">Total Items</th>';
+                html += '<th class="p-3.5 text-right">Grand Total</th>';
+                html += '<th class="p-3.5 text-center">Actions</th>';
+                html += '</tr></thead>';
+                html += '<tbody class="divide-y divide-slate-100 text-slate-700">';
+
+                sortedOrders.forEach(function(ord) {
+                    var itemCount = Array.isArray(ord.items) ? ord.items.length : (ord.totalItems || 0);
+                    var gTotal = parseFloat(ord.grandTotal) || 0;
+
+                    html += '<tr class="hover:bg-slate-50 transition">';
+                    html += '<td class="p-3.5 font-mono font-bold text-slate-900"><i class="fa-regular fa-calendar text-purple-600 mr-1.5"></i>' + ord.date + '</td>';
+                    html += '<td class="p-3.5"><span class="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-900 border border-purple-200 font-bold">' + ord.vendorName + '</span></td>';
+                    html += '<td class="p-3.5 text-center"><span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 font-mono font-bold border border-slate-200">' + itemCount + ' Items</span></td>';
+                    html += '<td class="p-3.5 text-right font-mono font-extrabold text-emerald-700 text-sm">₹' + gTotal.toFixed(2) + '</td>';
+                    html += '<td class="p-3.5 text-center">';
+                    html += '<div class="flex items-center justify-center space-x-2">';
+                    html += '<button type="button" onclick="editProcurementOrder(\'' + ord.id + '\')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1" title="Edit Order"><i class="fa-solid fa-pen-to-square"></i><span>Edit</span></button>';
+                    html += '<button type="button" onclick="deleteProcurementOrder(\'' + ord.id + '\')" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1" title="Delete Order"><i class="fa-solid fa-trash-can"></i><span>Delete</span></button>';
+                    html += '<button type="button" onclick="downloadProcurementOrderPDF(\'' + ord.id + '\')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-2xs transition inline-flex items-center space-x-1.5" title="Download HK Procurement PDF"><i class="fa-solid fa-file-pdf"></i><span>Download PDF</span></button>';
+                    html += '</div></td>';
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function editProcurementOrder(orderId) {
+            var ord = dbProcurements.find(function(o) { return o.id === orderId; });
+            if (!ord) return;
+
+            if (ord.vendorName && dbProcurementVendors.indexOf(ord.vendorName) === -1) {
+                dbProcurementVendors.push(ord.vendorName);
+            }
+
+            var selectedMap = {};
+            if (Array.isArray(ord.items)) {
+                ord.items.forEach(function(savedItem) {
+                    var matchedInv = dbData.inventory.find(function(inv) {
+                        return inv.id === savedItem.itemId || inv.code === savedItem.itemCode || inv.name === savedItem.name;
+                    });
+                    var targetKey = matchedInv ? matchedInv.id : savedItem.itemId;
+                    if (targetKey) {
+                        selectedMap[targetKey] = {
+                            checked: true,
+                            qty: parseFloat(savedItem.qty) || 1
+                        };
+                        if (savedItem.rate !== undefined && ord.vendorName) {
+                            if (!dbVendorRates[targetKey]) dbVendorRates[targetKey] = {};
+                            if (dbVendorRates[targetKey][ord.vendorName] === undefined) {
+                                dbVendorRates[targetKey][ord.vendorName] = parseFloat(savedItem.rate) || 0;
+                            }
+                        }
+                    }
+                });
+            }
+
+            procFormState = {
+                editId: ord.id,
+                date: ord.date || new Date().toISOString().split('T')[0],
+                vendorName: ord.vendorName || (dbProcurementVendors[0] || ''),
+                searchTerm: '',
+                selectedItems: selectedMap
+            };
+
+            procurementSubView = 'new_procurement';
+            switchModule('procurement');
+
+            setTimeout(function() {
+                var card = document.getElementById('procurementFormCard');
+                if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 80);
+        }
+
+        function deleteProcurementOrder(orderId) {
+            var ord = dbProcurements.find(function(o) { return o.id === orderId; });
+            if (!ord) return;
+
+            openConfirmDialog('Are you sure you want to delete the procurement order for "' + ord.vendorName + '" dated ' + ord.date + '?', async function() {
+                if (window.deleteProcurementFromFirestore) {
+                    await window.deleteProcurementFromFirestore(orderId);
+                }
+                if (procFormState.editId === orderId) {
+                    resetProcurementForm();
+                } else {
+                    switchModule('procurement');
+                }
+                showAppNotification('Procurement order deleted from Firestore.', 'info');
+            });
+        }
+
+        // Auto-generates clean PDF excluding Main Store Qty, named "HK Procurement - [Date].pdf"
+        function downloadProcurementOrderPDF(orderId) {
+            var ord = dbProcurements.find(function(o) { return o.id === orderId; });
+            if (!ord) return;
+
+            var jsPDF = window.jspdf.jsPDF;
+            var doc = new jsPDF('p', 'pt', 'a4');
+
+            // Document Header
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.setTextColor(0, 77, 61);
+            doc.text('HK Procurement', 40, 48);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(11);
+            doc.setTextColor(51, 65, 85);
+            doc.text('Date: ' + (ord.date || '-'), 40, 72);
+            doc.text('Vendor Name: ' + (ord.vendorName || '-'), 40, 90);
+
+            // Item Table (Strictly: Item Name, Order Qty, Rate, Total Amount — NO Main Store Qty)
+            var tableRows = [];
+            var itemsList = Array.isArray(ord.items) ? ord.items : [];
+            itemsList.forEach(function(it) {
+                var qtyNum = parseFloat(it.qty) || 0;
+                var rateNum = parseFloat(it.rate) || 0;
+                var totalNum = parseFloat(it.total) || (qtyNum * rateNum);
+                tableRows.push([
+                    it.name || '-',
+                    qtyNum.toString(),
+                    'Rs. ' + rateNum.toFixed(2),
+                    'Rs. ' + totalNum.toFixed(2)
+                ]);
+            });
+
+            var grandTotalNum = parseFloat(ord.grandTotal) || 0;
+
+            doc.autoTable({
+                head: [['Item Name', 'Order Qty', 'Rate', 'Total Amount']],
+                body: tableRows,
+                foot: [['', '', 'Grand Total', 'Rs. ' + grandTotalNum.toFixed(2)]],
+                startY: 110,
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [0, 77, 61],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                bodyStyles: {
+                    fontSize: 10,
+                    textColor: [30, 41, 59]
+                },
+                footStyles: {
+                    fillColor: [241, 245, 249],
+                    textColor: [15, 23, 42],
+                    fontStyle: 'bold',
+                    fontSize: 11
+                },
+                columnStyles: {
+                    0: { cellWidth: 'auto' },
+                    1: { halign: 'center', cellWidth: 85 },
+                    2: { halign: 'right', cellWidth: 100 },
+                    3: { halign: 'right', cellWidth: 115 }
+                }
+            });
+
+            var safeDate = (ord.date || new Date().toISOString().split('T')[0]).trim();
+            doc.save('HK Procurement - ' + safeDate + '.pdf');
         }
 
         // ================= MODULE 9: MACHINERY =================
@@ -5206,7 +5963,7 @@
             doc.save("Dry_Waste_Receipt_" + rec.date + ".pdf");
         }
 
-        // Unified Module Export Functionality (Excel & PDF across HR, Waste, Compost, Water Tanks, etc.)
+        // Unified Module Export Functionality (Excel & PDF across HR, Waste, Compost, Water Tanks, Procurement, etc.)
         function exportCurrentModule(type) {
             document.getElementById('exportDropdown').classList.add('hidden');
             var exportRows = [];
@@ -5326,6 +6083,39 @@
                 sheetName = "Water Tanks";
                 fileName = "Siyanat_Water_Tanks_Report";
                 reportTitle = "Siyanat Marol - Water Tank Cleaning Registry";
+            } else if (activeModule === 'procurement') {
+                if (procurementSubView === 'vendor_rate') {
+                    dbData.inventory.forEach(function(item) {
+                        var row = {
+                            'Item Code': item.code,
+                            'Item Name': item.name,
+                            'Category': item.category,
+                            'Unit': item.unit
+                        };
+                        dbProcurementVendors.forEach(function(vName) {
+                            row[vName + ' Rate (Rs)'] = getVendorItemRate(item.id, vName).toFixed(2);
+                        });
+                        exportRows.push(row);
+                    });
+                    sheetName = "Vendor Rates";
+                    fileName = "Siyanat_Vendor_Rates_Master";
+                    reportTitle = "Siyanat Marol - Vendor Rates Master";
+                } else {
+                    var sortedOrders = getSortedProcurements();
+                    sortedOrders.forEach(function(ord) {
+                        exportRows.push({
+                            'Order ID': ord.id,
+                            'Date': ord.date,
+                            'Vendor Name': ord.vendorName,
+                            'Total Items': Array.isArray(ord.items) ? ord.items.length : (ord.totalItems || 0),
+                            'Grand Total (Rs)': (parseFloat(ord.grandTotal) || 0).toFixed(2),
+                            'Logged By': ord.loggedBy || 'System'
+                        });
+                    });
+                    sheetName = "Procurement Orders";
+                    fileName = "Siyanat_Procurement_Orders";
+                    reportTitle = "Siyanat Marol - HK Procurement Orders Summary";
+                }
             }
 
             if (exportRows.length === 0) {
@@ -5595,9 +6385,131 @@
                     (err) => handleSnapshotError("settings/drive_config", err)
                 )
             );
+
+            // 11. Sync Inventory Master Collection (inventory)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "inventory"),
+                    (snapshot) => {
+                        const items = [];
+                        snapshot.forEach((docSnap) => {
+                            items.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        if (items.length > 0) {
+                            window.dbData.inventory = items;
+                        } else if (window.dbData.inventory && window.dbData.inventory.length > 0) {
+                            window.dbData.inventory.forEach((item) => {
+                                setDoc(doc(db, "inventory", item.id), item, { merge: true }).catch(() => {});
+                            });
+                        }
+                        if (window.activeModule === "inventory" || window.activeModule === "procurement") {
+                            window.switchModule(window.activeModule);
+                        }
+                    },
+                    (err) => handleSnapshotError("inventory", err)
+                )
+            );
+
+            // 12. Sync Inventory Archive Collection (inventory_archive)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "inventory_archive"),
+                    (snapshot) => {
+                        const arcs = [];
+                        snapshot.forEach((docSnap) => {
+                            arcs.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        if (arcs.length > 0) {
+                            arcs.sort((a, b) => new Date(b.date) - new Date(a.date));
+                            window.dbData.inventoryArchive = arcs;
+                        }
+                        if (window.activeModule === "inventory" || window.activeModule === "procurement") {
+                            window.switchModule(window.activeModule);
+                        }
+                    },
+                    (err) => handleSnapshotError("inventory_archive", err)
+                )
+            );
+
+            // 13. Sync Procurement Vendors List (settings/procurement_vendors)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    doc(db, "settings", "procurement_vendors"),
+                    (docSnap) => {
+                        if (docSnap.exists() && Array.isArray(docSnap.data().vendors) && docSnap.data().vendors.length > 0) {
+                            window.dbProcurementVendors = docSnap.data().vendors;
+                        } else {
+                            setDoc(doc(db, "settings", "procurement_vendors"), {
+                                vendors: window.DEFAULT_PROCUREMENT_VENDORS || ["Diversey", "Raj Traders", "Anjum Sutterwala"],
+                                updatedAt: new Date().toISOString()
+                            }, { merge: true }).catch(() => {});
+                        }
+                        if (window.activeModule === "procurement") {
+                            window.switchModule("procurement");
+                        }
+                    },
+                    (err) => handleSnapshotError("settings/procurement_vendors", err)
+                )
+            );
+
+            // 14. Sync Vendor Rates Collection (vendor_rates)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "vendor_rates"),
+                    (snapshot) => {
+                        const ratesMap = {};
+                        snapshot.forEach((docSnap) => {
+                            const data = docSnap.data();
+                            ratesMap[docSnap.id] = data.rates || {};
+                        });
+                        window.dbVendorRates = ratesMap;
+                        if (window.activeModule === "procurement") {
+                            window.switchModule("procurement");
+                        }
+                    },
+                    (err) => handleSnapshotError("vendor_rates", err)
+                )
+            );
+
+            // 15. Sync Procurement Orders Collection (procurements)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "procurements"),
+                    (snapshot) => {
+                        const orders = [];
+                        snapshot.forEach((docSnap) => {
+                            orders.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        orders.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+                        window.dbProcurements = orders;
+                        if (window.activeModule === "procurement") {
+                            window.switchModule("procurement");
+                        }
+                    },
+                    (err) => handleSnapshotError("procurements", err)
+                )
+            );
         }
 
         // Firestore Mutation Operations
+        window.saveInventoryItemToFirestore = async function(itemObj) {
+            try {
+                await setDoc(doc(db, "inventory", itemObj.id), itemObj, { merge: true });
+            } catch (err) {}
+        };
+
+        window.deleteInventoryItemFromFirestore = async function(itemId) {
+            try {
+                await deleteDoc(doc(db, "inventory", itemId));
+            } catch (err) {}
+        };
+
+        window.saveInventoryArchiveToFirestore = async function(arcObj) {
+            try {
+                await setDoc(doc(db, "inventory_archive", arcObj.id), arcObj, { merge: true });
+            } catch (err) {}
+        };
+
         window.savePestRecordToFirestore = async function(data) {
             try {
                 await addDoc(collection(db, "pest_control"), data);
@@ -5803,6 +6715,88 @@
                 await setDoc(doc(db, "settings", "drive_config"), cfgObj, { merge: true });
             } catch (err) {
                 window.dbDriveConfig = cfgObj;
+            }
+        };
+
+        // Module 8: Procurement & Vendor Rates Firestore Operations
+        window.saveProcurementVendorsToFirestore = async function(vendorsArray) {
+            try {
+                await setDoc(doc(db, "settings", "procurement_vendors"), {
+                    vendors: vendorsArray,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            } catch (err) {
+                window.dbProcurementVendors = vendorsArray;
+            }
+        };
+
+        window.deleteVendorColumnFromFirestore = async function(vendorName, updatedVendorsArray) {
+            try {
+                await setDoc(doc(db, "settings", "procurement_vendors"), {
+                    vendors: updatedVendorsArray,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+
+                for (const itemId of Object.keys(window.dbVendorRates || {})) {
+                    const updatedItemRates = { ...(window.dbVendorRates[itemId] || {}) };
+                    delete updatedItemRates[vendorName];
+                    await setDoc(doc(db, "vendor_rates", itemId), {
+                        itemId: itemId,
+                        rates: updatedItemRates,
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
+                }
+            } catch (err) {}
+        };
+
+        window.saveSingleVendorRateToFirestore = async function(itemId, itemObj, ratesForItem) {
+            try {
+                await setDoc(doc(db, "vendor_rates", itemId), {
+                    itemId: itemId,
+                    itemCode: itemObj ? itemObj.code : "",
+                    itemName: itemObj ? itemObj.name : "",
+                    rates: ratesForItem,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            } catch (err) {
+                if (!window.dbVendorRates[itemId]) window.dbVendorRates[itemId] = {};
+                window.dbVendorRates[itemId] = ratesForItem;
+            }
+        };
+
+        window.saveAllVendorRatesToFirestore = async function(allRatesMap) {
+            try {
+                for (const item of (window.dbData.inventory || [])) {
+                    const itemRates = allRatesMap[item.id] || {};
+                    await setDoc(doc(db, "vendor_rates", item.id), {
+                        itemId: item.id,
+                        itemCode: item.code,
+                        itemName: item.name,
+                        rates: itemRates,
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
+                }
+            } catch (err) {}
+        };
+
+        window.saveProcurementToFirestore = async function(orderId, procurementDoc) {
+            try {
+                await setDoc(doc(db, "procurements", orderId), procurementDoc, { merge: true });
+            } catch (err) {
+                const existingIdx = window.dbProcurements.findIndex((o) => o.id === orderId);
+                if (existingIdx >= 0) {
+                    window.dbProcurements[existingIdx] = procurementDoc;
+                } else {
+                    window.dbProcurements.unshift(procurementDoc);
+                }
+            }
+        };
+
+        window.deleteProcurementFromFirestore = async function(orderId) {
+            try {
+                await deleteDoc(doc(db, "procurements", orderId));
+            } catch (err) {
+                window.dbProcurements = window.dbProcurements.filter((o) => o.id !== orderId);
             }
         };
 
