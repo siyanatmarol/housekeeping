@@ -1377,7 +1377,7 @@
                         </div>
                         <p class="text-[11px] leading-relaxed">Your Firebase project (<code class="font-mono font-bold">siyanat-housekeeping</code>) returned a permission error on one or more collections. Your data is safe in persistent local storage, but to allow cloud sync across devices, go to <strong>Firebase Console &rarr; Firestore Database &rarr; Rules</strong> and publish:</p>
                         <div class="flex items-center justify-between bg-slate-900 text-emerald-300 font-mono text-[11px] p-2.5 rounded-lg overflow-x-auto">
-                            <code>rules_version = '2'; service cloud.firestore { match /databases/{database}/documents { match /{document=**} { allow read, write: if true; } } }</code>
+                            <code>rules_version = '2'; service cloud.firestore { match /databases/{database}/documents { match /{document=**} { allow read, write: if request.auth != null; } } }</code>
                             <button type="button" onclick="copyFirestoreSecurityRules()" class="ml-3 bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded text-[10px] font-sans font-bold whitespace-nowrap">Copy Rules</button>
                         </div>
                     </div>
@@ -7179,8 +7179,8 @@
         }
 
         function copyFirestoreSecurityRules() {
-            var rules = "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if true;\n    }\n  }\n}";
-            copyTextToClipboardSafe(rules, 'Copied Firestore Security Rules to clipboard!');
+            var rules = "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if request.auth != null;\n    }\n  }\n}";
+            copyTextToClipboardSafe(rules, 'Copied Secure Firestore Rules (request.auth != null) to clipboard!');
         }
 
         function exportFullDatabaseBackup() {
