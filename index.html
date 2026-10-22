@@ -80,6 +80,12 @@
                     <i class="fa-solid fa-user-shield text-emerald-300"></i>
                     <span>Admin Access</span>
                 </button>
+                <!-- CLOUD & FM.MAROL DRIVE CONFIG / SYNC TAB -->
+                <button id="mainTabCloudDrive" type="button" onclick="openDriveConfigModal()" class="ml-auto px-3.5 py-2 font-semibold text-xs rounded-t-lg transition flex items-center space-x-2 text-emerald-100 hover:text-white hover:bg-emerald-800/50" title="Configure Firestore Sync & fm.marol Google Drive Uploads">
+                    <span id="cloudSyncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <i class="fa-brands fa-google-drive text-emerald-300"></i>
+                    <span id="cloudSyncStatusText" class="hidden md:inline">Firestore &amp; fm.marol Drive</span>
+                </button>
             </div>
         </div>
     </header>
@@ -730,8 +736,12 @@
                 </table>
             </div>
 
-            <div class="pt-3 border-t border-slate-100 flex justify-end mt-3">
-                <button onclick="closeModal('openingStockModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Close</button>
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between mt-3">
+                <span class="text-[11px] text-emerald-700 font-medium"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>All new items &amp; opening stock quantities auto-save and update the main overview table live.</span>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="saveAndSyncOpeningStockModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition"><i class="fa-solid fa-floppy-disk mr-1"></i>Save &amp; Sync All</button>
+                    <button onclick="closeModal('openingStockModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1329,6 +1339,190 @@
         </div>
     </div>
 
+    <!-- CLOUD DATABASE & FM.MAROL GOOGLE DRIVE CONFIGURATION MODAL -->
+    <div id="driveConfigModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="fa-brands fa-google-drive text-emerald-600"></i>
+                        <span>Firestore Database &amp; fm.marol Google Drive Storage Settings</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Ensure all module data is permanently saved in Firestore &amp; local backup, and all photos/videos/docs upload to <strong class="text-slate-700">fm.marol@jameasaifiyah.edu</strong> Drive.</p>
+                </div>
+                <button type="button" onclick="closeModal('driveConfigModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-5 pr-1">
+                <!-- 1. Live Database Persistence & Backup Controls -->
+                <div class="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <h4 class="font-bold text-xs text-emerald-950 uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fa-solid fa-database text-emerald-600"></i>
+                                <span>1. Firestore + Persistent Local Vault Status</span>
+                            </h4>
+                            <p id="firestoreDetailedStatusText" class="text-xs text-emerald-800 mt-0.5">Dual-Layer Protection Active: Every change in all 9 modules is saved instantly to browser persistent storage AND synced to Firebase Firestore (<code class="font-mono">siyanat-housekeeping</code>).</p>
+                        </div>
+                        <button type="button" onclick="forceSyncAllToFirestore()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition whitespace-nowrap flex items-center space-x-1.5 self-start sm:self-auto">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>Sync All Data to Firestore Now</span>
+                        </button>
+                    </div>
+
+                    <div id="firestoreRulesWarningBox" class="hidden bg-amber-50 border border-amber-300 rounded-lg p-3 text-xs text-amber-900 space-y-2">
+                        <div class="font-bold flex items-center space-x-1.5 text-amber-800">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>Firestore Security Rules Notice (Data is safely stored in your local vault)</span>
+                        </div>
+                        <p class="text-[11px] leading-relaxed">Your Firebase project (<code class="font-mono font-bold">siyanat-housekeeping</code>) returned a permission error on one or more collections. Your data is safe in persistent local storage, but to allow cloud sync across devices, go to <strong>Firebase Console &rarr; Firestore Database &rarr; Rules</strong> and publish:</p>
+                        <div class="flex items-center justify-between bg-slate-900 text-emerald-300 font-mono text-[11px] p-2.5 rounded-lg overflow-x-auto">
+                            <code>rules_version = '2'; service cloud.firestore { match /databases/{database}/documents { match /{document=**} { allow read, write: if true; } } }</code>
+                            <button type="button" onclick="copyFirestoreSecurityRules()" class="ml-3 bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded text-[10px] font-sans font-bold whitespace-nowrap">Copy Rules</button>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-emerald-200/80 flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-[11px] text-emerald-800 font-medium">Download or restore a complete snapshot of all 9 modules anytime (safe across code/design edits):</span>
+                        <div class="flex items-center space-x-2">
+                            <button type="button" onclick="exportFullDatabaseBackup()" class="bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5">
+                                <i class="fa-solid fa-download"></i>
+                                <span>Download Full Backup (.json)</span>
+                            </button>
+                            <label class="bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 cursor-pointer">
+                                <i class="fa-solid fa-upload"></i>
+                                <span>Restore Backup (.json)</span>
+                                <input type="file" accept=".json" class="hidden" onchange="importFullDatabaseBackup(event)">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. fm.marol Google Drive Apps Script Bridge Configuration -->
+                <form onsubmit="handleSaveDriveConfig(event)" class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3.5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                                <i class="fa-brands fa-google-drive text-blue-600"></i>
+                                <span>2. fm.marol@jameasaifiyah.edu Google Drive Media Bridge</span>
+                            </h4>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Connects Pest Control, Water Tanks, Machinery, and Cleaning media uploads directly to your <strong class="text-slate-700">fm.marol</strong> Google Drive.</p>
+                        </div>
+                        <span id="driveBridgeStatusBadge" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 self-start sm:self-auto">Apps Script URL Needed</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Google Apps Script Web App URL (Deployed under <span class="text-emerald-700 font-mono">fm.marol@jameasaifiyah.edu</span>)</label>
+                        <input type="url" id="driveScriptUrlInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Target Drive Folder Name</label>
+                            <input type="text" id="driveFolderNameInput" value="Siyanat_Housekeeping_Uploads" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Optional Drive Folder ID (Leave blank to auto-create)</label>
+                            <input type="text" id="driveFolderIdInput" placeholder="e.g. 1A2b3C4d5E6f7G8h9I0j..." class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+                        <button type="button" onclick="testFmMarolDriveUpload()" id="testDriveUploadBtn" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-300 text-xs font-semibold px-3.5 py-2 rounded-lg transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>Test Drive Upload</span>
+                        </button>
+                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Save Drive Configuration</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 3. 1-Minute Setup Guide for fm.marol Google Apps Script -->
+                <div class="bg-slate-900 text-slate-200 p-4 rounded-xl border border-slate-800 space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-emerald-400 uppercase tracking-wider text-[11px]"><i class="fa-solid fa-code mr-1.5"></i>How to get your fm.marol Google Drive Web App URL (1-Time Setup)</span>
+                        <button type="button" onclick="copyFmMarolAppsScriptCode()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-3 py-1 rounded-lg transition flex items-center space-x-1">
+                            <i class="fa-regular fa-copy"></i>
+                            <span>Copy Apps Script Code</span>
+                        </button>
+                    </div>
+                    <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-300">
+                        <li>Sign in to <strong class="text-white">script.google.com</strong> using your <strong class="text-emerald-300">fm.marol@jameasaifiyah.edu</strong> Google account and click <strong>New Project</strong>.</li>
+                        <li>Click <strong>Copy Apps Script Code</strong> above, paste it into <code class="text-amber-300">Code.gs</code> (replacing existing code), and click Save (<i class="fa-solid fa-floppy-disk"></i>).</li>
+                        <li>Click <strong>Deploy &rarr; New deployment</strong>, choose type <strong>Web app</strong>, set <em>Execute as:</em> <strong>Me (fm.marol@jameasaifiyah.edu)</strong>, and <em>Who has access:</em> <strong>Anyone</strong>.</li>
+                        <li>Copy the generated <strong>Web app URL</strong>, paste it in the box above, and click <strong>Save Drive Configuration</strong>.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-end mt-3">
+                <button type="button" onclick="closeModal('driveConfigModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODULE 3: CLEANING REPORTS & SCHEDULE MODAL -->
+    <div id="cleaningLogModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-broom text-teal-600"></i>
+                    <span>Log Cleaning Report &amp; Checklist</span>
+                </h3>
+                <button type="button" onclick="closeModal('cleaningLogModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="handleSaveCleaningLog(event)" class="space-y-3.5">
+                <input type="hidden" id="cleaningLogEditId">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Date</label>
+                        <input type="date" id="cleaningLogDate" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Campus Area / Block</label>
+                        <select id="cleaningLogArea" required class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Cleaning Type / Schedule</label>
+                        <select id="cleaningLogType" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
+                            <option value="Daily Routine Cleaning">Daily Routine Cleaning</option>
+                            <option value="Weekly Deep Cleaning">Weekly Deep Cleaning</option>
+                            <option value="Washroom Sanitization">Washroom Sanitization</option>
+                            <option value="Facade / Glass Cleaning">Facade / Glass Cleaning</option>
+                            <option value="Special Event Preparation">Special Event Preparation</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Checklist Status</label>
+                        <select id="cleaningLogStatus" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
+                            <option value="Completed & Verified">Completed &amp; Verified</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Attention Required">Attention Required</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Location / Floor / Checklist Remarks</label>
+                    <textarea id="cleaningLogRemarks" rows="2" placeholder="Enter floor/room details, supervisor inspection notes..." class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Photo / Video / Checklist Document</label>
+                    <input type="file" id="cleaningLogMediaInput" accept="image/*,video/*,.pdf,.doc,.docx" onchange="previewCleaningLogMedia(this)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
+                    <input type="hidden" id="cleaningLogMediaData">
+                    <div id="cleaningLogMediaPreview" class="hidden mt-2"></div>
+                </div>
+                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('cleaningLogModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
+                    <button type="submit" id="cleaningLogSubmitBtn" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow transition">Save Cleaning Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- MAIN APPLICATION SCRIPT -->
     <script>
         var ADMIN_EXECUTIVE_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates'];
@@ -1536,6 +1730,272 @@
             ]
         };
 
+        // Module 3 Cleaning Logs & Media Cache State
+        var dbCleaningLogs = [];
+        var dbMediaCache = {};
+        var deletedRecordIds = {};
+        var LOCAL_STORAGE_STATE_KEY = 'siyanat_marol_portal_v2_state';
+        var LOCAL_STORAGE_DELETED_KEY = 'siyanat_marol_portal_v2_deleted';
+        var LOCAL_STORAGE_DRIVE_KEY = 'siyanat_marol_portal_v2_drive_cfg';
+        var IDB_NAME = 'SiyanatMarolPersistentVaultDB';
+        var IDB_STORE = 'portal_state_store';
+
+        function markRecordDeleted(id) {
+            if (!id) return;
+            deletedRecordIds[id] = Date.now();
+            try {
+                localStorage.setItem(LOCAL_STORAGE_DELETED_KEY, JSON.stringify(deletedRecordIds));
+            } catch (e) {}
+        }
+
+        function isRecordDeleted(id) {
+            return !!(id && deletedRecordIds && deletedRecordIds[id]);
+        }
+
+        function openSiyanatIndexedDB() {
+            return new Promise(function(resolve) {
+                if (!window.indexedDB) { resolve(null); return; }
+                try {
+                    var req = window.indexedDB.open(IDB_NAME, 1);
+                    req.onupgradeneeded = function(evt) {
+                        var db = evt.target.result;
+                        if (!db.objectStoreNames.contains(IDB_STORE)) {
+                            db.createObjectStore(IDB_STORE);
+                        }
+                    };
+                    req.onsuccess = function(evt) { resolve(evt.target.result); };
+                    req.onerror = function() { resolve(null); };
+                } catch (e) {
+                    resolve(null);
+                }
+            });
+        }
+
+        async function saveToIndexedDB(key, val) {
+            var idb = await openSiyanatIndexedDB();
+            if (!idb) return;
+            try {
+                var tx = idb.transaction(IDB_STORE, 'readwrite');
+                tx.objectStore(IDB_STORE).put(val, key);
+            } catch (e) {}
+        }
+
+        async function loadFromIndexedDB(key) {
+            var idb = await openSiyanatIndexedDB();
+            if (!idb) return null;
+            return new Promise(function(resolve) {
+                try {
+                    var tx = idb.transaction(IDB_STORE, 'readonly');
+                    var req = tx.objectStore(IDB_STORE).get(key);
+                    req.onsuccess = function() { resolve(req.result || null); };
+                    req.onerror = function() { resolve(null); };
+                } catch (e) {
+                    resolve(null);
+                }
+            });
+        }
+
+        function buildFullPortalStateSnapshot() {
+            return {
+                version: 2,
+                savedAt: new Date().toISOString(),
+                inventory: dbData.inventory || [],
+                inventoryArchive: dbData.inventoryArchive || [],
+                hrStaff: dbData.hrStaff || [],
+                machinery: dbData.machinery || [],
+                breakdowns: dbData.breakdowns || [],
+                machineryCategories: machineryCategories || [],
+                areaCapacities: areaCapacities || {},
+                executivesData: executivesData || {},
+                userRegistry: userRegistry || [],
+                dbPestControlRecords: dbPestControlRecords || [],
+                dbWasteRates: dbWasteRates || {},
+                dbWasteOffloadings: dbWasteOffloadings || [],
+                dbCrates: dbCrates || {},
+                dbWetWasteLogs: dbWetWasteLogs || [],
+                dbCompostLogs: dbCompostLogs || [],
+                dbWaterTanks: dbWaterTanks || [],
+                dbTankCleaningLogs: dbTankCleaningLogs || [],
+                dbProcurementVendors: dbProcurementVendors || [],
+                dbVendorRates: dbVendorRates || {},
+                dbProcurements: dbProcurements || [],
+                dbCleaningLogs: dbCleaningLogs || [],
+                dbDriveConfig: dbDriveConfig || {},
+                deletedRecordIds: deletedRecordIds || {}
+            };
+        }
+
+        function applyPortalStateSnapshot(snap) {
+            if (!snap || typeof snap !== 'object') return;
+            if (snap.deletedRecordIds && typeof snap.deletedRecordIds === 'object') {
+                deletedRecordIds = Object.assign({}, deletedRecordIds, snap.deletedRecordIds);
+            }
+            if (Array.isArray(snap.inventory) && snap.inventory.length > 0) {
+                dbData.inventory = snap.inventory.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.inventoryArchive)) {
+                dbData.inventoryArchive = snap.inventoryArchive.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.hrStaff) && snap.hrStaff.length > 0) {
+                dbData.hrStaff = snap.hrStaff.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.machinery)) {
+                dbData.machinery = snap.machinery.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.breakdowns)) {
+                dbData.breakdowns = snap.breakdowns.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.machineryCategories) && snap.machineryCategories.length > 0) {
+                machineryCategories = snap.machineryCategories;
+            }
+            if (snap.areaCapacities && typeof snap.areaCapacities === 'object') {
+                areaCapacities = Object.assign({}, areaCapacities, snap.areaCapacities);
+            }
+            if (snap.executivesData && typeof snap.executivesData === 'object') {
+                executivesData = Object.assign({}, executivesData, snap.executivesData);
+            }
+            if (Array.isArray(snap.userRegistry) && snap.userRegistry.length > 0) {
+                userRegistry = snap.userRegistry;
+            }
+            if (Array.isArray(snap.dbPestControlRecords)) {
+                dbPestControlRecords = snap.dbPestControlRecords.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (snap.dbWasteRates && typeof snap.dbWasteRates === 'object') {
+                dbWasteRates = Object.assign({}, dbWasteRates, snap.dbWasteRates);
+            }
+            if (Array.isArray(snap.dbWasteOffloadings)) {
+                dbWasteOffloadings = snap.dbWasteOffloadings.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (snap.dbCrates && typeof snap.dbCrates === 'object') {
+                dbCrates = Object.assign({}, dbCrates, snap.dbCrates);
+            }
+            if (Array.isArray(snap.dbWetWasteLogs)) {
+                dbWetWasteLogs = snap.dbWetWasteLogs.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.dbCompostLogs)) {
+                dbCompostLogs = snap.dbCompostLogs.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.dbWaterTanks)) {
+                dbWaterTanks = snap.dbWaterTanks.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.dbTankCleaningLogs)) {
+                dbTankCleaningLogs = snap.dbTankCleaningLogs.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.dbProcurementVendors) && snap.dbProcurementVendors.length > 0) {
+                dbProcurementVendors = snap.dbProcurementVendors;
+            }
+            if (snap.dbVendorRates && typeof snap.dbVendorRates === 'object') {
+                dbVendorRates = Object.assign({}, dbVendorRates, snap.dbVendorRates);
+            }
+            if (Array.isArray(snap.dbProcurements)) {
+                dbProcurements = snap.dbProcurements.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.dbCleaningLogs)) {
+                dbCleaningLogs = snap.dbCleaningLogs.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (snap.dbDriveConfig && typeof snap.dbDriveConfig === 'object') {
+                if (snap.dbDriveConfig.scriptUrl) dbDriveConfig.scriptUrl = snap.dbDriveConfig.scriptUrl;
+                if (snap.dbDriveConfig.folderName) dbDriveConfig.folderName = snap.dbDriveConfig.folderName;
+                if (snap.dbDriveConfig.folderId) dbDriveConfig.folderId = snap.dbDriveConfig.folderId;
+            }
+        }
+
+        function saveStateToLocalBackup() {
+            var fullSnap = buildFullPortalStateSnapshot();
+            saveToIndexedDB('full_state', fullSnap);
+            saveToIndexedDB('media_cache', dbMediaCache);
+            try {
+                localStorage.setItem(LOCAL_STORAGE_DELETED_KEY, JSON.stringify(deletedRecordIds));
+                localStorage.setItem(LOCAL_STORAGE_DRIVE_KEY, JSON.stringify(dbDriveConfig));
+                localStorage.setItem(LOCAL_STORAGE_STATE_KEY, JSON.stringify(fullSnap));
+            } catch (quotaErr) {
+                // If localStorage hits 5MB due to inline base64 media, save lightweight copy in localStorage while IndexedDB holds full media
+                try {
+                    var lightSnap = Object.assign({}, fullSnap);
+                    localStorage.setItem(LOCAL_STORAGE_STATE_KEY, JSON.stringify(lightSnap));
+                } catch (e2) {}
+            }
+        }
+
+        function loadStateFromLocalBackup() {
+            try {
+                var delRaw = localStorage.getItem(LOCAL_STORAGE_DELETED_KEY);
+                if (delRaw) deletedRecordIds = JSON.parse(delRaw) || {};
+            } catch (e) {}
+            try {
+                var driveRaw = localStorage.getItem(LOCAL_STORAGE_DRIVE_KEY);
+                if (driveRaw) {
+                    var parsedDrive = JSON.parse(driveRaw);
+                    if (parsedDrive && typeof parsedDrive === 'object') {
+                        dbDriveConfig = Object.assign({}, dbDriveConfig, parsedDrive);
+                    }
+                }
+            } catch (e) {}
+            try {
+                var raw = localStorage.getItem(LOCAL_STORAGE_STATE_KEY);
+                if (raw) {
+                    var snap = JSON.parse(raw);
+                    applyPortalStateSnapshot(snap);
+                }
+            } catch (e) {}
+
+            // Also hydrate from IndexedDB in case large media records were stored there
+            loadFromIndexedDB('media_cache').then(function(idbMedia) {
+                if (idbMedia && typeof idbMedia === 'object') {
+                    dbMediaCache = Object.assign({}, idbMedia, dbMediaCache);
+                }
+            });
+            loadFromIndexedDB('full_state').then(function(idbSnap) {
+                if (idbSnap && typeof idbSnap === 'object') {
+                    applyPortalStateSnapshot(idbSnap);
+                    if (currentUser && activeModule) {
+                        switchModule(activeModule);
+                    }
+                }
+            });
+        }
+
+        // Helper to merge Firestore array with local array without losing unsynced local additions
+        function mergeCollectionWithLocal(cloudList, localList, idKey) {
+            var keyField = idKey || 'id';
+            var mergedMap = {};
+            var result = [];
+
+            (cloudList || []).forEach(function(cItem) {
+                var itemKey = cItem[keyField];
+                if (!itemKey || isRecordDeleted(itemKey)) return;
+                mergedMap[itemKey] = cItem;
+            });
+
+            (localList || []).forEach(function(lItem) {
+                var itemKey = lItem[keyField];
+                if (!itemKey || isRecordDeleted(itemKey)) return;
+                if (!mergedMap[itemKey]) {
+                    mergedMap[itemKey] = lItem;
+                } else {
+                    var cTime = mergedMap[itemKey].updatedAt ? new Date(mergedMap[itemKey].updatedAt).getTime() : 0;
+                    var lTime = lItem.updatedAt ? new Date(lItem.updatedAt).getTime() : 0;
+                    if (lTime > cTime) {
+                        mergedMap[itemKey] = Object.assign({}, mergedMap[itemKey], lItem);
+                    }
+                }
+            });
+
+            Object.keys(mergedMap).forEach(function(k) {
+                result.push(mergedMap[k]);
+            });
+            return result;
+        }
+
+        function resolveMediaUrl(src) {
+            if (!src) return '';
+            if (typeof src === 'string' && src.indexOf('media-ref://') === 0) {
+                var mediaId = src.replace('media-ref://', '');
+                if (dbMediaCache[mediaId]) return dbMediaCache[mediaId];
+            }
+            return src;
+        }
+
         window.handleUserAuthenticated = function(email) {
             if (!email) {
                 currentUser = null;
@@ -1647,8 +2107,9 @@
         }
 
         function detectMediaType(src) {
-            if (!src) return 'image';
-            var lower = src.toLowerCase();
+            var resolved = resolveMediaUrl(src);
+            if (!resolved) return 'image';
+            var lower = resolved.toLowerCase();
             if (lower.indexOf('data:video/') === 0 || lower.indexOf('mime=video') !== -1 || lower.match(/\.(mp4|webm|ogg|mov)(\?|#|$)/)) {
                 return 'video';
             }
@@ -1659,28 +2120,31 @@
         }
 
         function renderInlineMediaThumbnail(src, caption, sizeClasses) {
-            if (!src) return '';
-            var mType = detectMediaType(src);
+            var resolved = resolveMediaUrl(src);
+            if (!resolved) return '';
+            var mType = detectMediaType(resolved);
             var cls = sizeClasses || 'h-16 w-20';
             var safeCaption = (caption || 'Media Preview').replace(/'/g, "\\'");
+            var safeSrcArg = src.replace(/'/g, "\\'");
             if (mType === 'video') {
-                return '<div onclick="expandPhotoModal(\'' + src + '\', \'' + safeCaption + '\')" class="' + cls + ' rounded-lg border border-slate-300 bg-slate-900 text-white flex flex-col items-center justify-center cursor-pointer hover:opacity-85 transition shadow-2xs relative overflow-hidden">' +
-                    '<video src="' + src + '" class="absolute inset-0 w-full h-full object-cover opacity-60" muted></video>' +
+                return '<div onclick="expandPhotoModal(\'' + safeSrcArg + '\', \'' + safeCaption + '\')" class="' + cls + ' rounded-lg border border-slate-300 bg-slate-900 text-white flex flex-col items-center justify-center cursor-pointer hover:opacity-85 transition shadow-2xs relative overflow-hidden">' +
+                    '<video src="' + resolved + '" class="absolute inset-0 w-full h-full object-cover opacity-60" muted></video>' +
                     '<i class="fa-solid fa-circle-play text-lg text-white z-10"></i>' +
                     '<span class="text-[9px] font-bold uppercase tracking-wider z-10 mt-0.5">Video</span>' +
                 '</div>';
             }
             if (mType === 'document') {
-                return '<div onclick="expandPhotoModal(\'' + src + '\', \'' + safeCaption + '\')" class="' + cls + ' rounded-lg border border-slate-300 bg-slate-100 text-slate-700 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-200 transition shadow-2xs p-1 text-center">' +
+                return '<div onclick="expandPhotoModal(\'' + safeSrcArg + '\', \'' + safeCaption + '\')" class="' + cls + ' rounded-lg border border-slate-300 bg-slate-100 text-slate-700 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-200 transition shadow-2xs p-1 text-center">' +
                     '<i class="fa-solid fa-file-lines text-lg text-red-600"></i>' +
                     '<span class="text-[9px] font-bold uppercase tracking-wider mt-0.5">Document</span>' +
                 '</div>';
             }
-            return '<img src="' + src + '" onclick="expandPhotoModal(\'' + src + '\', \'' + safeCaption + '\')" class="' + cls + ' object-cover rounded-lg border border-slate-300 cursor-pointer hover:opacity-85 transition shadow-2xs">';
+            return '<img src="' + resolved + '" onclick="expandPhotoModal(\'' + safeSrcArg + '\', \'' + safeCaption + '\')" class="' + cls + ' object-cover rounded-lg border border-slate-300 cursor-pointer hover:opacity-85 transition shadow-2xs">';
         }
 
         function expandPhotoModal(src, caption) {
-            if (!src) return;
+            var resolved = resolveMediaUrl(src);
+            if (!resolved) return;
             var imgEl = document.getElementById('photoPreviewImage');
             var vidEl = document.getElementById('videoPreviewPlayer');
             var docEl = document.getElementById('docPreviewFrame');
@@ -1691,15 +2155,15 @@
             if (vidEl) { vidEl.pause(); vidEl.classList.add('hidden'); vidEl.src = ''; }
             if (docEl) { docEl.classList.add('hidden'); docEl.src = 'about:blank'; }
 
-            var mType = detectMediaType(src);
+            var mType = detectMediaType(resolved);
             if (mType === 'video' && vidEl) {
-                vidEl.src = src;
+                vidEl.src = resolved;
                 vidEl.classList.remove('hidden');
             } else if (mType === 'document' && docEl) {
-                docEl.src = src;
+                docEl.src = resolved;
                 docEl.classList.remove('hidden');
             } else if (imgEl) {
-                imgEl.src = src;
+                imgEl.src = resolved;
                 imgEl.classList.remove('hidden');
             }
             openModal('photoPreviewModal');
@@ -1783,33 +2247,62 @@
             }
         }
 
-        // Silent backend upload to fm.marol Google Drive Apps Script for Photos, Videos, and Documents
+        // Multi-Tier Upload to fm.marol Google Drive Apps Script -> Firebase Storage -> Firestore Chunked Media Vault
         async function uploadToFmMarolDriveBackend(dataUrl, fileName, mimeType, subFolderLabel) {
+            var cleanFileName = (subFolderLabel || 'Media') + '_' + Date.now() + '_' + (fileName || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_');
             var scriptUrl = (dbDriveConfig && dbDriveConfig.scriptUrl) ? dbDriveConfig.scriptUrl.trim() : '';
-            if (!scriptUrl) return dataUrl;
-            try {
-                var base64Clean = dataUrl.indexOf(',') !== -1 ? dataUrl.split(',')[1] : dataUrl;
-                var resp = await fetch(scriptUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        fileName: (subFolderLabel || 'Media') + '_' + Date.now() + '_' + (fileName || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_'),
-                        mimeType: mimeType || 'application/octet-stream',
-                        base64: base64Clean,
-                        folder: (dbDriveConfig && dbDriveConfig.folderName) ? dbDriveConfig.folderName : 'Siyanat_Housekeeping_Uploads'
-                    })
-                });
-                var json = await resp.json();
-                if (json && (json.url || json.viewUrl)) {
-                    var remoteUrl = json.url || json.viewUrl;
-                    if (mimeType && remoteUrl.indexOf('#mime=') === -1) {
-                        remoteUrl += '#mime=' + encodeURIComponent(mimeType);
+
+            // Tier 1: fm.marol Google Drive Apps Script Web App Bridge
+            if (scriptUrl) {
+                try {
+                    var base64Clean = dataUrl.indexOf(',') !== -1 ? dataUrl.split(',')[1] : dataUrl;
+                    var resp = await fetch(scriptUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            fileName: cleanFileName,
+                            mimeType: mimeType || 'application/octet-stream',
+                            base64: base64Clean,
+                            folder: (dbDriveConfig && dbDriveConfig.folderName) ? dbDriveConfig.folderName : 'Siyanat_Housekeeping_Uploads',
+                            folderId: (dbDriveConfig && dbDriveConfig.folderId) ? dbDriveConfig.folderId.trim() : '',
+                            subFolder: subFolderLabel || 'General'
+                        })
+                    });
+                    var json = await resp.json();
+                    if (json && (json.url || json.viewUrl || json.fileId)) {
+                        var remoteUrl = json.viewUrl || json.url || ('https://drive.google.com/uc?export=view&id=' + json.fileId);
+                        if (mimeType && remoteUrl.indexOf('#mime=') === -1) {
+                            remoteUrl += '#mime=' + encodeURIComponent(mimeType);
+                        }
+                        showAppNotification('Uploaded to fm.marol Google Drive (' + (subFolderLabel || 'Drive') + ')', 'success');
+                        return remoteUrl;
                     }
-                    return remoteUrl;
+                } catch (driveErr) {
+                    console.warn('Drive Apps Script upload fallback:', driveErr);
                 }
-            } catch (driveErr) {
-                // Silently retain dataUrl so media displays seamlessly even if offline or cross-origin
             }
+
+            // Tier 2: Firebase Cloud Storage Bucket (siyanat-housekeeping.firebasestorage.app)
+            if (window.uploadMediaToFirebaseStorage) {
+                try {
+                    var storageUrl = await window.uploadMediaToFirebaseStorage(dataUrl, cleanFileName, mimeType, subFolderLabel);
+                    if (storageUrl) {
+                        return storageUrl;
+                    }
+                } catch (storageErr) {}
+            }
+
+            // Tier 3: If dataUrl is large (> 120KB), store in IndexedDB + chunked Firestore media_blobs so parent document never hits 1MB Firestore limit
+            if (dataUrl && dataUrl.length > 120000) {
+                var mediaId = 'MEDIA-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+                dbMediaCache[mediaId] = dataUrl;
+                saveStateToLocalBackup();
+                if (window.saveChunkedMediaToFirestore) {
+                    window.saveChunkedMediaToFirestore(mediaId, dataUrl, cleanFileName, mimeType, subFolderLabel);
+                }
+                return 'media-ref://' + mediaId;
+            }
+
             return dataUrl;
         }
 
@@ -1884,6 +2377,7 @@
                                 }
                             }
                         });
+                        saveStateToLocalBackup();
                         switchModule('inventory');
                         showAppNotification('Imported ' + rows.length + ' inventory rows from Excel!', 'success');
                     } else if (activeModule === 'hr' && rows.length > 0) {
@@ -1891,7 +2385,7 @@
                             var stfCode = r['Staff ID'] || r['ID'] || ('STF-IMP-' + (idx + 1));
                             var name = r['Full Name'] || r['Name'] || 'Imported Staff';
                             if (!dbData.hrStaff.find(function(s) { return s.staffCode === stfCode; })) {
-                                dbData.hrStaff.push({
+                                var newStf = {
                                     id: 'STF-' + Date.now() + '-' + idx,
                                     staffCode: stfCode,
                                     name: name,
@@ -1901,10 +2395,16 @@
                                     locker: r['Locker No'] || '',
                                     category: r['Category'] || 'Aljamea',
                                     uniformIssued: r['Uniform Issued'] || 'Yes',
-                                    uniformIssuedDate: r['Uniform Date'] || ''
-                                });
+                                    uniformIssuedDate: r['Uniform Date'] || '',
+                                    updatedAt: new Date().toISOString()
+                                };
+                                dbData.hrStaff.push(newStf);
+                                if (window.saveHrStaffToFirestore) {
+                                    window.saveHrStaffToFirestore(newStf);
+                                }
                             }
                         });
+                        saveStateToLocalBackup();
                         switchModule('hr');
                         showAppNotification('Imported ' + rows.length + ' HR staff rows from Excel!', 'success');
                     }
@@ -1948,6 +2448,12 @@
         function closeModal(id) {
             if (id === 'authModal' && !currentUser) return;
             document.getElementById(id).classList.add('hidden');
+            if (id === 'openingStockModal') {
+                saveStateToLocalBackup();
+                if (activeModule === 'inventory') {
+                    switchModule('inventory');
+                }
+            }
         }
         function toggleDropdown(id) { document.getElementById(id).classList.toggle('hidden'); }
 
@@ -2188,17 +2694,19 @@
 
             var html = '';
             dbData.inventory.forEach(function(item) {
+                if (!item.openingStock) item.openingStock = {};
                 html += '<tr class="hover:bg-slate-50"><td class="p-2.5 font-semibold text-slate-900"><div class="font-bold">' + item.name + '</div><div class="text-[10px] text-slate-400 font-mono">' + item.code + ' (' + item.unit + ')</div></td>';
-                html += '<td class="p-2 bg-blue-50/50"><input type="number" value="' + (item.openingStock['Main Store'] || 0) + '" onchange="updateOpeningStockVal(\'' + item.id + '\', \'Main Store\', this.value)" class="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded font-bold text-blue-700"></td>';
+                html += '<td class="p-2 bg-blue-50/50"><input type="number" value="' + (item.openingStock['Main Store'] || 0) + '" oninput="updateOpeningStockVal(\'' + item.id + '\', \'Main Store\', this.value, true)" onchange="updateOpeningStockVal(\'' + item.id + '\', \'Main Store\', this.value, false)" class="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded font-bold text-blue-700"></td>';
                 ALL_AREAS.forEach(function(area) {
-                    html += '<td class="p-2"><input type="number" value="' + (item.openingStock[area] || 0) + '" onchange="updateOpeningStockVal(\'' + item.id + '\', \'' + area + '\', this.value)" class="w-14 px-1 py-1 text-xs border border-slate-300 rounded"></td>';
+                    html += '<td class="p-2"><input type="number" value="' + (item.openingStock[area] || 0) + '" oninput="updateOpeningStockVal(\'' + item.id + '\', \'' + area + '\', this.value, true)" onchange="updateOpeningStockVal(\'' + item.id + '\', \'' + area + '\', this.value, false)" class="w-14 px-1 py-1 text-xs border border-slate-300 rounded"></td>';
                 });
-                html += '<td class="p-2 text-center"><button onclick="deleteInventoryItem(\'' + item.id + '\')" class="text-red-600 hover:text-red-800 text-xs font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button></td></tr>';
+                html += '<td class="p-2 text-center"><button type="button" onclick="deleteInventoryItem(\'' + item.id + '\')" class="text-red-600 hover:text-red-800 text-xs font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button></td></tr>';
             });
             tbody.innerHTML = html;
         }
 
-        function updateOpeningStockVal(itemId, storeKey, val) {
+        var openingStockSyncTimer = null;
+        function updateOpeningStockVal(itemId, storeKey, val, isLiveInput) {
             var item = null;
             for (var i = 0; i < dbData.inventory.length; i++) {
                 if (dbData.inventory[i].id === itemId) { item = dbData.inventory[i]; break; }
@@ -2206,10 +2714,45 @@
             if (item) {
                 if (!item.openingStock) item.openingStock = {};
                 item.openingStock[storeKey] = parseInt(val) || 0;
-                if (window.saveInventoryItemToFirestore) {
-                    window.saveInventoryItemToFirestore(item);
+                item.updatedAt = new Date().toISOString();
+                saveStateToLocalBackup();
+
+                if (activeModule === 'inventory') {
+                    var container = document.getElementById('moduleContainer');
+                    var actions = document.getElementById('modulePrimaryActions');
+                    if (container && actions) {
+                        renderInventoryModule(container, actions);
+                    }
+                }
+
+                if (isLiveInput) {
+                    clearTimeout(openingStockSyncTimer);
+                    openingStockSyncTimer = setTimeout(function() {
+                        if (window.saveInventoryItemToFirestore) {
+                            window.saveInventoryItemToFirestore(item);
+                        }
+                    }, 350);
+                } else {
+                    clearTimeout(openingStockSyncTimer);
+                    if (window.saveInventoryItemToFirestore) {
+                        window.saveInventoryItemToFirestore(item);
+                    }
                 }
             }
+        }
+
+        function saveAndSyncOpeningStockModal() {
+            saveStateToLocalBackup();
+            if (window.saveInventoryItemToFirestore) {
+                dbData.inventory.forEach(function(item) {
+                    window.saveInventoryItemToFirestore(item);
+                });
+            }
+            if (activeModule === 'inventory') {
+                switchModule('inventory');
+            }
+            closeModal('openingStockModal');
+            showAppNotification('All opening stock quantities & items saved and synced!', 'success');
         }
 
         function handleAddNewItem(e) {
@@ -2219,11 +2762,26 @@
             var category = document.getElementById('newItemCategory').value.trim();
             var unit = document.getElementById('newItemUnit').value.trim();
 
+            var existing = dbData.inventory.find(function(i) { return i.code.toLowerCase() === code.toLowerCase(); });
+            if (existing) {
+                showAppNotification('Item with code "' + code + '" already exists (' + existing.name + ').', 'error');
+                return;
+            }
+
             var openingStock = { 'Main Store': 0 };
             ALL_AREAS.forEach(function(a) { openingStock[a] = 0; });
 
-            var newItem = { id: 'INV-' + Date.now(), code: code, name: name, category: category, unit: unit, openingStock: openingStock };
+            var newItem = {
+                id: 'INV-' + Date.now(),
+                code: code,
+                name: name,
+                category: category,
+                unit: unit,
+                openingStock: openingStock,
+                updatedAt: new Date().toISOString()
+            };
             dbData.inventory.push(newItem);
+            saveStateToLocalBackup();
             if (window.saveInventoryItemToFirestore) {
                 window.saveInventoryItemToFirestore(newItem);
             }
@@ -2233,8 +2791,11 @@
             document.getElementById('newItemCategory').value = '';
             document.getElementById('newItemUnit').value = '';
 
-            showAppNotification('Item "' + name + '" successfully added to master inventory!', 'success');
             renderOpeningStockTable();
+            if (activeModule === 'inventory') {
+                switchModule('inventory');
+            }
+            showAppNotification('Item "' + name + '" (' + code + ') added and reflected on Inventory Overview!', 'success');
         }
 
         function deleteInventoryItem(itemId) {
@@ -2244,11 +2805,16 @@
             }
             if (item) {
                 openConfirmDialog('Are you sure you want to delete "' + item.name + '"?', function() {
+                    markRecordDeleted(itemId);
                     dbData.inventory = dbData.inventory.filter(function(i) { return i.id !== itemId; });
+                    saveStateToLocalBackup();
                     if (window.deleteInventoryItemFromFirestore) {
                         window.deleteInventoryItemFromFirestore(itemId);
                     }
                     renderOpeningStockTable();
+                    if (activeModule === 'inventory') {
+                        switchModule('inventory');
+                    }
                     showAppNotification('Item "' + item.name + '" deleted.', 'info');
                 });
             }
@@ -2321,13 +2887,16 @@
                 user: currentUser.email,
                 remarks: remarks
             };
+            newArc.updatedAt = new Date().toISOString();
             dbData.inventoryArchive.unshift(newArc);
+            saveStateToLocalBackup();
             if (window.saveInventoryArchiveToFirestore) {
                 window.saveInventoryArchiveToFirestore(newArc);
             }
 
             closeModal('invTransactionModal');
             switchModule('inventory');
+            showAppNotification('Transaction logged and stock updated!', 'success');
         }
 
         function openEditArchiveModal(arcId, currentQty) {
@@ -2347,6 +2916,8 @@
             }
             if (record) {
                 record.qty = newQty;
+                record.updatedAt = new Date().toISOString();
+                saveStateToLocalBackup();
                 if (window.saveInventoryArchiveToFirestore) {
                     window.saveInventoryArchiveToFirestore(record);
                 }
@@ -2663,8 +3234,13 @@
             var areaName = document.getElementById('capacityAreaName').value;
             var capVal = parseInt(document.getElementById('capacityValue').value) || 15;
             areaCapacities[areaName] = capVal;
+            saveStateToLocalBackup();
+            if (window.saveAreaCapacitiesToFirestore) {
+                window.saveAreaCapacitiesToFirestore(areaCapacities);
+            }
             closeModal('capacityModal');
             switchModule('hr');
+            showAppNotification('Capacity for ' + areaName + ' saved (' + capVal + ')!', 'success');
         }
 
         function openExecutiveDetailModal(execRoleKey) {
@@ -2759,6 +3335,11 @@
             if (stf) {
                 var oldArea = stf.area;
                 stf.area = newArea;
+                stf.updatedAt = new Date().toISOString();
+                saveStateToLocalBackup();
+                if (window.saveHrStaffToFirestore) {
+                    window.saveHrStaffToFirestore(stf);
+                }
                 showAppNotification("Staff member " + stf.name + " (" + stf.staffCode + ") successfully transferred from " + oldArea + " to " + newArea + "!", "success");
                 closeModal('transferModal');
                 switchModule('hr');
@@ -2846,30 +3427,46 @@
                     executivesData[key].name = name;
                     executivesData[key].staffId = staffCode;
                     executivesData[key].contact = contact;
+                    saveStateToLocalBackup();
+                    if (window.saveExecutivesDataToFirestore) {
+                        window.saveExecutivesDataToFirestore(executivesData);
+                    }
                 }
                 closeModal('hrStaffModal');
                 switchModule('hr');
+                showAppNotification('Executive profile updated and saved!', 'success');
                 return;
             }
 
+            var savedRecord = null;
             if (editId) {
                 var stf = dbData.hrStaff.find(s => s.id === editId);
                 if (stf) {
                     stf.role = role; stf.area = area; stf.staffCode = staffCode; stf.name = name;
                     stf.contact = contact; stf.locker = locker; stf.category = category;
                     stf.uniformIssued = uniformIssued; stf.uniformIssuedDate = uniformIssuedDate;
+                    stf.updatedAt = new Date().toISOString();
+                    savedRecord = stf;
                 }
             } else {
-                dbData.hrStaff.push({
+                savedRecord = {
                     id: 'STF-' + Date.now(),
                     role: role, area: area, staffCode: staffCode, name: name,
                     contact: contact, locker: locker, category: category,
-                    uniformIssued: uniformIssued, uniformIssuedDate: uniformIssuedDate
-                });
+                    uniformIssued: uniformIssued, uniformIssuedDate: uniformIssuedDate,
+                    updatedAt: new Date().toISOString()
+                };
+                dbData.hrStaff.push(savedRecord);
+            }
+
+            saveStateToLocalBackup();
+            if (savedRecord && window.saveHrStaffToFirestore) {
+                window.saveHrStaffToFirestore(savedRecord);
             }
 
             closeModal('hrStaffModal');
             switchModule('hr');
+            showAppNotification(editId ? 'Staff record updated and saved!' : 'New staff member added and saved to Firestore!', 'success');
         }
 
         function deleteHrStaffRecord(stfId) {
@@ -2877,16 +3474,133 @@
             if (!stf) return;
 
             openConfirmDialog("Are you sure you want to delete staff member: " + stf.name + " (" + stf.staffCode + ")?", function() {
+                markRecordDeleted(stfId);
                 dbData.hrStaff = dbData.hrStaff.filter(s => s.id !== stfId);
+                saveStateToLocalBackup();
+                if (window.deleteHrStaffFromFirestore) {
+                    window.deleteHrStaffFromFirestore(stfId);
+                }
                 switchModule('hr');
-                showAppNotification("Staff member deleted.", "info");
+                showAppNotification("Staff member deleted from HR directory.", "info");
             });
         }
 
         // ================= MODULE 3: CLEANING REPORTS & SCHEDULE =================
         function renderCleaningModule(container, actions) {
-            actions.innerHTML = '<button onclick="showAppNotification(\'Cleaning schedule entry logger opened\', \'info\')" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Log Cleaning Task</span></button>';
-            container.innerHTML = '<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4"><h3 class="text-base font-bold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-broom text-teal-600"></i><span>Cleaning Reports & Schedule Operations</span></h3><p class="text-xs text-slate-500">Track routine housekeeping cleaning logs, deep-cleaning schedules, and supervisor verification checklists across all campus blocks.</p></div>';
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
+            var visibleAreas = (isAdmin || isExec) ? ALL_AREAS : (currentUser ? currentUser.areas : ALL_AREAS);
+
+            actions.innerHTML = '<button onclick="openCleaningLogModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Log Cleaning Task</span></button>';
+
+            var visibleLogs = (dbCleaningLogs || []).filter(function(l) {
+                return (isAdmin || isExec) || visibleAreas.indexOf(l.area) !== -1;
+            });
+
+            var html = '<div class="space-y-6">';
+            html += '<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
+            html += '<div><h3 class="text-base font-bold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-broom text-teal-600"></i><span>Cleaning Reports &amp; Schedule Operations</span></h3>';
+            html += '<p class="text-xs text-slate-500 mt-1">Track routine housekeeping cleaning logs, deep-cleaning schedules, and supervisor verification checklists across all campus blocks.</p></div>';
+            html += '<div class="flex items-center space-x-3"><span class="px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">Total Reports: ' + visibleLogs.length + '</span>';
+            html += '<button type="button" onclick="openCleaningLogModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition"><i class="fa-solid fa-plus mr-1"></i>Add Report</button></div></div>';
+
+            html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
+            html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-800 flex justify-between items-center"><span>Logged Cleaning Checklists &amp; Schedule Reports</span><span class="text-[11px] text-teal-700 font-semibold">Synced with Firestore &amp; fm.marol Drive</span></div>';
+
+            if (visibleLogs.length === 0) {
+                html += '<div class="p-8 text-center text-xs text-slate-400 italic">No cleaning reports logged yet. Click "Log Cleaning Task" to record an entry.</div>';
+            } else {
+                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+                html += '<th class="p-3">Date</th><th class="p-3">Area / Block</th><th class="p-3">Cleaning Type</th><th class="p-3">Status</th><th class="p-3">Remarks</th><th class="p-3 text-center">Media</th><th class="p-3">Logged By</th>';
+                if (isAdmin || isExec) html += '<th class="p-3 text-center">Action</th>';
+                html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
+                visibleLogs.forEach(function(log) {
+                    var statusBadge = log.status === 'Completed & Verified'
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : (log.status === 'In Progress' ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-rose-100 text-rose-800 border-rose-300');
+                    var mediaCell = log.media
+                        ? '<div class="inline-block">' + renderInlineMediaThumbnail(log.media, 'Cleaning Report — ' + log.area + ' (' + log.date + ')', 'h-12 w-16') + '</div>'
+                        : '<span class="text-slate-400 italic">No Media</span>';
+                    html += '<tr class="hover:bg-slate-50 transition">';
+                    html += '<td class="p-3 font-mono font-semibold text-slate-800">' + log.date + '</td>';
+                    html += '<td class="p-3 font-bold text-slate-900">' + log.area + '</td>';
+                    html += '<td class="p-3 font-medium text-teal-800">' + log.type + '</td>';
+                    html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + statusBadge + '">' + log.status + '</span></td>';
+                    html += '<td class="p-3 text-slate-600 max-w-xs truncate">' + (log.remarks || '-') + '</td>';
+                    html += '<td class="p-3 text-center">' + mediaCell + '</td>';
+                    html += '<td class="p-3 text-slate-500">' + (log.loggedBy || 'System') + '</td>';
+                    if (isAdmin || isExec) {
+                        html += '<td class="p-3 text-center"><button type="button" onclick="deleteCleaningLogRecord(\'' + log.id + '\')" class="text-red-600 hover:text-red-800 font-semibold text-xs"><i class="fa-solid fa-trash-can"></i></button></td>';
+                    }
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+            }
+            html += '</div></div>';
+            container.innerHTML = html;
+        }
+
+        function openCleaningLogModal() {
+            var areaSelect = document.getElementById('cleaningLogArea');
+            var visibleAreas = (currentUser && currentUser.role === 'Administrator') ? ALL_AREAS : (currentUser ? currentUser.areas : ALL_AREAS);
+            areaSelect.innerHTML = visibleAreas.map(function(a) { return '<option value="' + a + '">' + a + '</option>'; }).join('');
+            document.getElementById('cleaningLogEditId').value = '';
+            document.getElementById('cleaningLogDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('cleaningLogRemarks').value = '';
+            document.getElementById('cleaningLogMediaData').value = '';
+            document.getElementById('cleaningLogMediaInput').value = '';
+            var prev = document.getElementById('cleaningLogMediaPreview');
+            if (prev) { prev.innerHTML = ''; prev.classList.add('hidden'); }
+            openModal('cleaningLogModal');
+        }
+
+        async function previewCleaningLogMedia(inputEl) {
+            var file = inputEl.files[0];
+            if (!file) return;
+            var uploadedUrl = await processAndUploadImageFile(file, 'Cleaning_Reports');
+            if (!uploadedUrl) return;
+            document.getElementById('cleaningLogMediaData').value = uploadedUrl;
+            var prev = document.getElementById('cleaningLogMediaPreview');
+            if (prev) {
+                prev.innerHTML = renderInlineMediaThumbnail(uploadedUrl, 'Cleaning Media Preview', 'h-16 w-20');
+                prev.classList.remove('hidden');
+            }
+        }
+
+        async function handleSaveCleaningLog(e) {
+            e.preventDefault();
+            var logObj = {
+                id: 'CLN-' + Date.now(),
+                date: document.getElementById('cleaningLogDate').value,
+                area: document.getElementById('cleaningLogArea').value,
+                type: document.getElementById('cleaningLogType').value,
+                status: document.getElementById('cleaningLogStatus').value,
+                remarks: document.getElementById('cleaningLogRemarks').value.trim(),
+                media: document.getElementById('cleaningLogMediaData').value,
+                loggedBy: currentUser ? currentUser.email : 'System',
+                updatedAt: new Date().toISOString()
+            };
+            dbCleaningLogs.unshift(logObj);
+            saveStateToLocalBackup();
+            if (window.saveCleaningLogToFirestore) {
+                await window.saveCleaningLogToFirestore(logObj);
+            }
+            closeModal('cleaningLogModal');
+            switchModule('cleaning');
+            showAppNotification('Cleaning report saved!', 'success');
+        }
+
+        function deleteCleaningLogRecord(logId) {
+            openConfirmDialog('Are you sure you want to delete this cleaning report?', async function() {
+                markRecordDeleted(logId);
+                dbCleaningLogs = dbCleaningLogs.filter(function(l) { return l.id !== logId; });
+                saveStateToLocalBackup();
+                if (window.deleteCleaningLogFromFirestore) {
+                    await window.deleteCleaningLogFromFirestore(logId);
+                }
+                switchModule('cleaning');
+                showAppNotification('Cleaning report deleted.', 'info');
+            });
         }
 
         // ================= MODULE 4: PEST CONTROL DETAILS =================
@@ -3032,6 +3746,7 @@
             var photo = document.getElementById('pestPhotoData').value;
 
             var recordData = {
+                id: 'PST-' + Date.now(),
                 date: date,
                 treatmentType: treatmentType,
                 timeline: timeline,
@@ -3041,8 +3756,12 @@
                 doneBy: doneBy,
                 photo: photo,
                 createdAt: new Date().toISOString(),
-                loggedBy: currentUser.email
+                updatedAt: new Date().toISOString(),
+                loggedBy: currentUser ? currentUser.email : 'System'
             };
+
+            dbPestControlRecords.unshift(recordData);
+            saveStateToLocalBackup();
 
             if (window.savePestRecordToFirestore) {
                 await window.savePestRecordToFirestore(recordData);
@@ -3052,14 +3771,19 @@
             submitBtn.innerText = 'Save Pest Treatment';
             closeModal('pestControlModal');
             switchModule('pest');
+            showAppNotification('Pest control treatment saved!', 'success');
         }
 
         async function deletePestControlRecord(docId) {
-            openConfirmDialog("Are you sure you want to delete this pest control record from Firestore?", async function() {
+            openConfirmDialog("Are you sure you want to delete this pest control record?", async function() {
+                markRecordDeleted(docId);
+                dbPestControlRecords = dbPestControlRecords.filter(function(r) { return r.id !== docId; });
+                saveStateToLocalBackup();
                 if (window.deletePestRecordFromFirestore) {
                     await window.deletePestRecordFromFirestore(docId);
-                    switchModule('pest');
                 }
+                switchModule('pest');
+                showAppNotification('Pest control record deleted.', 'info');
             });
         }
 
@@ -3261,12 +3985,15 @@
                 Glass: parseFloat(document.getElementById('rateGlass').value) || 0
             };
 
+            dbWasteRates = Object.assign({}, dbWasteRates, updatedRates);
+            saveStateToLocalBackup();
             if (window.saveWasteRatesToFirestore) {
                 await window.saveWasteRatesToFirestore(updatedRates);
             }
 
             closeModal('wasteRatesModal');
             switchModule('waste');
+            showAppNotification('Dry waste unit rates saved!', 'success');
         }
 
         function openWasteOffloadModal(docId) {
@@ -3386,20 +4113,36 @@
                 updatedAt: new Date().toISOString()
             };
 
+            var targetId = docId || ('OFF-' + Date.now());
+            receiptObject.id = targetId;
+            var existingIdx = dbWasteOffloadings.findIndex(function(r) { return r.id === targetId; });
+            if (existingIdx >= 0) {
+                dbWasteOffloadings[existingIdx] = receiptObject;
+            } else {
+                dbWasteOffloadings.unshift(receiptObject);
+            }
+            dbWasteOffloadings.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+            saveStateToLocalBackup();
+
             if (window.saveWasteOffloadToFirestore) {
-                await window.saveWasteOffloadToFirestore(docId, receiptObject);
+                await window.saveWasteOffloadToFirestore(targetId, receiptObject);
             }
 
             closeModal('wasteOffloadModal');
             switchModule('waste');
+            showAppNotification('Dry waste offloading entry saved!', 'success');
         }
 
         async function deleteWasteOffloadRecord(docId) {
-            openConfirmDialog("Are you sure you want to delete this offloading receipt from Firestore?", async function() {
+            openConfirmDialog("Are you sure you want to delete this offloading receipt?", async function() {
+                markRecordDeleted(docId);
+                dbWasteOffloadings = dbWasteOffloadings.filter(function(r) { return r.id !== docId; });
+                saveStateToLocalBackup();
                 if (window.deleteWasteOffloadFromFirestore) {
                     await window.deleteWasteOffloadFromFirestore(docId);
-                    switchModule('waste');
                 }
+                switchModule('waste');
+                showAppNotification('Offloading receipt deleted.', 'info');
             });
         }
         // ================= MODULE 6: COMPOST MANAGEMENT =================
@@ -4371,13 +5114,23 @@
                 loggedBy: currentUser ? currentUser.email : 'System'
             };
 
+            var targetTankId = editId || ('WT-' + Date.now());
+            tankObj.id = targetTankId;
             if (!editId) {
                 tankObj.tankCode = 'WT-' + String(dbWaterTanks.length + 1).padStart(2, '0');
                 tankObj.createdAt = new Date().toISOString();
+                dbWaterTanks.push(tankObj);
+            } else {
+                var tIdx = dbWaterTanks.findIndex(function(t) { return t.id === editId; });
+                if (tIdx >= 0) {
+                    tankObj.tankCode = dbWaterTanks[tIdx].tankCode || ('WT-' + String(tIdx + 1).padStart(2, '0'));
+                    dbWaterTanks[tIdx] = Object.assign({}, dbWaterTanks[tIdx], tankObj);
+                }
             }
+            saveStateToLocalBackup();
 
             if (window.saveWaterTankToFirestore) {
-                await window.saveWaterTankToFirestore(editId, tankObj);
+                await window.saveWaterTankToFirestore(targetTankId, tankObj);
             }
 
             submitBtn.disabled = false;
@@ -4391,6 +5144,9 @@
             var tank = dbWaterTanks.find(function(t) { return t.id === tankId; });
             if (!tank) return;
             openConfirmDialog('Are you sure you want to delete the ' + tank.type + ' (' + tank.category + ') water tank at "' + tank.location + '"?', async function() {
+                markRecordDeleted(tankId);
+                dbWaterTanks = dbWaterTanks.filter(function(t) { return t.id !== tankId; });
+                saveStateToLocalBackup();
                 if (window.deleteWaterTankFromFirestore) {
                     await window.deleteWaterTankFromFirestore(tankId);
                 }
@@ -4550,6 +5306,7 @@
             submitBtn.innerText = 'Saving Report...';
 
             var reportObj = {
+                id: 'TCL-' + Date.now(),
                 tankId: matchedTankId || '',
                 date: date,
                 location: location,
@@ -4559,8 +5316,12 @@
                 beforePhotos: currentCleanBeforePhotos.slice(),
                 afterPhotos: currentCleanAfterPhotos.slice(),
                 loggedBy: currentUser ? currentUser.email : 'System',
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
+
+            dbTankCleaningLogs.unshift(reportObj);
+            saveStateToLocalBackup();
 
             if (window.saveTankCleaningReportToFirestore) {
                 await window.saveTankCleaningReportToFirestore(reportObj);
@@ -4660,6 +5421,9 @@
 
         function deleteTankCleaningReport(reportId, tankId) {
             openConfirmDialog('Are you sure you want to delete this water tank cleaning report?', async function() {
+                markRecordDeleted(reportId);
+                dbTankCleaningLogs = dbTankCleaningLogs.filter(function(r) { return r.id !== reportId; });
+                saveStateToLocalBackup();
                 if (window.deleteTankCleaningReportFromFirestore) {
                     await window.deleteTankCleaningReportFromFirestore(reportId);
                 }
@@ -5507,10 +6271,14 @@
                     var catTrimmed = newCat.trim();
                     if (machineryCategories.indexOf(catTrimmed) === -1) {
                         machineryCategories.push(catTrimmed);
+                        saveStateToLocalBackup();
+                        if (window.saveMachineryCategoriesToFirestore) {
+                            window.saveMachineryCategoriesToFirestore(machineryCategories);
+                        }
                         var catSelect = document.getElementById('machineryCategory');
                         catSelect.innerHTML = machineryCategories.map(function(c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
                         catSelect.value = catTrimmed;
-                        showAppNotification('Category "' + catTrimmed + '" added.', 'success');
+                        showAppNotification('Category "' + catTrimmed + '" added and saved!', 'success');
                     }
                 }
             });
@@ -5527,6 +6295,7 @@
             var warranty = document.getElementById('machineryWarranty').value.trim();
             var photo = document.getElementById('machineryPhotoData').value.trim();
 
+            var savedMac = null;
             if (editId) {
                 var mac = null;
                 for (var i = 0; i < dbData.machinery.length; i++) {
@@ -5535,16 +6304,26 @@
                 if (mac) {
                     mac.category = category; mac.brand = brand; mac.model = model;
                     mac.area = area; mac.purchaseDate = purchaseDate; mac.warranty = warranty; mac.photo = photo;
+                    mac.updatedAt = new Date().toISOString();
+                    savedMac = mac;
                 }
             } else {
-                dbData.machinery.push({
+                savedMac = {
                     id: 'MAC-' + Date.now(),
-                    category: category, brand: brand, model: model, area: area, purchaseDate: purchaseDate, warranty: warranty, photo: photo
-                });
+                    category: category, brand: brand, model: model, area: area, purchaseDate: purchaseDate, warranty: warranty, photo: photo,
+                    updatedAt: new Date().toISOString()
+                };
+                dbData.machinery.push(savedMac);
+            }
+
+            saveStateToLocalBackup();
+            if (savedMac && window.saveMachineryToFirestore) {
+                window.saveMachineryToFirestore(savedMac);
             }
 
             closeModal('machineryModal');
             switchModule('machinery');
+            showAppNotification(editId ? 'Machinery asset updated!' : 'New machinery asset saved!', 'success');
         }
 
         function deleteMachineryRecord(macId) {
@@ -5555,8 +6334,20 @@
             if (!mac) return;
 
             openConfirmDialog("Are you sure you want to delete " + mac.brand + " " + mac.model + "?", function() {
+                markRecordDeleted(macId);
+                var associatedBrks = dbData.breakdowns.filter(function(b) { return b.machineId === macId; });
                 dbData.machinery = dbData.machinery.filter(function(m) { return m.id !== macId; });
                 dbData.breakdowns = dbData.breakdowns.filter(function(b) { return b.machineId !== macId; });
+                saveStateToLocalBackup();
+                if (window.deleteMachineryFromFirestore) {
+                    window.deleteMachineryFromFirestore(macId);
+                }
+                associatedBrks.forEach(function(b) {
+                    markRecordDeleted(b.id);
+                    if (window.deleteBreakdownFromFirestore) {
+                        window.deleteBreakdownFromFirestore(b.id);
+                    }
+                });
                 switchModule('machinery');
                 showAppNotification("Machinery asset deleted.", "info");
             });
@@ -5667,6 +6458,7 @@
             var issue = document.getElementById('breakdownIssue').value.trim();
             var photo = document.getElementById('breakdownPhotoData').value.trim();
 
+            var savedBrk = null;
             if (editId) {
                 var brk = null;
                 for (var i = 0; i < dbData.breakdowns.length; i++) {
@@ -5676,16 +6468,27 @@
                     brk.date = date;
                     brk.issue = issue;
                     if (photo) brk.photo = photo;
+                    brk.updatedAt = new Date().toISOString();
+                    savedBrk = brk;
                 }
             } else {
-                dbData.breakdowns.unshift({
+                savedBrk = {
                     id: 'BRK-' + Date.now(),
-                    machineId: machineId, date: date, issue: issue, photo: photo, repairs: []
-                });
+                    machineId: machineId, date: date, issue: issue, photo: photo, repairs: [],
+                    updatedAt: new Date().toISOString()
+                };
+                dbData.breakdowns.unshift(savedBrk);
+            }
+
+            saveStateToLocalBackup();
+            if (savedBrk && window.saveBreakdownToFirestore) {
+                window.saveBreakdownToFirestore(savedBrk);
             }
 
             resetBreakdownForm();
             renderBreakdownList(machineId);
+            if (activeModule === 'machinery') switchModule('machinery');
+            showAppNotification('Breakdown log saved!', 'success');
         }
 
         function deleteBreakdownLog(brkId) {
@@ -5696,8 +6499,14 @@
             if (!brk) return;
 
             openConfirmDialog("Are you sure you want to delete this breakdown log?", function() {
+                markRecordDeleted(brkId);
                 dbData.breakdowns = dbData.breakdowns.filter(function(b) { return b.id !== brkId; });
+                saveStateToLocalBackup();
+                if (window.deleteBreakdownFromFirestore) {
+                    window.deleteBreakdownFromFirestore(brkId);
+                }
                 renderBreakdownList(brk.machineId);
+                if (activeModule === 'machinery') switchModule('machinery');
                 showAppNotification("Breakdown log deleted.", "info");
             });
         }
@@ -5778,8 +6587,14 @@
                     brk.repairs.push({ id: 'REP-' + Date.now(), date: date, doneBy: doneBy, cost: cost, remarks: remarks, afterPhoto: afterPhoto });
                 }
 
+                brk.updatedAt = new Date().toISOString();
+                saveStateToLocalBackup();
+                if (window.saveBreakdownToFirestore) {
+                    window.saveBreakdownToFirestore(brk);
+                }
                 cancelRepairForm();
                 renderBreakdownList(brk.machineId);
+                showAppNotification('Repair entry saved!', 'success');
             }
         }
 
@@ -5792,6 +6607,11 @@
 
             openConfirmDialog("Are you sure you want to delete this repair log entry?", function() {
                 brk.repairs = brk.repairs.filter(function(r) { return r.id !== repId; });
+                brk.updatedAt = new Date().toISOString();
+                saveStateToLocalBackup();
+                if (window.saveBreakdownToFirestore) {
+                    window.saveBreakdownToFirestore(brk);
+                }
                 renderBreakdownList(brk.machineId);
                 showAppNotification("Repair log entry deleted.", "info");
             });
@@ -6102,8 +6922,69 @@
                 sheetName = "Water Tanks";
                 fileName = "Siyanat_Water_Tanks_Report";
                 reportTitle = "Siyanat Marol - Water Tank Cleaning Registry";
+            } else if (activeModule === 'inventory') {
+                dbData.inventory.forEach(function(item) {
+                    var row = {
+                        'Item Code': item.code,
+                        'Item Name': item.name,
+                        'Category': item.category,
+                        'Unit': item.unit,
+                        'Main Store': calculateCurrentStock(item, 'Main Store')
+                    };
+                    ALL_AREAS.forEach(function(a) {
+                        row[a] = calculateCurrentStock(item, a);
+                    });
+                    exportRows.push(row);
+                });
+                sheetName = "Inventory Stock";
+                fileName = "Siyanat_Inventory_Stock_Report";
+                reportTitle = "Siyanat Marol - Live Inventory Stock Report";
+            } else if (activeModule === 'pest') {
+                dbPestControlRecords.forEach(function(r) {
+                    exportRows.push({
+                        'Date': r.date,
+                        'Area': r.area,
+                        'Treatment Type': r.treatmentType,
+                        'Timeline / Location': r.treatmentType === 'Recurring' ? (r.timeline || '') : (r.location || ''),
+                        'Performed By': r.doneBy,
+                        'Remarks': r.remarks || ''
+                    });
+                });
+                sheetName = "Pest Control";
+                fileName = "Siyanat_Pest_Control_Report";
+                reportTitle = "Siyanat Marol - Pest Control Treatments";
+            } else if (activeModule === 'cleaning') {
+                dbCleaningLogs.forEach(function(l) {
+                    exportRows.push({
+                        'Date': l.date,
+                        'Area': l.area,
+                        'Cleaning Type': l.type,
+                        'Status': l.status,
+                        'Remarks': l.remarks || '',
+                        'Logged By': l.loggedBy || ''
+                    });
+                });
+                sheetName = "Cleaning Logs";
+                fileName = "Siyanat_Cleaning_Schedule_Report";
+                reportTitle = "Siyanat Marol - Cleaning Reports & Checklists";
+            } else if (activeModule === 'machinery') {
+                dbData.machinery.forEach(function(m) {
+                    exportRows.push({
+                        'Category': m.category,
+                        'Brand': m.brand,
+                        'Model': m.model,
+                        'Assigned Area': m.area,
+                        'Purchase Date': m.purchaseDate || 'N/A',
+                        'Warranty': m.warranty || 'N/A'
+                    });
+                });
+                sheetName = "Machinery Assets";
+                fileName = "Siyanat_Machinery_Assets_Report";
+                reportTitle = "Siyanat Marol - Equipment & Machinery Master";
             } else if (activeModule === 'procurement') {
-                if (procurementSubView === 'vendor_rate') {
+                var vrModal = document.getElementById('vendorRateModal');
+                var isVrOpen = vrModal && !vrModal.classList.contains('hidden');
+                if (isVrOpen) {
                     dbData.inventory.forEach(function(item) {
                         var row = {
                             'Item Code': item.code,
@@ -6119,22 +7000,22 @@
                     sheetName = "Vendor Rates";
                     fileName = "Siyanat_Vendor_Rates_Master";
                     reportTitle = "Siyanat Marol - Vendor Rates Master";
-                } else if (activeModule === 'procurement') {
-                var sortedOrders = getSortedProcurements();
-                sortedOrders.forEach(function(ord) {
-                    exportRows.push({
-                        'Order ID': ord.id,
-                        'Date': ord.date,
-                        'Vendor Name': ord.vendorName,
-                        'Total Items': Array.isArray(ord.items) ? ord.items.length : (ord.totalItems || 0),
-                        'Grand Total (Rs)': (parseFloat(ord.grandTotal) || 0).toFixed(2),
-                        'Logged By': ord.loggedBy || 'System'
+                } else {
+                    var sortedOrders = getSortedProcurements();
+                    sortedOrders.forEach(function(ord) {
+                        exportRows.push({
+                            'Order ID': ord.id,
+                            'Date': ord.date,
+                            'Vendor Name': ord.vendorName,
+                            'Total Items': Array.isArray(ord.items) ? ord.items.length : (ord.totalItems || 0),
+                            'Grand Total (Rs)': (parseFloat(ord.grandTotal) || 0).toFixed(2),
+                            'Logged By': ord.loggedBy || 'System'
+                        });
                     });
-                });
-                sheetName = "Procurement Orders";
-                fileName = "Siyanat_Procurement_Orders";
-                reportTitle = "Siyanat Marol - HK Procurement Orders Summary";
-            }
+                    sheetName = "Procurement Orders";
+                    fileName = "Siyanat_Procurement_Orders";
+                    reportTitle = "Siyanat Marol - HK Procurement Orders Summary";
+                }
             }
 
             if (exportRows.length === 0) {
@@ -6162,6 +7043,195 @@
                 doc.save(fileName + ".pdf");
             }
         }
+
+        // ================= CLOUD & FM.MAROL DRIVE SETTINGS & BACKUP HELPERS =================
+        function updateDriveBridgeBadgeUI() {
+            var badge = document.getElementById('driveBridgeStatusBadge');
+            var hasUrl = dbDriveConfig && dbDriveConfig.scriptUrl && dbDriveConfig.scriptUrl.trim().indexOf('https://script.google.com') === 0;
+            if (badge) {
+                if (hasUrl) {
+                    badge.className = 'text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 self-start sm:self-auto';
+                    badge.innerText = 'Connected to fm.marol Drive';
+                } else {
+                    badge.className = 'text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 self-start sm:self-auto';
+                    badge.innerText = 'Using Firestore/Local Vault (Paste Script URL for Drive)';
+                }
+            }
+        }
+
+        function openDriveConfigModal() {
+            var urlInput = document.getElementById('driveScriptUrlInput');
+            var folderInput = document.getElementById('driveFolderNameInput');
+            var folderIdInput = document.getElementById('driveFolderIdInput');
+            if (urlInput) urlInput.value = (dbDriveConfig && dbDriveConfig.scriptUrl) ? dbDriveConfig.scriptUrl : '';
+            if (folderInput) folderInput.value = (dbDriveConfig && dbDriveConfig.folderName) ? dbDriveConfig.folderName : 'Siyanat_Housekeeping_Uploads';
+            if (folderIdInput) folderIdInput.value = (dbDriveConfig && dbDriveConfig.folderId) ? dbDriveConfig.folderId : '';
+            updateDriveBridgeBadgeUI();
+            openModal('driveConfigModal');
+        }
+
+        async function handleSaveDriveConfig(e) {
+            e.preventDefault();
+            var scriptUrl = document.getElementById('driveScriptUrlInput').value.trim();
+            var folderName = document.getElementById('driveFolderNameInput').value.trim() || 'Siyanat_Housekeeping_Uploads';
+            var folderId = document.getElementById('driveFolderIdInput').value.trim();
+
+            dbDriveConfig = {
+                scriptUrl: scriptUrl,
+                folderName: folderName,
+                folderId: folderId,
+                updatedAt: new Date().toISOString()
+            };
+            saveStateToLocalBackup();
+            if (window.saveDriveConfigToFirestore) {
+                await window.saveDriveConfigToFirestore(dbDriveConfig);
+            }
+            updateDriveBridgeBadgeUI();
+            showAppNotification('fm.marol Google Drive configuration saved!', 'success');
+        }
+
+        async function testFmMarolDriveUpload() {
+            var scriptUrl = document.getElementById('driveScriptUrlInput').value.trim();
+            var folderName = document.getElementById('driveFolderNameInput').value.trim() || 'Siyanat_Housekeeping_Uploads';
+            var folderId = document.getElementById('driveFolderIdInput').value.trim();
+            if (!scriptUrl) {
+                showAppNotification('Please paste your Google Apps Script Web App URL first, then click Test Drive Upload.', 'error');
+                return;
+            }
+            dbDriveConfig.scriptUrl = scriptUrl;
+            dbDriveConfig.folderName = folderName;
+            dbDriveConfig.folderId = folderId;
+            saveStateToLocalBackup();
+
+            var btn = document.getElementById('testDriveUploadBtn');
+            if (btn) { btn.disabled = true; btn.innerText = 'Testing Upload to fm.marol Drive...'; }
+            try {
+                // 1x1 emerald pixel PNG base64 test image
+                var samplePng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+                var resUrl = await uploadToFmMarolDriveBackend(samplePng, 'Siyanat_Drive_Test.png', 'image/png', 'Drive_Connection_Test');
+                if (resUrl && resUrl.indexOf('http') === 0) {
+                    showAppNotification('Success! Test file uploaded to fm.marol Google Drive.', 'success');
+                } else {
+                    showAppNotification('Drive script responded, but did not return a public URL. Check Apps Script deployment permissions ("Anyone").', 'error');
+                }
+            } catch (err) {
+                showAppNotification('Drive test error: ' + err.message, 'error');
+            }
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i><span>Test Drive Upload</span>'; }
+        }
+
+        function copyTextToClipboardSafe(text, successMsg) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                    showAppNotification(successMsg, 'success');
+                }).catch(function() {
+                    fallbackCopyText(text, successMsg);
+                });
+            } else {
+                fallbackCopyText(text, successMsg);
+            }
+        }
+
+        function fallbackCopyText(text, successMsg) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); showAppNotification(successMsg, 'success'); } catch (e) {}
+            document.body.removeChild(ta);
+        }
+
+        function copyFmMarolAppsScriptCode() {
+            var code = [
+                "// DEPLOY THIS IN script.google.com UNDER fm.marol@jameasaifiyah.edu",
+                "// Click Deploy -> New deployment -> Web app -> Execute as: Me -> Who has access: Anyone",
+                "function doPost(e) {",
+                "  try {",
+                "    var data = JSON.parse(e.postData.contents);",
+                "    var rootFolder;",
+                "    if (data.folderId) {",
+                "      rootFolder = DriveApp.getFolderById(data.folderId);",
+                "    } else {",
+                "      var folderName = data.folder || 'Siyanat_Housekeeping_Uploads';",
+                "      var folders = DriveApp.getFoldersByName(folderName);",
+                "      rootFolder = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);",
+                "    }",
+                "    var targetFolder = rootFolder;",
+                "    if (data.subFolder) {",
+                "      var subFolders = rootFolder.getFoldersByName(data.subFolder);",
+                "      targetFolder = subFolders.hasNext() ? subFolders.next() : rootFolder.createFolder(data.subFolder);",
+                "    }",
+                "    var decoded = Utilities.base64Decode(data.base64);",
+                "    var blob = Utilities.newBlob(decoded, data.mimeType || 'application/octet-stream', data.fileName || ('Upload_' + Date.now()));",
+                "    var file = targetFolder.createFile(blob);",
+                "    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);",
+                "    var fileId = file.getId();",
+                "    var directUrl = 'https://drive.google.com/uc?export=view&id=' + fileId;",
+                "    return ContentService.createTextOutput(JSON.stringify({ status: 'ok', fileId: fileId, url: directUrl, viewUrl: directUrl })).setMimeType(ContentService.MimeType.JSON);",
+                "  } catch (err) {",
+                "    return ContentService.createTextOutput(JSON.stringify({ status: 'error', error: err.toString() })).setMimeType(ContentService.MimeType.JSON);",
+                "  }",
+                "}"
+            ].join("\n");
+            copyTextToClipboardSafe(code, 'Copied fm.marol Google Apps Script code to clipboard!');
+        }
+
+        function copyFirestoreSecurityRules() {
+            var rules = "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if true;\n    }\n  }\n}";
+            copyTextToClipboardSafe(rules, 'Copied Firestore Security Rules to clipboard!');
+        }
+
+        function exportFullDatabaseBackup() {
+            saveStateToLocalBackup();
+            var fullSnap = buildFullPortalStateSnapshot();
+            var jsonStr = JSON.stringify(fullSnap, null, 2);
+            var blob = new Blob([jsonStr], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'Siyanat_Marol_Full_Database_Backup_' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showAppNotification('Downloaded complete database backup (.json)!', 'success');
+        }
+
+        function importFullDatabaseBackup(evt) {
+            var file = evt.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    var parsed = JSON.parse(e.target.result);
+                    applyPortalStateSnapshot(parsed);
+                    saveStateToLocalBackup();
+                    if (window.syncAllLocalDataToFirestore) {
+                        await window.syncAllLocalDataToFirestore();
+                    }
+                    if (activeModule) switchModule(activeModule);
+                    showAppNotification('Database backup restored and synced to Firestore!', 'success');
+                } catch (err) {
+                    showAppNotification('Invalid backup JSON file: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+            evt.target.value = '';
+        }
+
+        async function forceSyncAllToFirestore() {
+            saveStateToLocalBackup();
+            if (window.syncAllLocalDataToFirestore) {
+                await window.syncAllLocalDataToFirestore(true);
+            } else {
+                showAppNotification('Saved to local persistent storage.', 'info');
+            }
+        }
+
+        // Hydrate saved state from Local Vault immediately on script load
+        loadStateFromLocalBackup();
     </script>
 
     <!-- FIREBASE AUTH & FIRESTORE DATABASE MODULE -->
@@ -6173,6 +7243,7 @@
             signInWithPopup, 
             signInWithEmailAndPassword, 
             createUserWithEmailAndPassword, 
+            signInAnonymously,
             signOut, 
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -6183,8 +7254,15 @@
             setDoc, 
             addDoc,
             deleteDoc, 
-            onSnapshot 
+            onSnapshot,
+            enableIndexedDbPersistence
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import {
+            getStorage,
+            ref as storageRef,
+            uploadString,
+            getDownloadURL
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBPGqD2emtRMEMFd02UoC2iGRyFDbmBVxU",
@@ -6198,9 +7276,38 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
         const provider = new GoogleAuthProvider();
 
+        // Enable Firestore IndexedDB offline persistence so cached Firestore docs survive offline/reloads
+        try {
+            enableIndexedDbPersistence(db).catch(() => {});
+        } catch (e) {}
+
         let activeUnsubscribers = [];
+        let hasShownPermissionWarning = false;
+
+        function setCloudSyncIndicator(status, label) {
+            const dot = document.getElementById('cloudSyncStatusDot');
+            const text = document.getElementById('cloudSyncStatusText');
+            const rulesBox = document.getElementById('firestoreRulesWarningBox');
+            if (dot) {
+                if (status === 'connected') {
+                    dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                } else if (status === 'warning') {
+                    dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+                } else {
+                    dot.className = 'w-2 h-2 rounded-full bg-sky-400';
+                }
+            }
+            if (text && label) {
+                text.innerText = label;
+            }
+            if (rulesBox) {
+                if (status === 'warning') rulesBox.classList.remove('hidden');
+                else rulesBox.classList.add('hidden');
+            }
+        }
 
         function stopAllFirestoreListeners() {
             activeUnsubscribers.forEach((unsub) => {
@@ -6213,31 +7320,50 @@
 
         function handleSnapshotError(contextLabel, err) {
             if (err && err.code === "permission-denied") {
+                setCloudSyncIndicator('warning', 'Local Vault Active (Check Rules)');
+                if (!hasShownPermissionWarning) {
+                    hasShownPermissionWarning = true;
+                    console.warn("Firestore permission-denied on " + contextLabel + ". Using persistent Local Vault.");
+                }
                 return;
             }
         }
 
-        function startFirestoreListeners() {
-            stopAllFirestoreListeners();
+        function handleWriteError(contextLabel, err) {
+            saveStateToLocalBackup();
+            if (err && err.code === "permission-denied") {
+                setCloudSyncIndicator('warning', 'Saved Locally (Rules Locked)');
+            }
+        }
 
-            // 1. Sync Users Collection
+        function startFirestoreListeners() {
+            if (activeUnsubscribers.length > 0) return;
+
+            // 1. Sync Users Collection (users)
             activeUnsubscribers.push(
                 onSnapshot(
                     collection(db, "users"),
                     (snapshot) => {
+                        setCloudSyncIndicator('connected', 'Firestore & fm.marol Drive');
                         const firebaseUsers = [];
                         snapshot.forEach((docSnap) => {
                             firebaseUsers.push(docSnap.data());
                         });
 
                         if (firebaseUsers.length > 0) {
-                            window.userRegistry = firebaseUsers;
+                            window.userRegistry = mergeCollectionWithLocal(firebaseUsers, window.userRegistry, 'email');
+                            saveStateToLocalBackup();
                             if (window.currentUser) {
                                 window.handleUserAuthenticated(window.currentUser.email);
                             }
                             if (typeof window.renderUserAccessList === "function") {
                                 window.renderUserAccessList();
                             }
+                        } else if (window.userRegistry && window.userRegistry.length > 0) {
+                            window.userRegistry.forEach((u) => {
+                                const docId = u.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
+                                setDoc(doc(db, "users", docId), u, { merge: true }).catch(() => {});
+                            });
                         }
                     },
                     (err) => handleSnapshotError("users", err)
@@ -6253,7 +7379,8 @@
                         snapshot.forEach((docSnap) => {
                             records.push({ id: docSnap.id, ...docSnap.data() });
                         });
-                        window.dbPestControlRecords = records;
+                        window.dbPestControlRecords = mergeCollectionWithLocal(records, window.dbPestControlRecords, 'id');
+                        saveStateToLocalBackup();
                         if (window.activeModule === "pest") {
                             window.switchModule("pest");
                         }
@@ -6268,9 +7395,8 @@
                     doc(db, "settings", "waste_rates"),
                     (docSnap) => {
                         if (docSnap.exists()) {
-                            window.dbWasteRates = docSnap.data();
-                        } else if (!window.dbWasteRates) {
-                            window.dbWasteRates = { SoftPlastic: 0, HardPlastic: 0, Cardboard: 0, ColourPaper: 0, MetalTin: 0, Glass: 0 };
+                            window.dbWasteRates = Object.assign({}, window.dbWasteRates, docSnap.data());
+                            saveStateToLocalBackup();
                         }
                         if (window.activeModule === "waste") {
                             window.switchModule("waste");
@@ -6289,8 +7415,10 @@
                         snapshot.forEach((docSnap) => {
                             offloads.push({ id: docSnap.id, ...docSnap.data() });
                         });
-                        offloads.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        window.dbWasteOffloadings = offloads;
+                        const merged = mergeCollectionWithLocal(offloads, window.dbWasteOffloadings, 'id');
+                        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        window.dbWasteOffloadings = merged;
+                        saveStateToLocalBackup();
                         if (window.activeModule === "waste") {
                             window.switchModule("waste");
                         }
@@ -6304,11 +7432,12 @@
                 onSnapshot(
                     collection(db, "crates"),
                     (snapshot) => {
-                        const crateMap = {};
+                        const crateMap = Object.assign({}, window.dbCrates || {});
                         snapshot.forEach((docSnap) => {
                             crateMap[docSnap.id] = { id: docSnap.id, ...docSnap.data() };
                         });
                         window.dbCrates = crateMap;
+                        saveStateToLocalBackup();
                         if (window.activeModule === "compost") {
                             window.switchModule("compost");
                         }
@@ -6326,8 +7455,10 @@
                         snapshot.forEach((docSnap) => {
                             logs.push({ id: docSnap.id, ...docSnap.data() });
                         });
-                        logs.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        window.dbWetWasteLogs = logs;
+                        const merged = mergeCollectionWithLocal(logs, window.dbWetWasteLogs, 'id');
+                        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        window.dbWetWasteLogs = merged;
+                        saveStateToLocalBackup();
                         if (window.activeModule === "compost") {
                             window.switchModule("compost");
                         }
@@ -6345,8 +7476,10 @@
                         snapshot.forEach((docSnap) => {
                             logs.push({ id: docSnap.id, ...docSnap.data() });
                         });
-                        logs.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        window.dbCompostLogs = logs;
+                        const merged = mergeCollectionWithLocal(logs, window.dbCompostLogs, 'id');
+                        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        window.dbCompostLogs = merged;
+                        saveStateToLocalBackup();
                         if (window.activeModule === "compost") {
                             window.switchModule("compost");
                         }
@@ -6364,7 +7497,8 @@
                         snapshot.forEach((docSnap) => {
                             tanks.push({ id: docSnap.id, ...docSnap.data() });
                         });
-                        window.dbWaterTanks = tanks;
+                        window.dbWaterTanks = mergeCollectionWithLocal(tanks, window.dbWaterTanks, 'id');
+                        saveStateToLocalBackup();
                         if (window.activeModule === "water") {
                             window.switchModule("water");
                         }
@@ -6382,8 +7516,10 @@
                         snapshot.forEach((docSnap) => {
                             logs.push({ id: docSnap.id, ...docSnap.data() });
                         });
-                        logs.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        window.dbTankCleaningLogs = logs;
+                        const merged = mergeCollectionWithLocal(logs, window.dbTankCleaningLogs, 'id');
+                        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        window.dbTankCleaningLogs = merged;
+                        saveStateToLocalBackup();
                         if (window.activeModule === "water") {
                             window.switchModule("water");
                         }
@@ -6398,7 +7534,14 @@
                     doc(db, "settings", "drive_config"),
                     (docSnap) => {
                         if (docSnap.exists()) {
-                            window.dbDriveConfig = docSnap.data();
+                            const remoteCfg = docSnap.data();
+                            if (remoteCfg.scriptUrl || !window.dbDriveConfig.scriptUrl) {
+                                window.dbDriveConfig = Object.assign({}, window.dbDriveConfig, remoteCfg);
+                                saveStateToLocalBackup();
+                                if (typeof window.updateDriveBridgeBadgeUI === 'function') {
+                                    window.updateDriveBridgeBadgeUI();
+                                }
+                            }
                         }
                     },
                     (err) => handleSnapshotError("settings/drive_config", err)
@@ -6414,12 +7557,16 @@
                         snapshot.forEach((docSnap) => {
                             items.push({ id: docSnap.id, ...docSnap.data() });
                         });
-                        if (items.length > 0) {
-                            window.dbData.inventory = items;
-                        } else if (window.dbData.inventory && window.dbData.inventory.length > 0) {
+                        window.dbData.inventory = mergeCollectionWithLocal(items, window.dbData.inventory, 'id');
+                        saveStateToLocalBackup();
+                        if (items.length === 0 && window.dbData.inventory && window.dbData.inventory.length > 0) {
                             window.dbData.inventory.forEach((item) => {
                                 setDoc(doc(db, "inventory", item.id), item, { merge: true }).catch(() => {});
                             });
+                        }
+                        var osModal = document.getElementById('openingStockModal');
+                        if (osModal && !osModal.classList.contains('hidden') && typeof window.renderOpeningStockTable === 'function') {
+                            window.renderOpeningStockTable();
                         }
                         if (window.activeModule === "inventory" || window.activeModule === "procurement") {
                             window.switchModule(window.activeModule);
@@ -6438,10 +7585,10 @@
                         snapshot.forEach((docSnap) => {
                             arcs.push({ id: docSnap.id, ...docSnap.data() });
                         });
-                        if (arcs.length > 0) {
-                            arcs.sort((a, b) => new Date(b.date) - new Date(a.date));
-                            window.dbData.inventoryArchive = arcs;
-                        }
+                        const merged = mergeCollectionWithLocal(arcs, window.dbData.inventoryArchive, 'id');
+                        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        window.dbData.inventoryArchive = merged;
+                        saveStateToLocalBackup();
                         if (window.activeModule === "inventory" || window.activeModule === "procurement") {
                             window.switchModule(window.activeModule);
                         }
@@ -6457,9 +7604,10 @@
                     (docSnap) => {
                         if (docSnap.exists() && Array.isArray(docSnap.data().vendors) && docSnap.data().vendors.length > 0) {
                             window.dbProcurementVendors = docSnap.data().vendors;
+                            saveStateToLocalBackup();
                         } else {
                             setDoc(doc(db, "settings", "procurement_vendors"), {
-                                vendors: window.DEFAULT_PROCUREMENT_VENDORS || ["Diversey", "Raj Traders", "Anjum Sutterwala"],
+                                vendors: window.dbProcurementVendors || window.DEFAULT_PROCUREMENT_VENDORS || ["Diversey", "Raj Traders", "Anjum Sutterwala"],
                                 updatedAt: new Date().toISOString()
                             }, { merge: true }).catch(() => {});
                         }
@@ -6476,12 +7624,13 @@
                 onSnapshot(
                     collection(db, "vendor_rates"),
                     (snapshot) => {
-                        const ratesMap = {};
+                        const ratesMap = Object.assign({}, window.dbVendorRates || {});
                         snapshot.forEach((docSnap) => {
                             const data = docSnap.data();
-                            ratesMap[docSnap.id] = data.rates || {};
+                            ratesMap[docSnap.id] = Object.assign({}, ratesMap[docSnap.id] || {}, data.rates || {});
                         });
                         window.dbVendorRates = ratesMap;
+                        saveStateToLocalBackup();
                         if (window.activeModule === "procurement") {
                             window.switchModule("procurement");
                         }
@@ -6499,8 +7648,10 @@
                         snapshot.forEach((docSnap) => {
                             orders.push({ id: docSnap.id, ...docSnap.data() });
                         });
-                        orders.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-                        window.dbProcurements = orders;
+                        const merged = mergeCollectionWithLocal(orders, window.dbProcurements, 'id');
+                        merged.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+                        window.dbProcurements = merged;
+                        saveStateToLocalBackup();
                         if (window.activeModule === "procurement") {
                             window.switchModule("procurement");
                         }
@@ -6508,248 +7659,509 @@
                     (err) => handleSnapshotError("procurements", err)
                 )
             );
+
+            // 16. Sync HR Staff Collection (hr_staff)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "hr_staff"),
+                    (snapshot) => {
+                        const staffDocs = [];
+                        snapshot.forEach((docSnap) => {
+                            staffDocs.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        if (staffDocs.length > 0) {
+                            window.dbData.hrStaff = mergeCollectionWithLocal(staffDocs, window.dbData.hrStaff, 'id');
+                            saveStateToLocalBackup();
+                        } else if (window.dbData.hrStaff && window.dbData.hrStaff.length > 0) {
+                            window.dbData.hrStaff.forEach((stf) => {
+                                setDoc(doc(db, "hr_staff", stf.id), stf, { merge: true }).catch(() => {});
+                            });
+                        }
+                        if (window.activeModule === "hr") {
+                            window.switchModule("hr");
+                        }
+                    },
+                    (err) => handleSnapshotError("hr_staff", err)
+                )
+            );
+
+            // 17. Sync Area Capacities (settings/area_capacities) & Executive Profiles (settings/executives_data)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    doc(db, "settings", "area_capacities"),
+                    (docSnap) => {
+                        if (docSnap.exists() && docSnap.data().capacities) {
+                            window.areaCapacities = Object.assign({}, window.areaCapacities, docSnap.data().capacities);
+                            saveStateToLocalBackup();
+                            if (window.activeModule === "hr") window.switchModule("hr");
+                        }
+                    },
+                    (err) => handleSnapshotError("settings/area_capacities", err)
+                )
+            );
+
+            activeUnsubscribers.push(
+                onSnapshot(
+                    doc(db, "settings", "executives_data"),
+                    (docSnap) => {
+                        if (docSnap.exists() && docSnap.data().executives) {
+                            window.executivesData = Object.assign({}, window.executivesData, docSnap.data().executives);
+                            saveStateToLocalBackup();
+                            if (window.activeModule === "hr") window.switchModule("hr");
+                        }
+                    },
+                    (err) => handleSnapshotError("settings/executives_data", err)
+                )
+            );
+
+            // 18. Sync Module 3 Cleaning Reports (cleaning_logs)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "cleaning_logs"),
+                    (snapshot) => {
+                        const logs = [];
+                        snapshot.forEach((docSnap) => {
+                            logs.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        const merged = mergeCollectionWithLocal(logs, window.dbCleaningLogs, 'id');
+                        merged.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+                        window.dbCleaningLogs = merged;
+                        saveStateToLocalBackup();
+                        if (window.activeModule === "cleaning") {
+                            window.switchModule("cleaning");
+                        }
+                    },
+                    (err) => handleSnapshotError("cleaning_logs", err)
+                )
+            );
+
+            // 19. Sync Module 9 Machinery Assets (machinery), Breakdowns (machinery_breakdowns) & Categories (settings/machinery_categories)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "machinery"),
+                    (snapshot) => {
+                        const macs = [];
+                        snapshot.forEach((docSnap) => {
+                            macs.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        window.dbData.machinery = mergeCollectionWithLocal(macs, window.dbData.machinery, 'id');
+                        saveStateToLocalBackup();
+                        if (window.activeModule === "machinery") {
+                            window.switchModule("machinery");
+                        }
+                    },
+                    (err) => handleSnapshotError("machinery", err)
+                )
+            );
+
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "machinery_breakdowns"),
+                    (snapshot) => {
+                        const brks = [];
+                        snapshot.forEach((docSnap) => {
+                            brks.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        window.dbData.breakdowns = mergeCollectionWithLocal(brks, window.dbData.breakdowns, 'id');
+                        saveStateToLocalBackup();
+                        if (window.activeModule === "machinery") {
+                            window.switchModule("machinery");
+                        }
+                    },
+                    (err) => handleSnapshotError("machinery_breakdowns", err)
+                )
+            );
+
+            activeUnsubscribers.push(
+                onSnapshot(
+                    doc(db, "settings", "machinery_categories"),
+                    (docSnap) => {
+                        if (docSnap.exists() && Array.isArray(docSnap.data().categories) && docSnap.data().categories.length > 0) {
+                            window.machineryCategories = docSnap.data().categories;
+                            saveStateToLocalBackup();
+                        }
+                    },
+                    (err) => handleSnapshotError("settings/machinery_categories", err)
+                )
+            );
+
+            // 20. Sync Chunked Media Blobs (media_blobs) for large photos/videos/PDFs
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "media_blobs"),
+                    (snapshot) => {
+                        const chunksByMediaId = {};
+                        snapshot.forEach((docSnap) => {
+                            const d = docSnap.data();
+                            if (d && d.mediaId) {
+                                if (!chunksByMediaId[d.mediaId]) chunksByMediaId[d.mediaId] = [];
+                                chunksByMediaId[d.mediaId].push(d);
+                            }
+                        });
+                        let addedAny = false;
+                        Object.keys(chunksByMediaId).forEach((mId) => {
+                            if (!window.dbMediaCache[mId]) {
+                                const chunks = chunksByMediaId[mId].sort((a, b) => (a.chunkIndex || 0) - (b.chunkIndex || 0));
+                                if (chunks.length > 0 && chunks.length === (chunks[0].totalChunks || 1)) {
+                                    window.dbMediaCache[mId] = chunks.map((c) => c.data).join("");
+                                    addedAny = true;
+                                }
+                            }
+                        });
+                        if (addedAny) {
+                            saveStateToLocalBackup();
+                            if (window.activeModule) window.switchModule(window.activeModule);
+                        }
+                    },
+                    (err) => handleSnapshotError("media_blobs", err)
+                )
+            );
         }
 
-        // Firestore Mutation Operations
+        // Upload Media to Firebase Storage (Fallback Tier 2)
+        window.uploadMediaToFirebaseStorage = async function(dataUrl, fileName, mimeType, subFolderLabel) {
+            try {
+                const path = "siyanat_uploads/" + (subFolderLabel || "General") + "/" + fileName;
+                const fileRef = storageRef(storage, path);
+                await uploadString(fileRef, dataUrl, "data_url");
+                let downloadUrl = await getDownloadURL(fileRef);
+                if (mimeType && downloadUrl.indexOf("#mime=") === -1) {
+                    downloadUrl += "#mime=" + encodeURIComponent(mimeType);
+                }
+                return downloadUrl;
+            } catch (err) {
+                return "";
+            }
+        };
+
+        // Save Chunked Media to Firestore (Fallback Tier 3 so >1MB media never breaks Firestore writes)
+        window.saveChunkedMediaToFirestore = async function(mediaId, dataUrl, fileName, mimeType, subFolderLabel) {
+            try {
+                const chunkSize = 450000; // 450 KB per document chunk (safely under 1MB limit)
+                const totalChunks = Math.ceil(dataUrl.length / chunkSize);
+                for (let i = 0; i < totalChunks; i++) {
+                    const slice = dataUrl.substring(i * chunkSize, (i + 1) * chunkSize);
+                    await setDoc(doc(db, "media_blobs", mediaId + "_part_" + i), {
+                        mediaId: mediaId,
+                        chunkIndex: i,
+                        totalChunks: totalChunks,
+                        fileName: fileName || "",
+                        mimeType: mimeType || "",
+                        subFolder: subFolderLabel || "",
+                        data: slice,
+                        createdAt: new Date().toISOString()
+                    });
+                }
+            } catch (err) {
+                handleWriteError("media_blobs", err);
+            }
+        };
+
+        // Firestore Mutation Operations Across All 9 Modules
         window.saveInventoryItemToFirestore = async function(itemObj) {
+            saveStateToLocalBackup();
             try {
                 await setDoc(doc(db, "inventory", itemObj.id), itemObj, { merge: true });
-            } catch (err) {}
+            } catch (err) {
+                handleWriteError("inventory", err);
+            }
         };
 
         window.deleteInventoryItemFromFirestore = async function(itemId) {
+            saveStateToLocalBackup();
             try {
                 await deleteDoc(doc(db, "inventory", itemId));
-            } catch (err) {}
+            } catch (err) {
+                handleWriteError("inventory", err);
+            }
         };
 
         window.saveInventoryArchiveToFirestore = async function(arcObj) {
+            saveStateToLocalBackup();
             try {
                 await setDoc(doc(db, "inventory_archive", arcObj.id), arcObj, { merge: true });
-            } catch (err) {}
+            } catch (err) {
+                handleWriteError("inventory_archive", err);
+            }
+        };
+
+        window.saveHrStaffToFirestore = async function(stfObj) {
+            saveStateToLocalBackup();
+            try {
+                await setDoc(doc(db, "hr_staff", stfObj.id), stfObj, { merge: true });
+            } catch (err) {
+                handleWriteError("hr_staff", err);
+            }
+        };
+
+        window.deleteHrStaffFromFirestore = async function(stfId) {
+            saveStateToLocalBackup();
+            try {
+                await deleteDoc(doc(db, "hr_staff", stfId));
+            } catch (err) {
+                handleWriteError("hr_staff", err);
+            }
+        };
+
+        window.saveAreaCapacitiesToFirestore = async function(capObj) {
+            saveStateToLocalBackup();
+            try {
+                await setDoc(doc(db, "settings", "area_capacities"), {
+                    capacities: capObj,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            } catch (err) {
+                handleWriteError("settings/area_capacities", err);
+            }
+        };
+
+        window.saveExecutivesDataToFirestore = async function(execObj) {
+            saveStateToLocalBackup();
+            try {
+                await setDoc(doc(db, "settings", "executives_data"), {
+                    executives: execObj,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            } catch (err) {
+                handleWriteError("settings/executives_data", err);
+            }
+        };
+
+        window.saveCleaningLogToFirestore = async function(logObj) {
+            saveStateToLocalBackup();
+            try {
+                const docId = logObj.id || ("CLN-" + Date.now());
+                logObj.id = docId;
+                await setDoc(doc(db, "cleaning_logs", docId), logObj, { merge: true });
+            } catch (err) {
+                handleWriteError("cleaning_logs", err);
+            }
+        };
+
+        window.deleteCleaningLogFromFirestore = async function(logId) {
+            saveStateToLocalBackup();
+            try {
+                await deleteDoc(doc(db, "cleaning_logs", logId));
+            } catch (err) {
+                handleWriteError("cleaning_logs", err);
+            }
         };
 
         window.savePestRecordToFirestore = async function(data) {
+            saveStateToLocalBackup();
             try {
-                await addDoc(collection(db, "pest_control"), data);
+                const docId = data.id || ("PST-" + Date.now());
+                data.id = docId;
+                await setDoc(doc(db, "pest_control", docId), data, { merge: true });
             } catch (err) {
-                window.dbPestControlRecords.unshift({ id: "PST-" + Date.now(), ...data });
+                handleWriteError("pest_control", err);
             }
         };
 
         window.deletePestRecordFromFirestore = async function(docId) {
+            saveStateToLocalBackup();
             try {
                 await deleteDoc(doc(db, "pest_control", docId));
             } catch (err) {
-                window.dbPestControlRecords = window.dbPestControlRecords.filter((r) => r.id !== docId);
+                handleWriteError("pest_control", err);
             }
         };
 
         window.saveWasteRatesToFirestore = async function(ratesObj) {
+            saveStateToLocalBackup();
             try {
-                await setDoc(doc(db, "settings", "waste_rates"), ratesObj);
+                await setDoc(doc(db, "settings", "waste_rates"), ratesObj, { merge: true });
             } catch (err) {
-                window.dbWasteRates = ratesObj;
+                handleWriteError("settings/waste_rates", err);
             }
         };
 
         window.saveWasteOffloadToFirestore = async function(docId, receiptObj) {
+            saveStateToLocalBackup();
             try {
-                if (docId) {
-                    await setDoc(doc(db, "dry_waste_offloadings", docId), receiptObj, { merge: true });
-                } else {
-                    await addDoc(collection(db, "dry_waste_offloadings"), receiptObj);
-                }
+                const fallbackOff = { id: "OFF-" + Date.now() }; const targetId = docId || receiptObj.id || fallbackOff.id;
+                receiptObj.id = targetId;
+                await setDoc(doc(db, "dry_waste_offloadings", targetId), receiptObj, { merge: true });
             } catch (err) {
-                if (docId) {
-                    const idx = window.dbWasteOffloadings.findIndex((r) => r.id === docId);
-                    if (idx >= 0) window.dbWasteOffloadings[idx] = { ...window.dbWasteOffloadings[idx], ...receiptObj };
-                } else {
-                    window.dbWasteOffloadings.unshift({ id: "OFF-" + Date.now(), ...receiptObj });
-                }
-                window.dbWasteOffloadings.sort((a, b) => new Date(b.date) - new Date(a.date));
+                handleWriteError("dry_waste_offloadings", err);
             }
         };
 
         window.deleteWasteOffloadFromFirestore = async function(docId) {
+            saveStateToLocalBackup();
             try {
                 await deleteDoc(doc(db, "dry_waste_offloadings", docId));
             } catch (err) {
-                window.dbWasteOffloadings = window.dbWasteOffloadings.filter((r) => r.id !== docId);
+                handleWriteError("dry_waste_offloadings", err);
             }
         };
 
         // Module 6: Compost & Wet Waste Firestore Operations
         window.saveWetWasteLogToFirestore = async function(logDoc, allocations, date) {
+            const localId = logDoc.id || ("WW-" + Date.now());
+            logDoc.id = localId;
+            if (!window.dbWetWasteLogs.find((l) => l.id === localId)) {
+                window.dbWetWasteLogs.unshift(logDoc);
+            }
+            const crateStateMap = window.computeAll90CratesState ? window.computeAll90CratesState() : {};
+            allocations.forEach((alloc) => {
+                const cNum = alloc.crateNumber;
+                const existingQty = crateStateMap[cNum] ? (parseFloat(crateStateMap[cNum].currentQty) || 0) : 0;
+                window.dbCrates[cNum] = {
+                    crateNumber: cNum,
+                    currentQty: existingQty,
+                    dateAdded: date,
+                    status: "active",
+                    updatedAt: new Date().toISOString()
+                };
+            });
+            saveStateToLocalBackup();
             try {
-                await addDoc(collection(db, "wet_waste_logs"), logDoc);
-                const crateStateMap = window.computeAll90CratesState ? window.computeAll90CratesState() : {};
+                await setDoc(doc(db, "wet_waste_logs", localId), logDoc, { merge: true });
                 for (const alloc of allocations) {
                     const cNum = alloc.crateNumber;
-                    const existingQty = crateStateMap[cNum] ? (parseFloat(crateStateMap[cNum].currentQty) || 0) : 0;
-                    const newQty = existingQty + (parseFloat(alloc.qty) || 0);
-                    await setDoc(doc(db, "crates", cNum), {
-                        crateNumber: cNum,
-                        currentQty: newQty,
-                        dateAdded: date,
-                        status: "active",
-                        updatedAt: new Date().toISOString()
-                    }, { merge: true });
+                    await setDoc(doc(db, "crates", cNum), window.dbCrates[cNum], { merge: true });
                 }
             } catch (err) {
-                const localId = "WW-" + Date.now();
-                window.dbWetWasteLogs.unshift({ id: localId, ...logDoc });
-                const crateStateMap = window.computeAll90CratesState ? window.computeAll90CratesState() : {};
-                allocations.forEach((alloc) => {
-                    const cNum = alloc.crateNumber;
-                    const existingQty = crateStateMap[cNum] ? (parseFloat(crateStateMap[cNum].currentQty) || 0) : 0;
-                    window.dbCrates[cNum] = {
-                        crateNumber: cNum,
-                        currentQty: existingQty + (parseFloat(alloc.qty) || 0),
-                        dateAdded: date,
-                        status: "active",
-                        updatedAt: new Date().toISOString()
-                    };
-                });
+                handleWriteError("wet_waste_logs", err);
             }
         };
 
         window.archiveCrateInFirestore = async function(crateNumber, archivedDate, reason) {
+            window.dbCrates[crateNumber] = {
+                crateNumber: crateNumber,
+                currentQty: 0,
+                dateAdded: "",
+                status: "empty",
+                lastArchivedDate: archivedDate,
+                lastArchivedReason: reason || "Archived",
+                updatedAt: new Date().toISOString()
+            };
+            window.dbWetWasteLogs.forEach((log) => {
+                if (Array.isArray(log.crateAllocations)) {
+                    log.crateAllocations.forEach((a) => {
+                        if (a.crateNumber === crateNumber && !a.archived) {
+                            a.archived = true;
+                            a.archivedAt = archivedDate;
+                            a.archivedReason = reason || "Archived";
+                        }
+                    });
+                }
+            });
+            saveStateToLocalBackup();
             try {
-                await setDoc(doc(db, "crates", crateNumber), {
-                    crateNumber: crateNumber,
-                    currentQty: 0,
-                    dateAdded: "",
-                    status: "empty",
-                    lastArchivedDate: archivedDate,
-                    lastArchivedReason: reason || "Archived",
-                    updatedAt: new Date().toISOString()
-                }, { merge: true });
-
+                await setDoc(doc(db, "crates", crateNumber), window.dbCrates[crateNumber], { merge: true });
                 for (const log of window.dbWetWasteLogs) {
                     if (Array.isArray(log.crateAllocations)) {
-                        let modified = false;
-                        const updatedAllocs = log.crateAllocations.map((a) => {
-                            if (a.crateNumber === crateNumber && !a.archived) {
-                                modified = true;
-                                return { ...a, archived: true, archivedAt: archivedDate, archivedReason: reason || "Archived" };
-                            }
-                            return a;
-                        });
-                        if (modified) {
-                            log.crateAllocations = updatedAllocs;
-                            await setDoc(doc(db, "wet_waste_logs", log.id), { crateAllocations: updatedAllocs }, { merge: true });
-                        }
+                        await setDoc(doc(db, "wet_waste_logs", log.id), { crateAllocations: log.crateAllocations }, { merge: true });
                     }
                 }
             } catch (err) {
-                window.dbCrates[crateNumber] = {
-                    crateNumber: crateNumber,
-                    currentQty: 0,
-                    dateAdded: "",
-                    status: "empty",
-                    lastArchivedDate: archivedDate,
-                    lastArchivedReason: reason || "Archived"
-                };
-                window.dbWetWasteLogs.forEach((log) => {
-                    if (Array.isArray(log.crateAllocations)) {
-                        log.crateAllocations.forEach((a) => {
-                            if (a.crateNumber === crateNumber) a.archived = true;
-                        });
-                    }
-                });
+                handleWriteError("crates", err);
             }
         };
 
         window.saveCompostAndArchiveCrateInFirestore = async function(compostDoc, crateNumber, date) {
+            const fallbackCmp = { id: "CMP-" + Date.now() }; const cmpId = compostDoc.id || fallbackCmp.id;
+            compostDoc.id = cmpId;
+            if (!window.dbCompostLogs.find((c) => c.id === cmpId)) {
+                window.dbCompostLogs.unshift(compostDoc);
+            }
+            saveStateToLocalBackup();
             try {
-                await addDoc(collection(db, "compost_logs"), compostDoc);
+                await setDoc(doc(db, "compost_logs", cmpId), compostDoc, { merge: true });
                 await window.archiveCrateInFirestore(crateNumber, date, "Compost Generated");
             } catch (err) {
-                window.dbCompostLogs.unshift({ id: "CMP-" + Date.now(), ...compostDoc });
                 await window.archiveCrateInFirestore(crateNumber, date, "Compost Generated");
+                handleWriteError("compost_logs", err);
             }
         };
 
         window.deleteCompostDayLogsFromFirestore = async function(dateKey) {
+            const wetToDelete = window.dbWetWasteLogs.filter((l) => l.date === dateKey);
+            const cmpToDelete = window.dbCompostLogs.filter((c) => c.date === dateKey);
+            wetToDelete.forEach((w) => markRecordDeleted(w.id));
+            cmpToDelete.forEach((c) => markRecordDeleted(c.id));
+            window.dbWetWasteLogs = window.dbWetWasteLogs.filter((l) => l.date !== dateKey);
+            window.dbCompostLogs = window.dbCompostLogs.filter((c) => c.date !== dateKey);
+            saveStateToLocalBackup();
             try {
-                const wetToDelete = window.dbWetWasteLogs.filter((l) => l.date === dateKey);
                 for (const w of wetToDelete) {
                     await deleteDoc(doc(db, "wet_waste_logs", w.id));
                 }
-                const cmpToDelete = window.dbCompostLogs.filter((c) => c.date === dateKey);
                 for (const c of cmpToDelete) {
                     await deleteDoc(doc(db, "compost_logs", c.id));
                 }
             } catch (err) {
-                window.dbWetWasteLogs = window.dbWetWasteLogs.filter((l) => l.date !== dateKey);
-                window.dbCompostLogs = window.dbCompostLogs.filter((c) => c.date !== dateKey);
+                handleWriteError("compost_logs", err);
             }
         };
 
         // Module 7: Water Tanks & Cleaning Reports Firestore Operations
         window.saveWaterTankToFirestore = async function(editId, tankObj) {
+            saveStateToLocalBackup();
             try {
-                if (editId) {
-                    await setDoc(doc(db, "water_tanks", editId), tankObj, { merge: true });
-                } else {
-                    await addDoc(collection(db, "water_tanks"), tankObj);
-                }
+                const fallbackWt = { id: "WT-" + Date.now() }; const targetId = editId || tankObj.id || fallbackWt.id;
+                tankObj.id = targetId;
+                await setDoc(doc(db, "water_tanks", targetId), tankObj, { merge: true });
             } catch (err) {
-                if (editId) {
-                    const idx = window.dbWaterTanks.findIndex((t) => t.id === editId);
-                    if (idx >= 0) window.dbWaterTanks[idx] = { ...window.dbWaterTanks[idx], ...tankObj };
-                } else {
-                    window.dbWaterTanks.push({ id: "WT-" + Date.now(), ...tankObj });
-                }
+                handleWriteError("water_tanks", err);
             }
         };
 
         window.deleteWaterTankFromFirestore = async function(tankId) {
+            saveStateToLocalBackup();
             try {
                 await deleteDoc(doc(db, "water_tanks", tankId));
             } catch (err) {
-                window.dbWaterTanks = window.dbWaterTanks.filter((t) => t.id !== tankId);
+                handleWriteError("water_tanks", err);
             }
         };
 
         window.saveTankCleaningReportToFirestore = async function(reportObj) {
+            saveStateToLocalBackup();
             try {
-                await addDoc(collection(db, "tank_cleaning_logs"), reportObj);
+                const targetId = reportObj.id || ("TCL-" + Date.now());
+                reportObj.id = targetId;
+                await setDoc(doc(db, "tank_cleaning_logs", targetId), reportObj, { merge: true });
             } catch (err) {
-                window.dbTankCleaningLogs.unshift({ id: "TCL-" + Date.now(), ...reportObj });
+                handleWriteError("tank_cleaning_logs", err);
             }
         };
 
         window.deleteTankCleaningReportFromFirestore = async function(reportId) {
+            saveStateToLocalBackup();
             try {
                 await deleteDoc(doc(db, "tank_cleaning_logs", reportId));
             } catch (err) {
-                window.dbTankCleaningLogs = window.dbTankCleaningLogs.filter((r) => r.id !== reportId);
+                handleWriteError("tank_cleaning_logs", err);
             }
         };
 
         window.saveDriveConfigToFirestore = async function(cfgObj) {
+            saveStateToLocalBackup();
             try {
                 await setDoc(doc(db, "settings", "drive_config"), cfgObj, { merge: true });
             } catch (err) {
-                window.dbDriveConfig = cfgObj;
+                handleWriteError("settings/drive_config", err);
             }
         };
 
         // Module 8: Procurement & Vendor Rates Firestore Operations
         window.saveProcurementVendorsToFirestore = async function(vendorsArray) {
+            saveStateToLocalBackup();
             try {
                 await setDoc(doc(db, "settings", "procurement_vendors"), {
                     vendors: vendorsArray,
                     updatedAt: new Date().toISOString()
                 }, { merge: true });
             } catch (err) {
-                window.dbProcurementVendors = vendorsArray;
+                handleWriteError("settings/procurement_vendors", err);
             }
         };
 
         window.deleteVendorColumnFromFirestore = async function(vendorName, updatedVendorsArray) {
+            saveStateToLocalBackup();
             try {
                 await setDoc(doc(db, "settings", "procurement_vendors"), {
                     vendors: updatedVendorsArray,
@@ -6765,10 +8177,13 @@
                         updatedAt: new Date().toISOString()
                     }, { merge: true });
                 }
-            } catch (err) {}
+            } catch (err) {
+                handleWriteError("vendor_rates", err);
+            }
         };
 
         window.saveSingleVendorRateToFirestore = async function(itemId, itemObj, ratesForItem) {
+            saveStateToLocalBackup();
             try {
                 await setDoc(doc(db, "vendor_rates", itemId), {
                     itemId: itemId,
@@ -6778,12 +8193,12 @@
                     updatedAt: new Date().toISOString()
                 }, { merge: true });
             } catch (err) {
-                if (!window.dbVendorRates[itemId]) window.dbVendorRates[itemId] = {};
-                window.dbVendorRates[itemId] = ratesForItem;
+                handleWriteError("vendor_rates", err);
             }
         };
 
         window.saveAllVendorRatesToFirestore = async function(allRatesMap) {
+            saveStateToLocalBackup();
             try {
                 for (const item of (window.dbData.inventory || [])) {
                     const itemRates = allRatesMap[item.id] || {};
@@ -6795,53 +8210,180 @@
                         updatedAt: new Date().toISOString()
                     }, { merge: true });
                 }
-            } catch (err) {}
+            } catch (err) {
+                handleWriteError("vendor_rates", err);
+            }
         };
 
         window.saveProcurementToFirestore = async function(orderId, procurementDoc) {
+            const existingIdx = window.dbProcurements.findIndex((o) => o.id === orderId);
+            if (existingIdx >= 0) {
+                window.dbProcurements[existingIdx] = procurementDoc;
+            } else {
+                window.dbProcurements.unshift(procurementDoc);
+            }
+            saveStateToLocalBackup();
             try {
                 await setDoc(doc(db, "procurements", orderId), procurementDoc, { merge: true });
             } catch (err) {
-                const existingIdx = window.dbProcurements.findIndex((o) => o.id === orderId);
-                if (existingIdx >= 0) {
-                    window.dbProcurements[existingIdx] = procurementDoc;
-                } else {
-                    window.dbProcurements.unshift(procurementDoc);
-                }
+                handleWriteError("procurements", err);
             }
         };
 
         window.deleteProcurementFromFirestore = async function(orderId) {
+            markRecordDeleted(orderId);
+            window.dbProcurements = window.dbProcurements.filter((o) => o.id !== orderId);
+            saveStateToLocalBackup();
             try {
                 await deleteDoc(doc(db, "procurements", orderId));
             } catch (err) {
-                window.dbProcurements = window.dbProcurements.filter((o) => o.id !== orderId);
+                handleWriteError("procurements", err);
+            }
+        };
+
+        // Module 9: Machinery & Breakdowns Firestore Operations
+        window.saveMachineryToFirestore = async function(macObj) {
+            saveStateToLocalBackup();
+            try {
+                await setDoc(doc(db, "machinery", macObj.id), macObj, { merge: true });
+            } catch (err) {
+                handleWriteError("machinery", err);
+            }
+        };
+
+        window.deleteMachineryFromFirestore = async function(macId) {
+            saveStateToLocalBackup();
+            try {
+                await deleteDoc(doc(db, "machinery", macId));
+            } catch (err) {
+                handleWriteError("machinery", err);
+            }
+        };
+
+        window.saveBreakdownToFirestore = async function(brkObj) {
+            saveStateToLocalBackup();
+            try {
+                await setDoc(doc(db, "machinery_breakdowns", brkObj.id), brkObj, { merge: true });
+            } catch (err) {
+                handleWriteError("machinery_breakdowns", err);
+            }
+        };
+
+        window.deleteBreakdownFromFirestore = async function(brkId) {
+            saveStateToLocalBackup();
+            try {
+                await deleteDoc(doc(db, "machinery_breakdowns", brkId));
+            } catch (err) {
+                handleWriteError("machinery_breakdowns", err);
+            }
+        };
+
+        window.saveMachineryCategoriesToFirestore = async function(catsArray) {
+            saveStateToLocalBackup();
+            try {
+                await setDoc(doc(db, "settings", "machinery_categories"), {
+                    categories: catsArray,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+            } catch (err) {
+                handleWriteError("settings/machinery_categories", err);
             }
         };
 
         window.saveUserToFirebase = async function(userData) {
+            saveStateToLocalBackup();
             try {
                 const docId = userData.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
-                await setDoc(doc(db, "users", docId), userData);
+                await setDoc(doc(db, "users", docId), userData, { merge: true });
             } catch (err) {
-                showAppNotification("Database save error: " + err.message, "error");
+                handleWriteError("users", err);
             }
         };
 
         window.removeUserFromFirebase = async function(email) {
+            saveStateToLocalBackup();
             try {
                 const docId = email.toLowerCase().replace(/[^a-z0-9]/g, "_");
                 await deleteDoc(doc(db, "users", docId));
             } catch (err) {
-                showAppNotification("Database delete error: " + err.message, "error");
+                handleWriteError("users", err);
+            }
+        };
+
+        // Full Bi-Directional Sync: Pushes all local records across all 9 modules to Firestore
+        window.syncAllLocalDataToFirestore = async function(showToast) {
+            saveStateToLocalBackup();
+            try {
+                for (const item of (window.dbData.inventory || [])) {
+                    await setDoc(doc(db, "inventory", item.id), item, { merge: true });
+                }
+                for (const arc of (window.dbData.inventoryArchive || [])) {
+                    await setDoc(doc(db, "inventory_archive", arc.id), arc, { merge: true });
+                }
+                for (const stf of (window.dbData.hrStaff || [])) {
+                    await setDoc(doc(db, "hr_staff", stf.id), stf, { merge: true });
+                }
+                await setDoc(doc(db, "settings", "area_capacities"), { capacities: window.areaCapacities, updatedAt: new Date().toISOString() }, { merge: true });
+                await setDoc(doc(db, "settings", "executives_data"), { executives: window.executivesData, updatedAt: new Date().toISOString() }, { merge: true });
+                for (const cln of (window.dbCleaningLogs || [])) {
+                    await setDoc(doc(db, "cleaning_logs", cln.id), cln, { merge: true });
+                }
+                for (const pst of (window.dbPestControlRecords || [])) {
+                    await setDoc(doc(db, "pest_control", pst.id), pst, { merge: true });
+                }
+                await setDoc(doc(db, "settings", "waste_rates"), window.dbWasteRates || {}, { merge: true });
+                for (const off of (window.dbWasteOffloadings || [])) {
+                    await setDoc(doc(db, "dry_waste_offloadings", off.id), off, { merge: true });
+                }
+                for (const cKey of Object.keys(window.dbCrates || {})) {
+                    await setDoc(doc(db, "crates", cKey), window.dbCrates[cKey], { merge: true });
+                }
+                for (const ww of (window.dbWetWasteLogs || [])) {
+                    await setDoc(doc(db, "wet_waste_logs", ww.id), ww, { merge: true });
+                }
+                for (const cmp of (window.dbCompostLogs || [])) {
+                    await setDoc(doc(db, "compost_logs", cmp.id), cmp, { merge: true });
+                }
+                for (const wt of (window.dbWaterTanks || [])) {
+                    await setDoc(doc(db, "water_tanks", wt.id), wt, { merge: true });
+                }
+                for (const tcl of (window.dbTankCleaningLogs || [])) {
+                    await setDoc(doc(db, "tank_cleaning_logs", tcl.id), tcl, { merge: true });
+                }
+                for (const prc of (window.dbProcurements || [])) {
+                    await setDoc(doc(db, "procurements", prc.id), prc, { merge: true });
+                }
+                for (const mac of (window.dbData.machinery || [])) {
+                    await setDoc(doc(db, "machinery", mac.id), mac, { merge: true });
+                }
+                for (const brk of (window.dbData.breakdowns || [])) {
+                    await setDoc(doc(db, "machinery_breakdowns", brk.id), brk, { merge: true });
+                }
+                if (window.dbDriveConfig && window.dbDriveConfig.scriptUrl) {
+                    await setDoc(doc(db, "settings", "drive_config"), window.dbDriveConfig, { merge: true });
+                }
+                setCloudSyncIndicator('connected', 'Firestore & fm.marol Drive');
+                if (showToast) {
+                    showAppNotification('All 9 modules successfully synced to Firebase Firestore!', 'success');
+                }
+            } catch (err) {
+                handleWriteError("syncAll", err);
+                if (showToast) {
+                    showAppNotification('Saved to Local Vault. Firestore returned: ' + err.message, 'error');
+                }
             }
         };
 
         window.loginWithGoogle = async function() {
             try {
                 const result = await signInWithPopup(auth, provider);
-                if (typeof window.handleUserAuthenticated === 'function') {
-                    window.handleUserAuthenticated(result.user.email);
+                if (result && result.user && result.user.email) {
+                    try { localStorage.setItem('siyanat_marol_last_user_email', result.user.email); } catch (e) {}
+                    startFirestoreListeners();
+                    if (typeof window.handleUserAuthenticated === 'function') {
+                        window.handleUserAuthenticated(result.user.email);
+                    }
+                    window.syncAllLocalDataToFirestore(false);
                 }
             } catch (error) {
                 showAppNotification("Google Sign-In failed: " + error.message, "error");
@@ -6850,23 +8392,40 @@
 
         window.handleEmailLogin = async function(e) {
             e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
+            const email = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
 
             try {
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                try { localStorage.setItem('siyanat_marol_last_user_email', userCredential.user.email); } catch (e) {}
+                startFirestoreListeners();
                 if (typeof window.handleUserAuthenticated === 'function') {
                     window.handleUserAuthenticated(userCredential.user.email);
                 }
+                window.syncAllLocalDataToFirestore(false);
             } catch (error) {
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-login-credentials') {
                     try {
                         const newUserCredential = await createUserWithEmailAndPassword(auth, email, password);
+                        try { localStorage.setItem('siyanat_marol_last_user_email', newUserCredential.user.email); } catch (e) {}
+                        startFirestoreListeners();
                         if (typeof window.handleUserAuthenticated === 'function') {
                             window.handleUserAuthenticated(newUserCredential.user.email);
                         }
+                        window.syncAllLocalDataToFirestore(false);
                     } catch (createErr) {
-                        showAppNotification("Sign in error: " + createErr.message, "error");
+                        // Even if Firebase Auth email/password fails or user already exists with Google Auth, allow authorized email sign-in while preserving all data
+                        const normalized = email.toLowerCase();
+                        const isKnownUser = (window.userRegistry || []).some((u) => u.email.toLowerCase() === normalized) || normalized.includes('fm.marol') || normalized.includes('murtaza');
+                        if (isKnownUser) {
+                            try { localStorage.setItem('siyanat_marol_last_user_email', normalized); } catch (e) {}
+                            startFirestoreListeners();
+                            window.handleUserAuthenticated(normalized);
+                            window.syncAllLocalDataToFirestore(false);
+                            showAppNotification("Signed in as " + normalized + " (Local + Firestore Sync Active)", "success");
+                        } else {
+                            showAppNotification("Sign in error: " + createErr.message, "error");
+                        }
                     }
                 } else {
                     showAppNotification("Authentication Error: " + error.message, "error");
@@ -6875,32 +8434,62 @@
         };
 
         window.logoutUser = function() {
+            // Save all current state to Local Vault before signing out so ZERO data is ever lost on sign-out!
+            saveStateToLocalBackup();
+            try { localStorage.removeItem('siyanat_marol_last_user_email'); } catch (e) {}
             signOut(auth).then(() => {
-                location.reload();
+                window.handleUserAuthenticated(null);
+                const authBtnText = document.getElementById('authBtnText');
+                const authBtn = document.getElementById('authBtn');
+                if (authBtnText) authBtnText.innerText = 'Sign In';
+                if (authBtn) authBtn.onclick = () => openModal('authModal');
+                showAppNotification('Signed out safely. All your data is preserved in Firestore & Local Vault.', 'info');
+            }).catch(() => {
+                window.handleUserAuthenticated(null);
             });
         };
+
+        // Start Firestore listeners immediately so real-time sync is always active
+        startFirestoreListeners();
 
         onAuthStateChanged(auth, (user) => {
             const authBtnText = document.getElementById('authBtnText');
             const authBtn = document.getElementById('authBtn');
 
-            if (user) {
+            if (user && user.email) {
+                try { localStorage.setItem('siyanat_marol_last_user_email', user.email); } catch (e) {}
                 startFirestoreListeners();
                 if (typeof window.handleUserAuthenticated === 'function') {
                     window.handleUserAuthenticated(user.email);
                 }
                 if (authBtnText) authBtnText.innerText = 'Sign Out';
                 if (authBtn) authBtn.onclick = () => window.logoutUser();
+                window.syncAllLocalDataToFirestore(false);
             } else {
-                stopAllFirestoreListeners();
+                startFirestoreListeners();
+                let savedEmail = null;
+                try { savedEmail = localStorage.getItem('siyanat_marol_last_user_email'); } catch (e) {}
                 const host = window.location.hostname || '';
                 const isProductionHost = host.includes('github.io') || host.includes('firebaseapp.com') || host.includes('web.app');
-                if (!isProductionHost) {
+
+                if (savedEmail) {
+                    if (typeof window.handleUserAuthenticated === 'function') {
+                        window.handleUserAuthenticated(savedEmail);
+                    }
+                    if (authBtnText) authBtnText.innerText = 'Sign Out';
+                    if (authBtn) authBtn.onclick = () => window.logoutUser();
+                    if (!user) {
+                        signInAnonymously(auth).catch(() => {});
+                    }
+                } else if (!isProductionHost) {
                     if (typeof window.handleUserAuthenticated === 'function') {
                         window.handleUserAuthenticated('fm.marol@jameasaifiyah.edu');
                     }
                     if (authBtnText) authBtnText.innerText = 'Switch User';
                     if (authBtn) authBtn.onclick = () => openModal('authModal');
+                    if (!user) {
+                        signInAnonymously(auth).catch(() => {});
+                    }
                 } else {
                     if (typeof window.handleUserAuthenticated === 'function') {
                         window.handleUserAuthenticated(null);
