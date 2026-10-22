@@ -1984,7 +1984,7 @@
             }
         }
 
-        function loadStateFromLocalBackup() {
+     function loadStateFromLocalBackup() {
             try {
                 var delRaw = localStorage.getItem(LOCAL_STORAGE_DELETED_KEY);
                 if (delRaw) deletedRecordIds = JSON.parse(delRaw) || {};
@@ -2007,12 +2007,13 @@
                 }
             } catch (e) {}
 
-            // Also hydrate from IndexedDB in case large media records were stored there
+            // Hydrate from IndexedDB
             loadFromIndexedDB('media_cache').then(function(idbMedia) {
                 if (idbMedia && typeof idbMedia === 'object') {
                     dbMediaCache = Object.assign({}, idbMedia, dbMediaCache);
                 }
             });
+            
             loadFromIndexedDB('full_state').then(function(idbSnap) {
                 if (idbSnap && typeof idbSnap === 'object') {
                     applyPortalStateSnapshot(idbSnap);
@@ -2021,8 +2022,13 @@
                     }
                 }
             });
-        }
 
+            // Auto-trigger Firestore cloud sync on initial load so all 150+ items load across all users
+            if (window.forceSyncAllFromFirestore) {
+                window.forceSyncAllFromFirestore();
+            }
+        }
+        
         // Helper to merge Firestore array with local array without losing unsynced local additions
         function mergeCollectionWithLocal(cloudList, localList, idKey) {
             var keyField = idKey || 'id';
@@ -2064,29 +2070,47 @@
             return src;
         }
 
-        window.handleUserAuthenticated = function(email) {
+       window.handleUserAuthenticated = async function(email) {
             if (!email) {
                 currentUser = null;
+                renderUnauthenticatedGate();
+                openModal('authModal');
+                return;
+            }
+
+            var normalizedEmail = email.toLowerCase().trim();
+
+            // 1. Fetch latest state/user registry from local storage & Firestore first
+            if (window.forceSyncAllFromFirestore) {
+                await window.forceSyncAllFromFirestore();
+            }
+
+            // 2. Check if the logged-in email exists in the updated user registry
+            var matchedUser = userRegistry.find(function(u) {
+                return u.email.toLowerCase().trim() === normalizedEmail;
+            });
+
+            if (matchedUser) {
+                // User permissions found in Registry (configured via Admin Access Panel)
+                currentUser = matchedUser;
             } else {
-                var normalizedEmail = email.toLowerCase().trim();
-                var matchedUser = null;
+                // Fallback for primary department super-admin accounts only
+                var isSystemSuperAdmin = normalizedEmail.includes('fm.marol') || normalizedEmail.includes('murtaza');
 
-                for (var i = 0; i < userRegistry.length; i++) {
-                    if (userRegistry[i].email.toLowerCase().trim() === normalizedEmail) {
-                        matchedUser = userRegistry[i];
-                        break;
-                    }
-                }
-
-                if (matchedUser) {
-                    currentUser = matchedUser;
-                } else {
-                    var isAdminEmail = normalizedEmail.includes('fm.marol') || normalizedEmail.includes('murtaza');
+                if (isSystemSuperAdmin) {
                     currentUser = {
                         email: normalizedEmail,
-                        role: isAdminEmail ? 'Administrator' : 'Supervisor',
-                        areas: isAdminEmail ? ALL_AREAS : ['Admin Phase 1'],
-                        allowedModules: isAdminEmail ? ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] : ['inventory', 'hr', 'cleaning']
+                        role: 'Administrator',
+                        areas: ALL_AREAS,
+                        allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery']
+                    };
+                } else {
+                    // Default fallback for any newly registered unrecognized email
+                    currentUser = {
+                        email: normalizedEmail,
+                        role: 'Supervisor',
+                        areas: ['Admin Phase 1'],
+                        allowedModules: ['inventory', 'hr', 'cleaning']
                     };
                 }
             }
@@ -2096,9 +2120,6 @@
             if (currentUser) {
                 closeModal('authModal');
                 switchModule(activeModule || 'inventory');
-            } else {
-                renderUnauthenticatedGate();
-                openModal('authModal');
             }
         };
 
@@ -8794,6 +8815,16 @@
                 }
             }
         });
+
+        // ================= AUTO-REFRESH BACKGROUND SYNC =================
+        // Automatically checks Firestore every 30 seconds so all users & devices
+        // see live data updates in real-time without requiring a page refresh.
+        setInterval(function() {
+            if (currentUser && window.forceSyncAllFromFirestore) {
+                window.forceSyncAllFromFirestore();
+            }
+        }, 30000);
+
     </script>
 </body>
 </html>
