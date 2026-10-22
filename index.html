@@ -720,7 +720,7 @@
                 <table class="w-full text-left text-xs whitespace-nowrap">
                     <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0 z-10">
                         <tr>
-                            <th class="p-2.5">Item Name / Code</th>
+                            <th class="p-2.5">Edit / Delete &bull; Item Name &amp; Code</th>
                             <th class="p-2 bg-blue-100 text-blue-900">Main Store</th>
                             <th class="p-2">Admin Phase 1</th>
                             <th class="p-2">Admin Phase 3</th>
@@ -731,7 +731,6 @@
                             <th class="p-2">Girls Hostel</th>
                             <th class="p-2">Compound Area</th>
                             <th class="p-2">Najmi Bldg</th>
-                            <th class="p-2 text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody id="openingStockTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
@@ -745,6 +744,44 @@
                     <button onclick="closeModal('openingStockModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Close</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- EDIT INVENTORY ITEM DETAILS MODAL -->
+    <div id="editInvItemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
+                    <span>Edit Inventory Item Details</span>
+                </h3>
+                <button type="button" onclick="closeModal('editInvItemModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="handleSaveEditedInventoryItem(event)" class="space-y-3.5">
+                <input type="hidden" id="editInvItemId">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Item Code</label>
+                    <input type="text" id="editInvItemCode" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Item Name</label>
+                    <input type="text" id="editInvItemName" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Category</label>
+                        <input type="text" id="editInvItemCategory" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Unit</label>
+                        <input type="text" id="editInvItemUnit" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('editInvItemModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow transition">Save Item Details</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -2371,16 +2408,96 @@
                     var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     var rows = XLSX.utils.sheet_to_json(firstSheet);
                     if (activeModule === 'inventory' && rows.length > 0) {
+                        var getFlexCell = function(rowObj, exactKeys, partialKeywords, excludeKeywords) {
+                            var keys = Object.keys(rowObj || {});
+                            for (var kIdx = 0; kIdx < keys.length; kIdx++) {
+                                var normK = keys[kIdx].trim().toLowerCase().replace(/[\s_\-./]+/g, ' ');
+                                if (exactKeys.indexOf(normK) !== -1 && rowObj[keys[kIdx]] !== undefined && String(rowObj[keys[kIdx]]).trim() !== '') {
+                                    return String(rowObj[keys[kIdx]]).trim();
+                                }
+                            }
+                            if (partialKeywords && partialKeywords.length > 0) {
+                                for (var kIdx2 = 0; kIdx2 < keys.length; kIdx2++) {
+                                    var normK2 = keys[kIdx2].trim().toLowerCase().replace(/[\s_\-./]+/g, ' ');
+                                    var isExcluded = (excludeKeywords || []).some(function(ex) { return normK2.indexOf(ex) !== -1; });
+                                    if (isExcluded) continue;
+                                    var isMatched = partialKeywords.some(function(pk) { return normK2.indexOf(pk) !== -1; });
+                                    if (isMatched && rowObj[keys[kIdx2]] !== undefined && String(rowObj[keys[kIdx2]]).trim() !== '') {
+                                        return String(rowObj[keys[kIdx2]]).trim();
+                                    }
+                                }
+                            }
+                            return '';
+                        };
+
+                        var addedCount = 0;
+                        var updatedCount = 0;
                         rows.forEach(function(r, idx) {
-                            var code = r['Item Code'] || r['Code'] || ('IMP-' + (idx + 1));
-                            var name = r['Item Name'] || r['Name'] || 'Imported Item';
-                            var cat = r['Category'] || 'General';
-                            var unit = r['Unit'] || 'Nos';
-                            if (!dbData.inventory.find(function(i) { return i.code === code; })) {
-                                var stockObj = { 'Main Store': parseInt(r['Main Store']) || 0 };
-                                ALL_AREAS.forEach(function(a) { stockObj[a] = parseInt(r[a]) || 0; });
-                                var newItem = { id: 'INV-' + Date.now() + '-' + idx, code: code, name: name, category: cat, unit: unit, openingStock: stockObj };
+                            var code = getFlexCell(r, ['item code', 'code', 'item id', 'sku', 'item no', 'sr no', 'id'], ['code'], []) || ('IMP-' + (idx + 1));
+                            var name = getFlexCell(
+                                r,
+                                ['item name', 'name', 'item', 'items', 'particulars', 'particular', 'description', 'item description', 'material', 'material name', 'product', 'product name', 'housekeeping item', 'item details', 'article'],
+                                ['name', 'item', 'particular', 'desc', 'material', 'product'],
+                                ['code', 'cat', 'unit', 'uom', 'qty', 'store', 'rate', 'id']
+                            );
+                            var cat = getFlexCell(r, ['category', 'cat', 'item category', 'group', 'type', 'department'], ['cat', 'group'], ['code', 'name']) || 'General';
+                            var unit = getFlexCell(r, ['unit', 'uom', 'units', 'pack', 'packing', 'pack size', 'measure'], ['unit', 'uom', 'pack'], ['code', 'name', 'cat', 'rate']) || 'Nos';
+
+                            // Fallback: if name is still blank, pick the first column value that is not code, cat, unit, or a pure number
+                            if (!name) {
+                                var rKeys = Object.keys(r || {});
+                                for (var fIdx = 0; fIdx < rKeys.length; fIdx++) {
+                                    var valStr = String(r[rKeys[fIdx]] || '').trim();
+                                    if (valStr && valStr !== code && valStr !== cat && valStr !== unit && isNaN(Number(valStr))) {
+                                        name = valStr;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!name) name = 'Imported Item';
+
+                            var existingItem = dbData.inventory.find(function(i) {
+                                return (i.code || '').toLowerCase() === String(code).toLowerCase();
+                            });
+
+                            if (existingItem) {
+                                existingItem.name = name;
+                                existingItem.category = cat;
+                                existingItem.unit = unit;
+                                if (!existingItem.openingStock) existingItem.openingStock = { 'Main Store': 0 };
+                                var msVal = getFlexCell(r, ['main store', 'mainstore', 'opening stock'], ['main store'], []);
+                                if (msVal !== '' && !isNaN(parseInt(msVal))) {
+                                    existingItem.openingStock['Main Store'] = parseInt(msVal) || 0;
+                                }
+                                ALL_AREAS.forEach(function(a) {
+                                    var aVal = getFlexCell(r, [a.toLowerCase()], [a.toLowerCase()], []);
+                                    if (aVal !== '' && !isNaN(parseInt(aVal))) {
+                                        existingItem.openingStock[a] = parseInt(aVal) || 0;
+                                    } else if (existingItem.openingStock[a] === undefined) {
+                                        existingItem.openingStock[a] = 0;
+                                    }
+                                });
+                                existingItem.updatedAt = new Date().toISOString();
+                                updatedCount++;
+                                if (window.saveInventoryItemToFirestore) {
+                                    window.saveInventoryItemToFirestore(existingItem);
+                                }
+                            } else {
+                                var stockObj = { 'Main Store': parseInt(getFlexCell(r, ['main store', 'mainstore', 'opening stock'], ['main store'], [])) || 0 };
+                                ALL_AREAS.forEach(function(a) {
+                                    stockObj[a] = parseInt(getFlexCell(r, [a.toLowerCase()], [a.toLowerCase()], [])) || 0;
+                                });
+                                var newItem = {
+                                    id: 'INV-' + Date.now() + '-' + idx,
+                                    code: code,
+                                    name: name,
+                                    category: cat,
+                                    unit: unit,
+                                    openingStock: stockObj,
+                                    updatedAt: new Date().toISOString()
+                                };
                                 dbData.inventory.push(newItem);
+                                addedCount++;
                                 if (window.saveInventoryItemToFirestore) {
                                     window.saveInventoryItemToFirestore(newItem);
                                 }
@@ -2388,7 +2505,7 @@
                         });
                         saveStateToLocalBackup();
                         switchModule('inventory');
-                        showAppNotification('Imported ' + rows.length + ' inventory rows from Excel!', 'success');
+                        showAppNotification('Excel Import Complete: ' + addedCount + ' added, ' + updatedCount + ' updated & synced!', 'success');
                     } else if (activeModule === 'hr' && rows.length > 0) {
                         rows.forEach(function(r, idx) {
                             var stfCode = r['Staff ID'] || r['ID'] || ('STF-IMP-' + (idx + 1));
@@ -2655,18 +2772,26 @@
 
             html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center bg-slate-50"><span>Area Stores Current Stock</span><span class="text-[11px] text-blue-600 font-semibold">' + currentUser.role + '</span></div>';
-            html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs whitespace-nowrap"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr><th class="p-3">Code</th><th class="p-3">Item Name</th><th class="p-3">Category</th>';
-            if (isAdmin || isExec) html += '<th class="p-3 bg-blue-50 text-blue-800">Main Store</th>';
-            visibleAreas.forEach(function(a) { html += '<th class="p-3 bg-slate-50 text-slate-800 border-l border-slate-200">' + a + '</th>'; });
+            html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs table-auto"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+            html += '<th class="py-3 px-2 whitespace-nowrap">Code</th>';
+            html += '<th class="py-3 px-2 min-w-[130px]">Item Name</th>';
+            html += '<th class="py-3 px-1.5 whitespace-nowrap">Category</th>';
+            html += '<th class="py-3 px-1.5 whitespace-nowrap">Unit</th>';
+            if (isAdmin || isExec) html += '<th class="py-3 px-1 text-center bg-blue-50 text-blue-800 border-l border-slate-200 w-[56px] text-[10px] leading-tight">Main Store</th>';
+            visibleAreas.forEach(function(a) { html += '<th class="py-3 px-1 text-center bg-slate-50 text-slate-800 border-l border-slate-200 w-[58px] text-[10px] leading-tight">' + a + '</th>'; });
             html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
             filteredItems.forEach(function(item) {
-                html += '<tr class="hover:bg-slate-50 transition"><td class="p-3 font-mono text-slate-500">' + item.code + '</td><td class="p-3 font-semibold text-slate-900">' + item.name + '</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">' + item.category + '</span></td>';
+                html += '<tr class="hover:bg-slate-50 transition">';
+                html += '<td class="py-3 px-2 font-mono text-slate-500 whitespace-nowrap text-[11px]">' + item.code + '</td>';
+                html += '<td class="py-3 px-2 font-semibold text-slate-900 leading-snug">' + item.name + '</td>';
+                html += '<td class="py-3 px-1.5 whitespace-nowrap"><span class="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">' + item.category + '</span></td>';
+                html += '<td class="py-3 px-1.5 text-slate-600 font-medium whitespace-nowrap text-[11px]">' + (item.unit || '-') + '</td>';
                 if (isAdmin || isExec) {
-                    html += '<td class="p-3 font-bold text-blue-700 bg-blue-50/30">' + calculateCurrentStock(item, 'Main Store') + ' ' + item.unit + '</td>';
+                    html += '<td class="py-3 px-1 text-center font-bold text-blue-700 bg-blue-50/30 border-l border-slate-100 font-mono">' + calculateCurrentStock(item, 'Main Store') + '</td>';
                 }
                 visibleAreas.forEach(function(area) {
-                    html += '<td class="p-3 font-medium text-slate-800 border-l border-slate-100">' + calculateCurrentStock(item, area) + ' ' + item.unit + '</td>';
+                    html += '<td class="py-3 px-1 text-center font-medium text-slate-800 border-l border-slate-100 font-mono">' + calculateCurrentStock(item, area) + '</td>';
                 });
                 html += '</tr>';
             });
@@ -2704,14 +2829,89 @@
             var html = '';
             dbData.inventory.forEach(function(item) {
                 if (!item.openingStock) item.openingStock = {};
-                html += '<tr class="hover:bg-slate-50"><td class="p-2.5 font-semibold text-slate-900"><div class="font-bold">' + item.name + '</div><div class="text-[10px] text-slate-400 font-mono">' + item.code + ' (' + item.unit + ')</div></td>';
+                html += '<tr class="hover:bg-slate-50"><td class="p-2.5 font-semibold text-slate-900">' +
+                    '<div class="flex items-center space-x-2.5">' +
+                        '<div class="flex items-center space-x-1 flex-shrink-0">' +
+                            '<button type="button" onclick="openEditInventoryItemModal(\'' + item.id + '\')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded px-1.5 py-1 text-[11px] transition" title="Edit Item Details"><i class="fa-solid fa-pen-to-square"></i></button>' +
+                            '<button type="button" onclick="deleteInventoryItem(\'' + item.id + '\')" class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 rounded px-1.5 py-1 text-[11px] transition" title="Delete Item"><i class="fa-solid fa-trash-can"></i></button>' +
+                        '</div>' +
+                        '<div>' +
+                            '<div class="font-bold text-slate-900">' + item.name + '</div>' +
+                            '<div class="text-[10px] text-slate-400 font-mono">' + item.code + ' &bull; ' + (item.category || 'General') + ' (' + item.unit + ')</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</td>';
                 html += '<td class="p-2 bg-blue-50/50"><input type="number" value="' + (item.openingStock['Main Store'] || 0) + '" oninput="updateOpeningStockVal(\'' + item.id + '\', \'Main Store\', this.value, true)" onchange="updateOpeningStockVal(\'' + item.id + '\', \'Main Store\', this.value, false)" class="w-16 px-1.5 py-1 text-xs border border-slate-300 rounded font-bold text-blue-700"></td>';
                 ALL_AREAS.forEach(function(area) {
                     html += '<td class="p-2"><input type="number" value="' + (item.openingStock[area] || 0) + '" oninput="updateOpeningStockVal(\'' + item.id + '\', \'' + area + '\', this.value, true)" onchange="updateOpeningStockVal(\'' + item.id + '\', \'' + area + '\', this.value, false)" class="w-14 px-1 py-1 text-xs border border-slate-300 rounded"></td>';
                 });
-                html += '<td class="p-2 text-center"><button type="button" onclick="deleteInventoryItem(\'' + item.id + '\')" class="text-red-600 hover:text-red-800 text-xs font-bold px-2 py-1"><i class="fa-solid fa-trash-can"></i></button></td></tr>';
+                html += '</tr>';
             });
             tbody.innerHTML = html;
+        }
+
+        function openEditInventoryItemModal(itemId) {
+            var item = dbData.inventory.find(function(i) { return i.id === itemId; });
+            if (!item) return;
+            document.getElementById('editInvItemId').value = item.id;
+            document.getElementById('editInvItemCode').value = item.code || '';
+            document.getElementById('editInvItemName').value = item.name || '';
+            document.getElementById('editInvItemCategory').value = item.category || '';
+            document.getElementById('editInvItemUnit').value = item.unit || '';
+            openModal('editInvItemModal');
+        }
+
+        function handleSaveEditedInventoryItem(e) {
+            e.preventDefault();
+            var itemId = document.getElementById('editInvItemId').value;
+            var newCode = document.getElementById('editInvItemCode').value.trim();
+            var newName = document.getElementById('editInvItemName').value.trim();
+            var newCategory = document.getElementById('editInvItemCategory').value.trim();
+            var newUnit = document.getElementById('editInvItemUnit').value.trim();
+
+            var item = dbData.inventory.find(function(i) { return i.id === itemId; });
+            if (!item) return;
+
+            var duplicate = dbData.inventory.find(function(i) {
+                return i.id !== itemId && (i.code || '').toLowerCase() === newCode.toLowerCase();
+            });
+            if (duplicate) {
+                showAppNotification('Another item already uses code "' + newCode + '" (' + duplicate.name + ').', 'error');
+                return;
+            }
+
+            var oldCode = item.code;
+            item.code = newCode;
+            item.name = newName;
+            item.category = newCategory;
+            item.unit = newUnit;
+            item.updatedAt = new Date().toISOString();
+
+            // Keep transaction archive records linked if code or name was updated
+            if (dbData.inventoryArchive && dbData.inventoryArchive.length > 0) {
+                dbData.inventoryArchive.forEach(function(arc) {
+                    if (arc.itemCode === oldCode) {
+                        arc.itemCode = newCode;
+                        arc.itemName = newName;
+                        arc.updatedAt = new Date().toISOString();
+                        if (window.saveInventoryArchiveToFirestore) {
+                            window.saveInventoryArchiveToFirestore(arc);
+                        }
+                    }
+                });
+            }
+
+            saveStateToLocalBackup();
+            if (window.saveInventoryItemToFirestore) {
+                window.saveInventoryItemToFirestore(item);
+            }
+
+            closeModal('editInvItemModal');
+            renderOpeningStockTable();
+            if (activeModule === 'inventory') {
+                switchModule('inventory');
+            }
+            showAppNotification('Updated item "' + newName + '" (' + newCode + ') and synced to Firestore!', 'success');
         }
 
         var openingStockSyncTimer = null;
