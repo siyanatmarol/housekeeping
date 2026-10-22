@@ -80,12 +80,7 @@
                     <i class="fa-solid fa-user-shield text-emerald-300"></i>
                     <span>Admin Access</span>
                 </button>
-                <!-- CLOUD & FM.MAROL DRIVE CONFIG / SYNC TAB -->
-                <button id="mainTabCloudDrive" type="button" onclick="openDriveConfigModal()" class="ml-auto px-3.5 py-2 font-semibold text-xs rounded-t-lg transition flex items-center space-x-2 text-emerald-100 hover:text-white hover:bg-emerald-800/50" title="Configure Firestore Sync & fm.marol Google Drive Uploads">
-                    <span id="cloudSyncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <i class="fa-brands fa-google-drive text-emerald-300"></i>
-                    <span id="cloudSyncStatusText" class="hidden md:inline">Firestore &amp; fm.marol Drive</span>
-                </button>
+
             </div>
         </div>
     </header>
@@ -397,7 +392,14 @@
                     <i class="fa-solid fa-user-shield text-emerald-600"></i>
                     <span>Admin User Access Control</span>
                 </h3>
-                <button onclick="closeModal('adminModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="openDriveConfigModal()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5" title="Database Backup & fm.marol Drive Settings">
+                        <span id="cloudSyncStatusDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <i class="fa-brands fa-google-drive text-emerald-600"></i>
+                        <span id="cloudSyncStatusText">Cloud &amp; Drive Settings</span>
+                    </button>
+                    <button onclick="closeModal('adminModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto custom-scrollbar p-1">
@@ -1408,12 +1410,12 @@
                             </h4>
                             <p class="text-[11px] text-slate-500 mt-0.5">Connects Pest Control, Water Tanks, Machinery, and Cleaning media uploads directly to your <strong class="text-slate-700">fm.marol</strong> Google Drive.</p>
                         </div>
-                        <span id="driveBridgeStatusBadge" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300 self-start sm:self-auto">Apps Script URL Needed</span>
+                        <span id="driveBridgeStatusBadge" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 self-start sm:self-auto">Connected to fm.marol Drive</span>
                     </div>
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Google Apps Script Web App URL (Deployed under <span class="text-emerald-700 font-mono">fm.marol@jameasaifiyah.edu</span>)</label>
-                        <input type="url" id="driveScriptUrlInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <input type="url" id="driveScriptUrlInput" value="https://script.google.com/macros/s/AKfycbzlC50dxfxCLRxdkSdl79qPuDaS2WXVDp6ltAhA8oTzvOyBWCJEJfSqzVYJi3nZ5ryZ/exec" placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1640,8 +1642,9 @@
         var currentCleanAfterPhotos = [];
 
         // Google Apps Script Drive Config State (fm.marol)
+        var DEFAULT_FM_MAROL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlC50dxfxCLRxdkSdl79qPuDaS2WXVDp6ltAhA8oTzvOyBWCJEJfSqzVYJi3nZ5ryZ/exec';
         var dbDriveConfig = {
-            scriptUrl: '',
+            scriptUrl: DEFAULT_FM_MAROL_SCRIPT_URL,
             folderName: 'Siyanat_Housekeeping_Uploads'
         };
 
@@ -1927,6 +1930,7 @@
                 if (driveRaw) {
                     var parsedDrive = JSON.parse(driveRaw);
                     if (parsedDrive && typeof parsedDrive === 'object') {
+                        if (!parsedDrive.scriptUrl) parsedDrive.scriptUrl = DEFAULT_FM_MAROL_SCRIPT_URL;
                         dbDriveConfig = Object.assign({}, dbDriveConfig, parsedDrive);
                     }
                 }
@@ -2250,7 +2254,7 @@
         // Multi-Tier Upload to fm.marol Google Drive Apps Script -> Firebase Storage -> Firestore Chunked Media Vault
         async function uploadToFmMarolDriveBackend(dataUrl, fileName, mimeType, subFolderLabel) {
             var cleanFileName = (subFolderLabel || 'Media') + '_' + Date.now() + '_' + (fileName || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_');
-            var scriptUrl = (dbDriveConfig && dbDriveConfig.scriptUrl) ? dbDriveConfig.scriptUrl.trim() : '';
+            var scriptUrl = (dbDriveConfig && dbDriveConfig.scriptUrl) ? dbDriveConfig.scriptUrl.trim() : DEFAULT_FM_MAROL_SCRIPT_URL;
 
             // Tier 1: fm.marol Google Drive Apps Script Web App Bridge
             if (scriptUrl) {
