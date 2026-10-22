@@ -2772,26 +2772,35 @@
 
             html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center bg-slate-50"><span>Area Stores Current Stock</span><span class="text-[11px] text-blue-600 font-semibold">' + currentUser.role + '</span></div>';
+            // --- TABLE HEADERS ---
             html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs table-auto"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
             html += '<th class="py-3 px-2 whitespace-nowrap">Code</th>';
-            html += '<th class="py-3 px-2 min-w-[130px]">Item Name</th>';
+            // Reduced Item Name min-width from 130px to 100px
+            html += '<th class="py-3 px-2 min-w-[100px]">Item Name</th>';
             html += '<th class="py-3 px-1.5 whitespace-nowrap">Category</th>';
             html += '<th class="py-3 px-1.5 whitespace-nowrap">Unit</th>';
-            if (isAdmin || isExec) html += '<th class="py-3 px-1 text-center bg-blue-50 text-blue-800 border-l border-slate-200 w-[56px] text-[10px] leading-tight">Main Store</th>';
-            visibleAreas.forEach(function(a) { html += '<th class="py-3 px-1 text-center bg-slate-50 text-slate-800 border-l border-slate-200 w-[58px] text-[10px] leading-tight">' + a + '</th>'; });
+            // Main Store Header
+            if (isAdmin || isExec) html += '<th class="py-3 px-1 text-center bg-blue-50 text-blue-800 border-l border-slate-200 w-[60px] text-[10px] leading-tight">Main Store</th>';
+            // Increased Area Store Column widths from 58px to 68px
+            visibleAreas.forEach(function(a) { html += '<th class="py-3 px-1 text-center bg-slate-50 text-slate-800 border-l border-slate-200 w-[68px] text-[10px] leading-tight">' + a + '</th>'; });
             html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
+            // --- TABLE BODY ---
             filteredItems.forEach(function(item) {
                 html += '<tr class="hover:bg-slate-50 transition">';
                 html += '<td class="py-3 px-2 font-mono text-slate-500 whitespace-nowrap text-[11px]">' + item.code + '</td>';
                 html += '<td class="py-3 px-2 font-semibold text-slate-900 leading-snug">' + item.name + '</td>';
                 html += '<td class="py-3 px-1.5 whitespace-nowrap"><span class="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">' + item.category + '</span></td>';
                 html += '<td class="py-3 px-1.5 text-slate-600 font-medium whitespace-nowrap text-[11px]">' + (item.unit || '-') + '</td>';
+                
+                // Increased Main Store quantity font size by 2 points (text-xs / 12px -> text-sm / 14px)
                 if (isAdmin || isExec) {
-                    html += '<td class="py-3 px-1 text-center font-bold text-blue-700 bg-blue-50/30 border-l border-slate-100 font-mono">' + calculateCurrentStock(item, 'Main Store') + '</td>';
+                    html += '<td class="py-3 px-1 text-center font-bold text-blue-700 bg-blue-50/30 border-l border-slate-100 font-mono text-sm">' + calculateCurrentStock(item, 'Main Store') + '</td>';
                 }
+                
+                // Increased Area quantity numbers font size by 1 point (text-xs / 12px -> text-[13px])
                 visibleAreas.forEach(function(area) {
-                    html += '<td class="py-3 px-1 text-center font-medium text-slate-800 border-l border-slate-100 font-mono">' + calculateCurrentStock(item, area) + '</td>';
+                    html += '<td class="py-3 px-1 text-center font-medium text-slate-800 border-l border-slate-100 font-mono text-[13px]">' + calculateCurrentStock(item, area) + '</td>';
                 });
                 html += '</tr>';
             });
@@ -5734,7 +5743,7 @@
                                     '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-solid fa-magnifying-glass text-purple-600 mr-1"></i>Search Item</label>' +
                                     '<div class="relative">' +
                                         '<i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>' +
-                                        '<input type="text" id="procLiveSearchInput" placeholder="Filter by Item Name..." oninput="handleProcLiveSearch(this.value)" class="w-full pl-8 pr-8 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">' +
+                                        '<input type="text" id="procLiveSearchInput" placeholder="Filter by Name or Category..." oninput="handleProcLiveSearch(this.value)" class="w-full pl-8 pr-8 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">' +
                                         '<button type="button" id="procClearSearchBtn" onclick="handleProcLiveSearch(\'\')" class="hidden absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-circle-xmark text-xs"></i></button>' +
                                     '</div>' +
                                 '</div>' +
@@ -6006,18 +6015,21 @@
             renderNewProcurementModalRows();
         }
 
-        function renderNewProcurementModalRows() {
+      function renderNewProcurementModalRows() {
             var tbody = document.getElementById('procItemSelectionTbody');
             if (!tbody) return;
 
             var currentVendor = procFormState.vendorName || (dbProcurementVendors[0] || '');
+            
+            // Search by Item Name, Item Code, AND Category
             var filteredInventory = dbData.inventory.filter(function(item) {
                 if (!procFormState.searchTerm) return true;
                 var q = procFormState.searchTerm.toLowerCase();
-                return item.name.toLowerCase().indexOf(q) !== -1 ||
-                       (item.code && item.code.toLowerCase().indexOf(q) !== -1);
+                return (item.name && item.name.toLowerCase().indexOf(q) !== -1) ||
+                       (item.code && item.code.toLowerCase().indexOf(q) !== -1) ||
+                       (item.category && item.category.toLowerCase().indexOf(q) !== -1);
             });
-
+          
             var html = '';
             if (filteredInventory.length === 0) {
                 html = '<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">No inventory items match "' + procFormState.searchTerm + '".</td></tr>';
