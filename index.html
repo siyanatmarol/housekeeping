@@ -1199,7 +1199,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Location</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tank Location</label>
                     <input type="text" id="waterTankLocation" list="waterTankLocationDatalist" required placeholder="e.g. Boys Hostel, Admin Phase 1, Mahad Bldg" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none">
                     <datalist id="waterTankLocationDatalist">
                         <option value="Admin Phase 1"></option>
@@ -1212,6 +1212,11 @@
                         <option value="Compound Area"></option>
                         <option value="Najmi Bldg"></option>
                     </datalist>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Providing water to</label>
+                    <input type="text" id="waterTankProvidingTo" list="waterTankLocationDatalist" required placeholder="e.g. Boys Hostel, Admin Phase 1, Mahad Bldg" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none">
                 </div>
 
                 <div class="grid grid-cols-3 gap-2">
@@ -1257,7 +1262,7 @@
                         <input type="date" id="cleanReportDate" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Location (From Existing Tanks)</label>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tank Location (From Existing Tanks)</label>
                         <select id="cleanReportLocation" onchange="onCleanReportFilterChange('location')" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 focus:outline-none"></select>
                     </div>
                 </div>
@@ -4908,7 +4913,7 @@
             // Top KPI Overview Cards
             html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">';
             html += '<div class="bg-gradient-to-br from-sky-700 to-sky-900 text-white p-4 rounded-2xl shadow-sm border border-sky-600 flex items-center justify-between">';
-            html += '<div><span class="text-[11px] font-bold uppercase text-sky-200 block">Registered Water Tanks</span><div class="text-2xl font-extrabold font-mono mt-1">' + dbWaterTanks.length + '</div><span class="text-[11px] text-sky-200">Grouped across campus locations</span></div>';
+            html += '<div><span class="text-[11px] font-bold uppercase text-sky-200 block">Registered Water Tanks</span><div class="text-2xl font-extrabold font-mono mt-1">' + dbWaterTanks.length + '</div><span class="text-[11px] text-sky-200">Underground first, sorted A–Z by Tank Location</span></div>';
             html += '<div class="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center text-lg"><i class="fa-solid fa-faucet-drip"></i></div></div>';
 
             html += '<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">';
@@ -4926,8 +4931,8 @@
 
             // Filter Bar
             html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
-            html += '<div class="relative w-full sm:w-72"><i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
-            html += '<input type="text" placeholder="Filter by Location..." value="' + waterTankSearchLocation + '" oninput="handleWaterTankLocationSearch(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500"></div>';
+            html += '<div class="relative w-full sm:w-80"><i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
+            html += '<input type="text" placeholder="Filter by Tank Location or Providing Water To..." value="' + waterTankSearchLocation + '" oninput="handleWaterTankLocationSearch(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500"></div>';
 
             html += '<div class="flex items-center space-x-2 flex-wrap gap-y-2">';
             html += '<select onchange="setWaterTankFilterType(this.value)" class="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-medium">';
@@ -4943,9 +4948,12 @@
             html += '</select>';
             html += '</div></div>';
 
-            // Filter & Group Water Tanks by Location
+            // Filter Water Tanks
             var filteredTanks = dbWaterTanks.filter(function(t) {
-                var locMatch = !waterTankSearchLocation || (t.location && t.location.toLowerCase().indexOf(waterTankSearchLocation.toLowerCase()) !== -1);
+                var q = (waterTankSearchLocation || '').toLowerCase();
+                var locMatch = !q ||
+                    (t.location && t.location.toLowerCase().indexOf(q) !== -1) ||
+                    (t.providingWaterTo && t.providingWaterTo.toLowerCase().indexOf(q) !== -1);
                 var typeMatch = waterTankFilterType === 'All' || t.type === waterTankFilterType;
                 var catMatch = waterTankFilterCategory === 'All' || t.category === waterTankFilterCategory;
                 return locMatch && typeMatch && catMatch;
@@ -4959,91 +4967,88 @@
                 html += '<button type="button" onclick="openWaterTankModal()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition inline-flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Add First Water Tank</span></button>';
                 html += '</div>';
             } else {
-                var locationGroups = {};
-                filteredTanks.forEach(function(tank) {
-                    var locKey = (tank.location || 'Unspecified Location').trim();
-                    if (!locationGroups[locKey]) locationGroups[locKey] = [];
-                    locationGroups[locKey].push(tank);
+                // Single unified list sorted with Underground tanks on top, then Overhead tanks, and alphabetically by Tank Location within each
+                var sortedTanks = filteredTanks.slice().sort(function(a, b) {
+                    var catOrderA = (a.category === 'Underground') ? 0 : 1;
+                    var catOrderB = (b.category === 'Underground') ? 0 : 1;
+                    if (catOrderA !== catOrderB) return catOrderA - catOrderB;
+                    var locA = (a.location || '').trim();
+                    var locB = (b.location || '').trim();
+                    var locCmp = locA.localeCompare(locB, undefined, { numeric: true, sensitivity: 'base' });
+                    if (locCmp !== 0) return locCmp;
+                    return (a.type || '').localeCompare(b.type || '');
                 });
 
-                var sortedLocations = Object.keys(locationGroups).sort(function(a, b) {
-                    return a.localeCompare(b);
+                html += '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
+                html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
+                html += '<h4 class="font-bold text-sm text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-list-check text-sky-600"></i><span>Water Tanks Master List (Underground First &bull; Alphabetical by Tank Location)</span></h4>';
+                html += '<span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200 self-start sm:self-auto">' + sortedTanks.length + (sortedTanks.length === 1 ? ' Tank' : ' Tanks') + '</span>';
+                html += '</div>';
+
+                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+                html += '<th class="p-3">Tank Location &amp; ID</th>';
+                html += '<th class="p-3">Providing Water To</th>';
+                html += '<th class="p-3">Type</th>';
+                html += '<th class="p-3">Category</th>';
+                html += '<th class="p-3">Capacity</th>';
+                html += '<th class="p-3">3 Most Recent Cleaning Dates</th>';
+                html += '<th class="p-3 text-center">Actions</th>';
+                html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
+
+                sortedTanks.forEach(function(tank) {
+                    var tankLogs = getTankRecentCleanings(tank);
+                    var recent3 = tankLogs.slice(0, 3);
+
+                    var typeBadge = tank.type === 'Domestic'
+                        ? 'bg-sky-100 text-sky-800 border-sky-300'
+                        : 'bg-amber-100 text-amber-800 border-amber-300';
+                    var catBadge = tank.category === 'Underground'
+                        ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
+                        : 'bg-teal-100 text-teal-800 border-teal-300';
+
+                    var recentDatesHtml = '';
+                    if (recent3.length === 0) {
+                        recentDatesHtml = '<span class="text-slate-400 italic text-[11px]">No cleaning logged yet</span>';
+                    } else {
+                        recentDatesHtml = '<div class="flex items-center flex-wrap gap-1.5">';
+                        recent3.forEach(function(rLog, idx) {
+                            var badgeTone = idx === 0
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold'
+                                : 'bg-slate-100 text-slate-700 border-slate-300 font-medium';
+                            recentDatesHtml += '<span class="px-2 py-0.5 rounded-md text-[11px] font-mono border ' + badgeTone + '" title="' + (rLog.remarks || 'Cleaned') + '"><i class="fa-regular fa-calendar-check mr-1 text-[10px]"></i>' + rLog.date + '</span>';
+                        });
+                        recentDatesHtml += '</div>';
+                    }
+
+                    var capDisplay = tank.capacity || ((tank.capacityValue || '') + ' ' + (tank.capacityUnit || 'Liters'));
+                    var isExpanded = !!expandedTankHistoryIds[tank.id];
+
+                    html += '<tr class="hover:bg-slate-50 transition">';
+                    html += '<td class="p-3"><div class="font-bold text-slate-900">' + tank.location + '</div><div class="text-[10px] font-mono text-slate-400">' + (tank.tankCode || tank.id) + '</div></td>';
+                    html += '<td class="p-3 font-medium text-slate-700">' + (tank.providingWaterTo ? '<span class="inline-flex items-center space-x-1"><i class="fa-solid fa-share-nodes text-sky-600 text-[10px]"></i><span>' + tank.providingWaterTo + '</span></span>' : '<span class="text-slate-400 italic">-</span>') + '</td>';
+                    html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + typeBadge + '">' + tank.type + '</span></td>';
+                    html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + catBadge + '">' + tank.category + '</span></td>';
+                    html += '<td class="p-3 font-mono font-bold text-slate-800">' + capDisplay + '</td>';
+                    html += '<td class="p-3">' + recentDatesHtml + '</td>';
+                    html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-1.5 flex-wrap gap-y-1">';
+                    html += '<button type="button" onclick="openWaterTankModal(\'' + tank.id + '\')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Tank"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
+                    html += '<button type="button" onclick="openTankCleaningReportModal(\'' + tank.id + '\')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
+                    html += '<button type="button" onclick="openTankHistoryModal(\'' + tank.id + '\')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>View History (' + tankLogs.length + ')</button>';
+                    html += '<button type="button" onclick="toggleInlineTankHistory(\'' + tank.id + '\')" class="text-slate-500 hover:text-sky-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
+                    if (isAdmin || isExec) {
+                        html += '<button type="button" onclick="deleteWaterTank(\'' + tank.id + '\')" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Tank"><i class="fa-solid fa-trash-can"></i></button>';
+                    }
+                    html += '</div></td>';
+                    html += '</tr>';
+
+                    if (isExpanded) {
+                        html += '<tr class="bg-sky-50/40"><td colspan="7" class="p-4 border-t border-sky-100">';
+                        html += renderTankChronologicalHistoryHtml(tank, tankLogs);
+                        html += '</td></tr>';
+                    }
                 });
 
-                sortedLocations.forEach(function(locName) {
-                    var tanksInLoc = locationGroups[locName].sort(function(a, b) {
-                        return (a.type + a.category).localeCompare(b.type + b.category);
-                    });
-
-                    html += '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
-                    html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">';
-                    html += '<h4 class="font-bold text-sm text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-location-dot text-sky-600"></i><span>' + locName + '</span></h4>';
-                    html += '<span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200">' + tanksInLoc.length + (tanksInLoc.length === 1 ? ' Tank' : ' Tanks') + '</span>';
-                    html += '</div>';
-
-                    html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
-                    html += '<th class="p-3">Location &amp; ID</th>';
-                    html += '<th class="p-3">Type</th>';
-                    html += '<th class="p-3">Category</th>';
-                    html += '<th class="p-3">Capacity</th>';
-                    html += '<th class="p-3">3 Most Recent Cleaning Dates</th>';
-                    html += '<th class="p-3 text-center">Actions</th>';
-                    html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
-
-                    tanksInLoc.forEach(function(tank) {
-                        var tankLogs = getTankRecentCleanings(tank);
-                        var recent3 = tankLogs.slice(0, 3);
-
-                        var typeBadge = tank.type === 'Domestic'
-                            ? 'bg-sky-100 text-sky-800 border-sky-300'
-                            : 'bg-amber-100 text-amber-800 border-amber-300';
-                        var catBadge = tank.category === 'Underground'
-                            ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
-                            : 'bg-teal-100 text-teal-800 border-teal-300';
-
-                        var recentDatesHtml = '';
-                        if (recent3.length === 0) {
-                            recentDatesHtml = '<span class="text-slate-400 italic text-[11px]">No cleaning logged yet</span>';
-                        } else {
-                            recentDatesHtml = '<div class="flex items-center flex-wrap gap-1.5">';
-                            recent3.forEach(function(rLog, idx) {
-                                var badgeTone = idx === 0
-                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold'
-                                    : 'bg-slate-100 text-slate-700 border-slate-300 font-medium';
-                                recentDatesHtml += '<span class="px-2 py-0.5 rounded-md text-[11px] font-mono border ' + badgeTone + '" title="' + (rLog.remarks || 'Cleaned') + '"><i class="fa-regular fa-calendar-check mr-1 text-[10px]"></i>' + rLog.date + '</span>';
-                            });
-                            recentDatesHtml += '</div>';
-                        }
-
-                        var capDisplay = tank.capacity || ((tank.capacityValue || '') + ' ' + (tank.capacityUnit || 'Liters'));
-                        var isExpanded = !!expandedTankHistoryIds[tank.id];
-
-                        html += '<tr class="hover:bg-slate-50 transition">';
-                        html += '<td class="p-3"><div class="font-bold text-slate-900">' + tank.location + '</div><div class="text-[10px] font-mono text-slate-400">' + (tank.tankCode || tank.id) + '</div></td>';
-                        html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + typeBadge + '">' + tank.type + '</span></td>';
-                        html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + catBadge + '">' + tank.category + '</span></td>';
-                        html += '<td class="p-3 font-mono font-bold text-slate-800">' + capDisplay + '</td>';
-                        html += '<td class="p-3">' + recentDatesHtml + '</td>';
-                        html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-1.5 flex-wrap gap-y-1">';
-                        html += '<button type="button" onclick="openWaterTankModal(\'' + tank.id + '\')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Tank"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
-                        html += '<button type="button" onclick="openTankCleaningReportModal(\'' + tank.id + '\')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
-                        html += '<button type="button" onclick="openTankHistoryModal(\'' + tank.id + '\')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>View History (' + tankLogs.length + ')</button>';
-                        html += '<button type="button" onclick="toggleInlineTankHistory(\'' + tank.id + '\')" class="text-slate-500 hover:text-sky-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
-                        if (isAdmin || isExec) {
-                            html += '<button type="button" onclick="deleteWaterTank(\'' + tank.id + '\')" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Tank"><i class="fa-solid fa-trash-can"></i></button>';
-                        }
-                        html += '</div></td>';
-                        html += '</tr>';
-
-                        if (isExpanded) {
-                            html += '<tr class="bg-sky-50/40"><td colspan="6" class="p-4 border-t border-sky-100">';
-                            html += renderTankChronologicalHistoryHtml(tank, tankLogs);
-                            html += '</td></tr>';
-                        }
-                    });
-
-                    html += '</tbody></table></div></div>';
-                });
+                html += '</tbody></table></div></div>';
             }
 
             html += '</div>';
@@ -5078,6 +5083,8 @@
                     document.getElementById('waterTankType').value = tank.type || 'Domestic';
                     document.getElementById('waterTankCategory').value = tank.category || 'Underground';
                     document.getElementById('waterTankLocation').value = tank.location || '';
+                    var provEl = document.getElementById('waterTankProvidingTo');
+                    if (provEl) provEl.value = tank.providingWaterTo || '';
                     document.getElementById('waterTankCapacityValue').value = tank.capacityValue || parseFloat(tank.capacity) || '';
                     document.getElementById('waterTankCapacityUnit').value = tank.capacityUnit || (tank.capacity && tank.capacity.indexOf('Gallon') !== -1 ? 'Gallons' : 'Liters');
                     document.getElementById('waterTankModalTitle').innerHTML = '<i class="fa-solid fa-faucet-drip text-sky-600"></i><span>Edit Water Tank</span>';
@@ -5087,6 +5094,8 @@
                 document.getElementById('waterTankType').value = 'Domestic';
                 document.getElementById('waterTankCategory').value = 'Underground';
                 document.getElementById('waterTankLocation').value = '';
+                var provElReset = document.getElementById('waterTankProvidingTo');
+                if (provElReset) provElReset.value = '';
                 document.getElementById('waterTankCapacityValue').value = '';
                 document.getElementById('waterTankCapacityUnit').value = 'Liters';
                 document.getElementById('waterTankModalTitle').innerHTML = '<i class="fa-solid fa-faucet-drip text-sky-600"></i><span>Add Water Tank</span>';
@@ -5100,6 +5109,7 @@
             var type = document.getElementById('waterTankType').value;
             var category = document.getElementById('waterTankCategory').value;
             var location = document.getElementById('waterTankLocation').value.trim();
+            var providingWaterTo = document.getElementById('waterTankProvidingTo') ? document.getElementById('waterTankProvidingTo').value.trim() : '';
             var capVal = parseFloat(document.getElementById('waterTankCapacityValue').value) || 0;
             var capUnit = document.getElementById('waterTankCapacityUnit').value;
 
@@ -5111,6 +5121,7 @@
                 type: type,
                 category: category,
                 location: location,
+                providingWaterTo: providingWaterTo,
                 capacityValue: capVal,
                 capacityUnit: capUnit,
                 capacity: capVal.toLocaleString() + ' ' + capUnit,
@@ -5348,7 +5359,7 @@
             document.getElementById('tankHistoryModalTitle').innerHTML =
                 '<i class="fa-solid fa-clock-rotate-left text-sky-600"></i><span>Cleaning History — ' + tank.location + '</span>';
             document.getElementById('tankHistoryModalSubtitle').innerText =
-                'Type: ' + tank.type + ' | Category: ' + tank.category + ' | Capacity: ' + capDisplay + ' | Total Cleanings: ' + logs.length;
+                'Providing Water To: ' + (tank.providingWaterTo || '-') + ' | Type: ' + tank.type + ' | Category: ' + tank.category + ' | Capacity: ' + capDisplay + ' | Total Cleanings: ' + logs.length;
 
             document.getElementById('tankHistoryModalBody').innerHTML = renderTankChronologicalHistoryHtml(tank, logs);
             document.getElementById('tankHistoryAddReportBtn').onclick = function() {
@@ -6913,10 +6924,17 @@
                     reportTitle = "Siyanat Marol - Wet Waste & Compost Report";
                 }
             } else if (activeModule === 'water') {
-                dbWaterTanks.forEach(function(t) {
+                var sortedForExport = dbWaterTanks.slice().sort(function(a, b) {
+                    var catOrderA = (a.category === 'Underground') ? 0 : 1;
+                    var catOrderB = (b.category === 'Underground') ? 0 : 1;
+                    if (catOrderA !== catOrderB) return catOrderA - catOrderB;
+                    return (a.location || '').localeCompare(b.location || '', undefined, { numeric: true, sensitivity: 'base' });
+                });
+                sortedForExport.forEach(function(t) {
                     var recent = getTankRecentCleanings(t).slice(0, 3).map(function(r) { return r.date; }).join(', ');
                     exportRows.push({
-                        'Location': t.location,
+                        'Tank Location': t.location,
+                        'Providing Water To': t.providingWaterTo || '-',
                         'Type': t.type,
                         'Category': t.category,
                         'Capacity': t.capacity || ((t.capacityValue || '') + ' ' + (t.capacityUnit || '')),
