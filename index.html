@@ -851,6 +851,28 @@
         </div>
     </div>
 
+<!-- INVENTORY TRANSACTIONS ARCHIVE MODAL -->
+    <div id="invArchiveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-5xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="fa-solid fa-clock-rotate-left text-blue-600"></i>
+                        <span>Transaction Archive History</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Chronological record of stock purchases, issues, and consumption logs</p>
+                </div>
+                <button type="button" onclick="closeModal('invArchiveModal')" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div id="invArchiveModalBody" class="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 rounded-xl"></div>
+            <div class="pt-3 border-t border-slate-100 flex justify-end mt-3">
+                <button type="button" onclick="closeModal('invArchiveModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+    
     <!-- MACHINERY ASSET FORM MODAL -->
     <div id="machineryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -2751,17 +2773,15 @@
 
             var visibleAreas = isAdmin ? ALL_AREAS : currentUser.areas;
 
-            var filteredArchive = dbData.inventoryArchive.filter(function(arc) {
-                if (isAdmin) return true;
-                if (isExec) return currentUser.areas.indexOf(arc.area) !== -1 || arc.area === 'Main Store';
-                if (isSup) return currentUser.areas.indexOf(arc.area) !== -1;
-                return true;
-            });
-
             var html = '<div class="space-y-6">';
             html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">';
+            
+            // Search Input & Transactions Archive Button
+            html += '<div class="flex items-center space-x-2.5 w-full sm:w-auto flex-1">';
             html += '<div class="relative w-full sm:w-72"><i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
             html += '<input type="text" placeholder="Search Item Name or Code..." value="' + searchSearchTerm + '" oninput="handleInvSearch(this.value)" class="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"></div>';
+            html += '<button type="button" onclick="openInvArchiveModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition whitespace-nowrap flex items-center space-x-1.5 shadow-2xs"><i class="fa-solid fa-clock-rotate-left text-blue-600"></i><span>Transactions Archive</span></button>';
+            html += '</div>';
 
             html += '<div class="flex items-center space-x-2 w-full sm:w-auto justify-end"><span class="text-xs text-slate-500 font-medium">Category:</span>';
             html += '<select onchange="handleInvCategoryFilter(this.value)" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none">';
@@ -2770,62 +2790,37 @@
             });
             html += '</select></div></div>';
 
+            // Area Stores Table
             html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center bg-slate-50"><span>Area Stores Current Stock</span><span class="text-[11px] text-blue-600 font-semibold">' + currentUser.role + '</span></div>';
-            // --- TABLE HEADERS ---
             html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs table-auto"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
             html += '<th class="py-3 px-2 whitespace-nowrap">Code</th>';
-            // Reduced Item Name min-width from 130px to 100px
             html += '<th class="py-3 px-2 min-w-[100px]">Item Name</th>';
             html += '<th class="py-3 px-1.5 whitespace-nowrap">Category</th>';
             html += '<th class="py-3 px-1.5 whitespace-nowrap">Unit</th>';
-            // Main Store Header
             if (isAdmin || isExec) html += '<th class="py-3 px-1 text-center bg-blue-50 text-blue-800 border-l border-slate-200 w-[60px] text-[10px] leading-tight">Main Store</th>';
-            // Increased Area Store Column widths from 58px to 68px
             visibleAreas.forEach(function(a) { html += '<th class="py-3 px-1 text-center bg-slate-50 text-slate-800 border-l border-slate-200 w-[68px] text-[10px] leading-tight">' + a + '</th>'; });
             html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
-            // --- TABLE BODY ---
             filteredItems.forEach(function(item) {
                 html += '<tr class="hover:bg-slate-50 transition">';
                 html += '<td class="py-3 px-2 font-mono text-slate-500 whitespace-nowrap text-[11px]">' + item.code + '</td>';
                 html += '<td class="py-3 px-2 font-semibold text-slate-900 leading-snug">' + item.name + '</td>';
                 html += '<td class="py-3 px-1.5 whitespace-nowrap"><span class="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">' + item.category + '</span></td>';
                 html += '<td class="py-3 px-1.5 text-slate-600 font-medium whitespace-nowrap text-[11px]">' + (item.unit || '-') + '</td>';
-                
-                // Increased Main Store quantity font size by 2 points (text-xs / 12px -> text-sm / 14px)
                 if (isAdmin || isExec) {
                     html += '<td class="py-3 px-1 text-center font-bold text-blue-700 bg-blue-50/30 border-l border-slate-100 font-mono text-sm">' + calculateCurrentStock(item, 'Main Store') + '</td>';
                 }
-                
-                // Increased Area quantity numbers font size by 1 point (text-xs / 12px -> text-[13px])
                 visibleAreas.forEach(function(area) {
                     html += '<td class="py-3 px-1 text-center font-medium text-slate-800 border-l border-slate-100 font-mono text-[13px]">' + calculateCurrentStock(item, area) + '</td>';
                 });
                 html += '</tr>';
             });
 
-            html += '</tbody></table></div></div>';
-
-            html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
-            html += '<div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 bg-slate-50"><span>Transaction Archive History</span></div>';
-            html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-600 uppercase font-semibold border-b border-slate-200"><tr><th class="p-3">Date</th><th class="p-3">Type</th><th class="p-3">Item Name</th><th class="p-3">Store / Area</th><th class="p-3">Quantity</th><th class="p-3">Logged By</th>';
-            if (isAdmin || isExec) html += '<th class="p-3 text-center">Action</th>';
-            html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
-
-            filteredArchive.forEach(function(arc) {
-                var badgeClass = arc.type === 'PURCHASE' ? 'bg-emerald-100 text-emerald-800' : arc.type === 'ISSUE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800';
-                html += '<tr class="hover:bg-slate-50 transition"><td class="p-3 text-slate-500 font-mono">' + arc.date + '</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ' + badgeClass + '">' + arc.type + '</span></td><td class="p-3 font-medium text-slate-900">' + arc.itemName + '</td><td class="p-3 font-semibold text-slate-700">' + arc.area + '</td><td class="p-3 font-bold text-slate-900">' + arc.qty + '</td><td class="p-3 text-slate-500">' + arc.user + '</td>';
-                if (isAdmin || isExec) {
-                    html += '<td class="p-3 text-center"><button onclick="openEditArchiveModal(\'' + arc.id + '\', ' + arc.qty + ')" class="text-blue-600 hover:text-blue-800 font-semibold text-[11px]"><i class="fa-solid fa-pen-to-square"></i> Edit</button></td>';
-                }
-                html += '</tr>';
-            });
-
             html += '</tbody></table></div></div></div>';
             container.innerHTML = html;
         }
-
+        
         function handleInvSearch(val) { searchSearchTerm = val; switchModule('inventory'); }
         function handleInvCategoryFilter(val) { selectedCategoryFilter = val; switchModule('inventory'); }
 
@@ -3143,6 +3138,72 @@
                 closeModal('editArchiveModal');
                 switchModule('inventory');
             }
+        }
+
+        function openInvArchiveModal() {
+            renderInvArchiveModalTable();
+            openModal('invArchiveModal');
+        }
+
+        function renderInvArchiveModalTable() {
+            var bodyEl = document.getElementById('invArchiveModalBody');
+            if (!bodyEl) return;
+
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
+            var isSup = currentUser && currentUser.role === 'Supervisor';
+
+            var filteredArchive = dbData.inventoryArchive.filter(function(arc) {
+                if (isAdmin) return true;
+                if (isExec) return currentUser.areas.indexOf(arc.area) !== -1 || arc.area === 'Main Store';
+                if (isSup) return currentUser.areas.indexOf(arc.area) !== -1;
+                return true;
+            });
+
+            var html = '<table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0 z-10"><tr>';
+            html += '<th class="p-3">Date</th><th class="p-3">Type</th><th class="p-3">Item Name</th><th class="p-3">Store / Area</th><th class="p-3">Quantity</th><th class="p-3">Logged By</th>';
+            if (isAdmin) html += '<th class="p-3 text-center">Actions</th>';
+            html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
+
+            if (filteredArchive.length === 0) {
+                html += '<tr><td colspan="' + (isAdmin ? 7 : 6) + '" class="p-6 text-center text-slate-400 italic">No transaction records found matching your area access level.</td></tr>';
+            } else {
+                filteredArchive.forEach(function(arc) {
+                    var badgeClass = arc.type === 'PURCHASE' ? 'bg-emerald-100 text-emerald-800' : arc.type === 'ISSUE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800';
+                    html += '<tr class="hover:bg-slate-50 transition"><td class="p-3 text-slate-500 font-mono">' + arc.date + '</td>';
+                    html += '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ' + badgeClass + '">' + arc.type + '</span></td>';
+                    html += '<td class="p-3 font-medium text-slate-900">' + arc.itemName + '</td>';
+                    html += '<td class="p-3 font-semibold text-slate-700">' + arc.area + '</td>';
+                    html += '<td class="p-3 font-bold text-slate-900">' + arc.qty + '</td>';
+                    html += '<td class="p-3 text-slate-500">' + arc.user + '</td>';
+                    if (isAdmin) {
+                        html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-2">';
+                        html += '<button type="button" onclick="openEditArchiveModal(\'' + arc.id + '\', ' + arc.qty + ')" class="text-blue-600 hover:text-blue-800 font-semibold text-[11px]"><i class="fa-solid fa-pen-to-square"></i> Edit</button>';
+                        html += '<button type="button" onclick="deleteArchiveRecord(\'' + arc.id + '\')" class="text-red-600 hover:text-red-800 font-semibold text-[11px]"><i class="fa-solid fa-trash-can"></i> Delete</button>';
+                        html += '</div></td>';
+                    }
+                    html += '</tr>';
+                });
+            }
+
+            html += '</tbody></table>';
+            bodyEl.innerHTML = html;
+        }
+
+        function deleteArchiveRecord(arcId) {
+            openConfirmDialog("Are you sure you want to delete this transaction record?", function() {
+                markRecordDeleted(arcId);
+                dbData.inventoryArchive = dbData.inventoryArchive.filter(function(arc) { return arc.id !== arcId; });
+                saveStateToLocalBackup();
+                if (window.deleteInventoryArchiveFromFirestore) {
+                    window.deleteInventoryArchiveFromFirestore(arcId);
+                }
+                renderInvArchiveModalTable();
+                if (activeModule === 'inventory') {
+                    switchModule('inventory');
+                }
+                showAppNotification("Transaction record permanently deleted.", "info");
+            });
         }
 
         // ================= MODULE 2: HR & STAFF SCHEDULE =================
