@@ -887,12 +887,18 @@
             <form onsubmit="handleSaveMachinery(event)" class="space-y-3.5">
                 <input type="hidden" id="machineryEditId">
 
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-xs font-semibold text-slate-600">Category</label>
-                        <button type="button" onclick="addNewMachineryCategoryPrompt()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800">+ Add Category</button>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Machinery ID</label>
+                        <input type="text" id="machineryIdCode" required placeholder="e.g. MAC-01" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     </div>
-                    <select id="machineryCategory" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-xs font-semibold text-slate-600">Category</label>
+                            <button type="button" onclick="addNewMachineryCategoryPrompt()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800">+ Add Category</button>
+                        </div>
+                        <select id="machineryCategory" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -1659,6 +1665,8 @@
         ];
 
         var machineryCategories = ['Vacuum Cleaner', 'Surface Cleaning', 'Fumigation Machine'];
+        var machineryFilterArea = 'All';
+        var machineryFilterCategory = 'All';
 
         var currentUser = null;
         var currentPrimaryTab = 'housekeeping';
@@ -1787,8 +1795,8 @@
             ],
             hrStaff: generatePreseededStaff(),
             machinery: [
-                { id: 'MAC-01', category: 'Vacuum Cleaner', brand: 'Kärcher', model: 'WD 3 V-17/4/20', area: 'Mahad Bldg', purchaseDate: '2025-05-10', warranty: '2 Years', photo: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=300&q=80' },
-                { id: 'MAC-02', category: 'Surface Cleaning', brand: 'Taski', model: 'ergodisc 165', area: 'Boys Hostel', purchaseDate: '2024-11-20', warranty: '1 Year', photo: '' }
+                { id: 'MAC-01', machineryId: 'MAC-01', category: 'Vacuum Cleaner', brand: 'Kärcher', model: 'WD 3 V-17/4/20', area: 'Mahad Bldg', purchaseDate: '2025-05-10', warranty: '2 Years', photo: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=300&q=80' },
+                { id: 'MAC-02', machineryId: 'MAC-02', category: 'Surface Cleaning', brand: 'Taski', model: 'ergodisc 165', area: 'Boys Hostel', purchaseDate: '2024-11-20', warranty: '1 Year', photo: '' }
             ],
             breakdowns: [
                 { id: 'BRK-101', machineId: 'MAC-01', date: '2026-09-10', issue: 'Suction motor making abnormal noise and losing power', photo: '', repairs: [
@@ -6508,31 +6516,205 @@
         }
 
         // ================= MODULE 9: MACHINERY =================
+        function setMachineryAreaFilter(val) {
+            machineryFilterArea = val || 'All';
+            switchModule('machinery');
+        }
+
+        function setMachineryCategoryFilter(val) {
+            machineryFilterCategory = val || 'All';
+            switchModule('machinery');
+        }
+
+        function resetMachineryFilters() {
+            machineryFilterArea = 'All';
+            machineryFilterCategory = 'All';
+            switchModule('machinery');
+        }
+
         function renderMachineryModule(container, actions) {
             var isAdmin = currentUser.role === 'Administrator';
 
             actions.innerHTML = '<button onclick="openMachineryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Add Machinery</span></button>';
 
-            var filteredMachinery = dbData.machinery.filter(function(mac) {
+            var accessibleAreas = isAdmin ? ALL_AREAS.slice() : (currentUser.areas ? currentUser.areas.slice() : ALL_AREAS.slice());
+
+            // Collect all unique categories from machineryCategories and existing machinery items
+            var allCategoryNames = machineryCategories.slice();
+            dbData.machinery.forEach(function(m) {
+                if (m.category && allCategoryNames.indexOf(m.category) === -1) {
+                    allCategoryNames.push(m.category);
+                }
+            });
+
+            if (machineryFilterArea !== 'All' && accessibleAreas.indexOf(machineryFilterArea) === -1) {
+                machineryFilterArea = 'All';
+            }
+            if (machineryFilterCategory !== 'All' && allCategoryNames.indexOf(machineryFilterCategory) === -1) {
+                machineryFilterCategory = 'All';
+            }
+
+            // Base machinery accessible to current user role
+            var roleAccessibleMachinery = dbData.machinery.filter(function(mac) {
                 if (isAdmin) return true;
                 return currentUser.areas.indexOf(mac.area) !== -1;
             });
 
-            var html = '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"><div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center bg-slate-50"><span>Equipment & Machinery Asset Master</span><span class="text-[11px] text-indigo-600 font-semibold">Total Assets: ' + filteredMachinery.length + '</span></div>';
-            html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr><th class="p-3">Photo (Click to Expand)</th><th class="p-3">Category</th><th class="p-3">Brand & Model</th><th class="p-3">Assigned Area</th><th class="p-3">Purchase & Warranty</th><th class="p-3 text-center">Breakdown / Maintenance Details</th><th class="p-3 text-center">Actions</th></tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
+            // Apply Area and Category filters
+            var filteredMachinery = roleAccessibleMachinery.filter(function(mac) {
+                var matchesArea = (machineryFilterArea === 'All') || (mac.area === machineryFilterArea);
+                var matchesCategory = (machineryFilterCategory === 'All') || (mac.category === machineryFilterCategory);
+                return matchesArea && matchesCategory;
+            });
+
+            // Compute Category Bifurcation based on filteredMachinery
+            var categoryCounts = {};
+            var categoriesToDisplay = (machineryFilterCategory === 'All') ? allCategoryNames : [machineryFilterCategory];
+            categoriesToDisplay.forEach(function(cat) {
+                categoryCounts[cat] = 0;
+            });
+            filteredMachinery.forEach(function(mac) {
+                var catName = mac.category || 'Uncategorized';
+                if (categoryCounts[catName] === undefined) categoryCounts[catName] = 0;
+                categoryCounts[catName]++;
+            });
+
+            // Compute Total Breakdowns and Total Repairs dynamically for filteredMachinery
+            var filteredMachineIds = {};
+            filteredMachinery.forEach(function(mac) {
+                filteredMachineIds[mac.id] = true;
+            });
+
+            var totalBreakdownsCount = 0;
+            var totalRepairsCount = 0;
+            var totalRepairExpense = 0;
+
+            dbData.breakdowns.forEach(function(brk) {
+                if (filteredMachineIds[brk.machineId]) {
+                    totalBreakdownsCount++;
+                    var reps = Array.isArray(brk.repairs) ? brk.repairs : [];
+                    totalRepairsCount += reps.length;
+                    reps.forEach(function(r) {
+                        totalRepairExpense += (parseInt(r.cost) || 0);
+                    });
+                }
+            });
+
+            var activeFilterSummary = (machineryFilterArea === 'All' ? 'All Area' : machineryFilterArea) + ' • ' + (machineryFilterCategory === 'All' ? 'All Assets' : machineryFilterCategory);
+
+            var html = '<div class="space-y-4">';
+
+            // 1. COMPACT OVERVIEW CARDS IN ONE LINE (Total Assets with Category Bifurcation, Total Breakdown, Total Repairs)
+            html += '<div class="grid grid-cols-12 gap-3 items-stretch">';
+
+            // Card 1: Total Assets + Category Bifurcation (6 cols)
+            html += '<div class="col-span-12 sm:col-span-6 bg-white rounded-xl px-3.5 py-2.5 border border-indigo-200 shadow-2xs flex items-center justify-between gap-3">';
+            html += '<div class="flex items-center space-x-3 flex-shrink-0">';
+            html += '<div class="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center text-sm flex-shrink-0"><i class="fa-solid fa-gears"></i></div>';
+            html += '<div>';
+            html += '<span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block leading-tight">Total Assets</span>';
+            html += '<span class="text-xl font-extrabold font-mono text-slate-900 leading-none">' + filteredMachinery.length + '</span>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="flex flex-wrap items-center justify-end gap-1.5 border-l border-slate-100 pl-3 flex-1">';
+            var catKeys = Object.keys(categoryCounts);
+            if (catKeys.length === 0) {
+                html += '<span class="text-[11px] text-slate-400 italic">No categories</span>';
+            } else {
+                catKeys.forEach(function(catName) {
+                    var cnt = categoryCounts[catName] || 0;
+                    var pillClass = cnt > 0
+                        ? 'bg-indigo-50/90 border-indigo-200 text-indigo-900'
+                        : 'bg-slate-50 border-slate-200 text-slate-400';
+                    html += '<span class="px-2 py-0.5 rounded-md border text-[11px] inline-flex items-center space-x-1 ' + pillClass + '">';
+                    html += '<span class="font-medium truncate max-w-[110px]">' + catName + ':</span>';
+                    html += '<strong class="font-mono font-bold text-slate-900">' + cnt + '</strong>';
+                    html += '</span>';
+                });
+            }
+            html += '</div></div>';
+
+            // Card 2: Total Breakdown Card (3 cols)
+            html += '<div class="col-span-6 sm:col-span-3 bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-xl px-3.5 py-2.5 shadow-2xs border border-amber-500 flex items-center justify-between">';
+            html += '<div>';
+            html += '<span class="text-[10px] font-bold uppercase tracking-wider text-amber-100 block leading-tight">Total Breakdown</span>';
+            html += '<div class="text-xl font-extrabold font-mono leading-tight mt-0.5">' + totalBreakdownsCount + '</div>';
+            html += '</div>';
+            html += '<div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm text-white flex-shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></div>';
+            html += '</div>';
+
+            // Card 3: Total Repairs Card (3 cols)
+            html += '<div class="col-span-6 sm:col-span-3 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white rounded-xl px-3.5 py-2.5 shadow-2xs border border-emerald-500 flex items-center justify-between">';
+            html += '<div>';
+            html += '<span class="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block leading-tight">Total Repairs</span>';
+            html += '<div class="flex items-baseline space-x-1.5 mt-0.5">';
+            html += '<span class="text-xl font-extrabold font-mono leading-tight">' + totalRepairsCount + '</span>';
+            html += '<span class="text-[10px] text-emerald-100 font-mono">(₹' + totalRepairExpense.toLocaleString() + ')</span>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm text-white flex-shrink-0"><i class="fa-solid fa-screwdriver-wrench"></i></div>';
+            html += '</div>';
+
+            html += '</div>';
+
+            // 2. FILTER BAR (1st Dropdown: Area -> All Area + each area name, 2nd Dropdown: Category -> All Assets + each category name)
+            html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
+            html += '<div class="flex items-center space-x-2">';
+            html += '<div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs"><i class="fa-solid fa-filter"></i></div>';
+            html += '<div><h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Filter Machinery & Overview Metrics</h4>';
+            html += '<p class="text-[11px] text-slate-500">Total assets, category bifurcation, breakdowns, and repairs update dynamically</p></div>';
+            html += '</div>';
+
+            html += '<div class="flex flex-wrap items-center gap-3">';
+            // 1st Filter Dropdown: Area
+            html += '<div class="flex items-center space-x-2">';
+            html += '<label for="machineryAreaFilterSelect" class="text-xs font-semibold text-slate-600 whitespace-nowrap">Area:</label>';
+            html += '<select id="machineryAreaFilterSelect" onchange="setMachineryAreaFilter(this.value)" class="text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">';
+            html += '<option value="All" ' + (machineryFilterArea === 'All' ? 'selected' : '') + '>All Area</option>';
+            accessibleAreas.forEach(function(areaName) {
+                html += '<option value="' + areaName + '" ' + (machineryFilterArea === areaName ? 'selected' : '') + '>' + areaName + '</option>';
+            });
+            html += '</select>';
+            html += '</div>';
+
+            // 2nd Filter Dropdown: Category
+            html += '<div class="flex items-center space-x-2">';
+            html += '<label for="machineryCategoryFilterSelect" class="text-xs font-semibold text-slate-600 whitespace-nowrap">Category:</label>';
+            html += '<select id="machineryCategoryFilterSelect" onchange="setMachineryCategoryFilter(this.value)" class="text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">';
+            html += '<option value="All" ' + (machineryFilterCategory === 'All' ? 'selected' : '') + '>All Assets</option>';
+            allCategoryNames.forEach(function(catName) {
+                html += '<option value="' + catName + '" ' + (machineryFilterCategory === catName ? 'selected' : '') + '>' + catName + '</option>';
+            });
+            html += '</select>';
+            html += '</div>';
+
+            if (machineryFilterArea !== 'All' || machineryFilterCategory !== 'All') {
+                html += '<button type="button" onclick="resetMachineryFilters()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-2 rounded-lg transition"><i class="fa-solid fa-rotate-left mr-1"></i>Reset</button>';
+            }
+            html += '</div></div>';
+
+            // 3. EQUIPMENT & MACHINERY ASSET MASTER TABLE
+            html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"><div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center bg-slate-50"><span>Equipment & Machinery Asset Master</span><span class="text-[11px] text-indigo-600 font-semibold">Total Assets: ' + filteredMachinery.length + '</span></div>';
+            html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr><th class="p-3">Photo (Click to Expand)</th><th class="p-3">Machinery ID</th><th class="p-3">Category</th><th class="p-3">Brand & Model</th><th class="p-3">Assigned Area</th><th class="p-3">Purchase & Warranty</th><th class="p-3 text-center">Breakdown / Maintenance Details</th><th class="p-3 text-center">Actions</th></tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
             if (filteredMachinery.length === 0) {
-                html += '<tr><td colspan="7" class="p-6 text-center text-slate-400">No machinery logged for your assigned area yet.</td></tr>';
+                html += '<tr><td colspan="8" class="p-6 text-center text-slate-400">No machinery assets found matching the selected filter criteria.</td></tr>';
             } else {
                 filteredMachinery.forEach(function(mac) {
                     var machineBreakdowns = dbData.breakdowns.filter(function(b) { return b.machineId === mac.id; });
-                    var photoHtml = mac.photo ? renderInlineMediaThumbnail(mac.photo, mac.brand + ' ' + mac.model, 'w-12 h-12') : '<div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-lg border border-slate-200"><i class="fa-solid fa-gears"></i></div>';
+                    var machineRepairsCount = 0;
+                    machineBreakdowns.forEach(function(b) {
+                        machineRepairsCount += (Array.isArray(b.repairs) ? b.repairs.length : 0);
+                    });
+                    var displayMachineryId = mac.machineryId || mac.id || '-';
+                    var photoHtml = mac.photo ? renderInlineMediaThumbnail(mac.photo, displayMachineryId + ' - ' + mac.brand + ' ' + mac.model, 'w-12 h-12') : '<div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-lg border border-slate-200"><i class="fa-solid fa-gears"></i></div>';
 
-                    html += '<tr class="hover:bg-slate-50 transition"><td class="p-3">' + photoHtml + '</td><td class="p-3 font-semibold text-slate-800">' + mac.category + '</td><td class="p-3"><div class="font-bold text-slate-900">' + mac.brand + '</div><div class="text-[11px] text-slate-500 font-mono">' + mac.model + '</div></td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200">' + mac.area + '</span></td><td class="p-3 text-slate-500 text-[11px]"><div>DOB: ' + (mac.purchaseDate || 'N/A') + '</div><div>Warranty: ' + (mac.warranty || 'N/A') + '</div></td><td class="p-3 text-center"><button onclick="openBreakdownModal(\'' + mac.id + '\')" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1.5"><i class="fa-solid fa-wrench text-amber-600"></i><span>Breakdown Details (' + machineBreakdowns.length + ')</span></button></td><td class="p-3 text-center"><div class="flex items-center justify-center space-x-2"><button onclick="openMachineryModal(\'' + mac.id + '\')" class="text-indigo-600 hover:text-indigo-800 font-semibold px-1.5 py-1"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteMachineryRecord(\'' + mac.id + '\')" class="text-red-600 hover:text-red-800 font-semibold px-1.5 py-1"><i class="fa-solid fa-trash-can"></i></button></div></td></tr>';
+                    html += '<tr class="hover:bg-slate-50 transition"><td class="p-3">' + photoHtml + '</td><td class="p-3 font-mono font-bold text-indigo-700 whitespace-nowrap">' + displayMachineryId + '</td><td class="p-3 font-semibold text-slate-800">' + mac.category + '</td><td class="p-3"><div class="font-bold text-slate-900">' + mac.brand + '</div><div class="text-[11px] text-slate-500 font-mono">' + mac.model + '</div></td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200">' + mac.area + '</span></td><td class="p-3 text-slate-500 text-[11px]"><div>DOB: ' + (mac.purchaseDate || 'N/A') + '</div><div>Warranty: ' + (mac.warranty || 'N/A') + '</div></td><td class="p-3 text-center"><button onclick="openBreakdownModal(\'' + mac.id + '\')" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1.5"><i class="fa-solid fa-wrench text-amber-600"></i><span>Breakdown (' + machineBreakdowns.length + ') / Repairs (' + machineRepairsCount + ')</span></button></td><td class="p-3 text-center"><div class="flex items-center justify-center space-x-2"><button onclick="openMachineryModal(\'' + mac.id + '\')" class="text-indigo-600 hover:text-indigo-800 font-semibold px-1.5 py-1"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteMachineryRecord(\'' + mac.id + '\')" class="text-red-600 hover:text-red-800 font-semibold px-1.5 py-1"><i class="fa-solid fa-trash-can"></i></button></div></td></tr>';
                 });
             }
 
-            html += '</tbody></table></div></div>';
+            html += '</tbody></table></div></div></div>';
             container.innerHTML = html;
         }
 
@@ -6552,6 +6734,7 @@
                 }
                 if (mac) {
                     document.getElementById('machineryEditId').value = mac.id;
+                    document.getElementById('machineryIdCode').value = mac.machineryId || mac.id || '';
                     document.getElementById('machineryCategory').value = mac.category;
                     document.getElementById('machineryBrand').value = mac.brand;
                     document.getElementById('machineryModel').value = mac.model;
@@ -6565,10 +6748,19 @@
                 }
             } else {
                 document.getElementById('machineryEditId').value = '';
+                var nextMacNum = String(dbData.machinery.length + 1).padStart(2, '0');
+                document.getElementById('machineryIdCode').value = '';
+                document.getElementById('machineryIdCode').placeholder = 'e.g. MAC-' + nextMacNum;
                 document.getElementById('machineryBrand').value = '';
                 document.getElementById('machineryModel').value = '';
                 document.getElementById('machineryPurchaseDate').value = '';
                 document.getElementById('machineryWarranty').value = '';
+                if (machineryFilterArea !== 'All') {
+                    document.getElementById('machineryArea').value = machineryFilterArea;
+                }
+                if (machineryFilterCategory !== 'All') {
+                    document.getElementById('machineryCategory').value = machineryFilterCategory;
+                }
             }
 
             openModal('machineryModal');
@@ -6596,6 +6788,7 @@
         function handleSaveMachinery(e) {
             e.preventDefault();
             var editId = document.getElementById('machineryEditId').value;
+            var machineryIdCode = document.getElementById('machineryIdCode').value.trim();
             var category = document.getElementById('machineryCategory').value;
             var brand = document.getElementById('machineryBrand').value.trim();
             var model = document.getElementById('machineryModel').value.trim();
@@ -6604,6 +6797,15 @@
             var warranty = document.getElementById('machineryWarranty').value.trim();
             var photo = document.getElementById('machineryPhotoData').value.trim();
 
+            var duplicateMac = dbData.machinery.find(function(m) {
+                var existingCode = (m.machineryId || m.id || '').toLowerCase();
+                return m.id !== editId && existingCode === machineryIdCode.toLowerCase();
+            });
+            if (duplicateMac) {
+                showAppNotification('Machinery ID "' + machineryIdCode + '" is already assigned to ' + duplicateMac.brand + ' ' + duplicateMac.model + '.', 'error');
+                return;
+            }
+
             var savedMac = null;
             if (editId) {
                 var mac = null;
@@ -6611,6 +6813,7 @@
                     if (dbData.machinery[i].id === editId) { mac = dbData.machinery[i]; break; }
                 }
                 if (mac) {
+                    mac.machineryId = machineryIdCode;
                     mac.category = category; mac.brand = brand; mac.model = model;
                     mac.area = area; mac.purchaseDate = purchaseDate; mac.warranty = warranty; mac.photo = photo;
                     mac.updatedAt = new Date().toISOString();
@@ -6619,6 +6822,7 @@
             } else {
                 savedMac = {
                     id: 'MAC-' + Date.now(),
+                    machineryId: machineryIdCode,
                     category: category, brand: brand, model: model, area: area, purchaseDate: purchaseDate, warranty: warranty, photo: photo,
                     updatedAt: new Date().toISOString()
                 };
@@ -6670,9 +6874,10 @@
             }
             if (!mac) return;
 
+            var dispId = mac.machineryId || mac.id || '-';
             document.getElementById('breakdownMachineId').value = mac.id;
-            document.getElementById('breakdownMachineTitle').innerText = mac.brand + " " + mac.model + " (" + mac.category + ")";
-            document.getElementById('breakdownMachineSubtitle').innerText = "Assigned Area: " + mac.area + " | Log breakdowns & repairs";
+            document.getElementById('breakdownMachineTitle').innerText = dispId + " — " + mac.brand + " " + mac.model + " (" + mac.category + ")";
+            document.getElementById('breakdownMachineSubtitle').innerText = "Machinery ID: " + dispId + " | Assigned Area: " + mac.area + " | Log breakdowns & repairs";
 
             resetBreakdownForm();
             cancelRepairForm();
@@ -6903,6 +7108,7 @@
                 }
                 cancelRepairForm();
                 renderBreakdownList(brk.machineId);
+                if (activeModule === 'machinery') switchModule('machinery');
                 showAppNotification('Repair entry saved!', 'success');
             }
         }
@@ -6922,6 +7128,7 @@
                     window.saveBreakdownToFirestore(brk);
                 }
                 renderBreakdownList(brk.machineId);
+                if (activeModule === 'machinery') switchModule('machinery');
                 showAppNotification("Repair log entry deleted.", "info");
             });
         }
@@ -7284,14 +7491,25 @@
                 fileName = "Siyanat_Cleaning_Schedule_Report";
                 reportTitle = "Siyanat Marol - Cleaning Reports & Checklists";
             } else if (activeModule === 'machinery') {
-                dbData.machinery.forEach(function(m) {
+                var macListForExport = dbData.machinery.filter(function(m) {
+                    var areaOk = (machineryFilterArea === 'All') || (m.area === machineryFilterArea);
+                    var catOk = (machineryFilterCategory === 'All') || (m.category === machineryFilterCategory);
+                    return areaOk && catOk;
+                });
+                macListForExport.forEach(function(m) {
+                    var mBrks = dbData.breakdowns.filter(function(b) { return b.machineId === m.id; });
+                    var mReps = 0;
+                    mBrks.forEach(function(b) { mReps += (Array.isArray(b.repairs) ? b.repairs.length : 0); });
                     exportRows.push({
+                        'Machinery ID': m.machineryId || m.id || 'N/A',
                         'Category': m.category,
                         'Brand': m.brand,
                         'Model': m.model,
                         'Assigned Area': m.area,
                         'Purchase Date': m.purchaseDate || 'N/A',
-                        'Warranty': m.warranty || 'N/A'
+                        'Warranty': m.warranty || 'N/A',
+                        'Total Breakdowns': mBrks.length,
+                        'Total Repairs': mReps
                     });
                 });
                 sheetName = "Machinery Assets";
