@@ -1878,246 +1878,10 @@
             ]
         };
 
-        // Module 3 Cleaning Logs, Daily Work Reports (DWR), & Scope of Work State
+        // Module 3 Cleaning Logs, Daily Work Reports (DWR), & Dynamic Scope of Work State (Populated via Admin Excel Import & Form Builder)
         var dbCleaningLogs = [];
-        var DEFAULT_SCOPE_OF_WORK = {
-            'Religious Block': {
-                'Masjid': [
-                    'Vacuum',
-                    'Windows-doors-pillars & walls dusting',
-                    'Glass cleaning',
-                    'Qibla cleaning',
-                    'Mic Room - Vacuum & dusting',
-                    'Fans & Ac vents cleaning (Once every 2 weeks)',
-                    'Ceiling dusting (Once every 2 weeks)',
-                    'Mishkat cleaning (Once every 6 months)'
-                ],
-                'Iwaan': [
-                    'Vacuum',
-                    'Windows-doors-pillars & walls dusting',
-                    'Glass cleaning',
-                    'Jharoka cleaning',
-                    'Fans & Ac vents cleaning (Once every 2 weeks)',
-                    'Ceiling dusting (Once every 2 weeks)',
-                    'Mishkat cleaning (Once every 6 months)',
-                    'Wooden railing jaali cleaning'
-                ],
-                'Corridor': [
-                    'Dry Mop - 3 times a day',
-                    'Damp Mop - 1 time a day',
-                    'Bathroom Cleaning',
-                    'Pillars & walls dusting',
-                    'Glass Barricade cleaning',
-                    'Ceiling dusting (Once every 2 weeks)',
-                    'Mishkat cleaning (Once every 6 months)',
-                    'Swingo cleaning (Once every month)',
-                    'Jaali cleaning',
-                    'Fans cleaning (Once every 2 weeks)'
-                ],
-                'Mawaid': [
-                    'Vaccuum',
-                    'Handwash Area cleaning',
-                    'Windows-doors-pillars & walls dusting',
-                    'Glass cleaning',
-                    'Designer window Jaali & inner area cleaning',
-                    'Outside Windows chajja cleaning',
-                    'Fans & Ac vents cleaning (Once every 2 weeks)',
-                    'Ceiling dusting (Once every 2 weeks)',
-                    'Wooden Railing jaali cleaning',
-                    'Railing outer area cleaning'
-                ],
-                'Salat al Zahab': [
-                    'Vacuum',
-                    'Windows-doors-pillars & walls dusting',
-                    'Glass cleaning',
-                    'Fans & Ac vents cleaning (Once every 2 weeks)',
-                    'Ceiling dusting (Once every 2 weeks)',
-                    'MPH Corridor - Dry & Damp Mop',
-                    'MPH Corridor - Walls & Door Dusting',
-                    'Tank room cleaning (Once a week)'
-                ],
-                'Iwan and Masjid Terrace': [
-                    'Turf cleaning - Vacuum',
-                    'Pathway dry dusting',
-                    'Skylight glass cleaning',
-                    'Boundary walls dusting & cleaning',
-                    'Furniture cleaning',
-                    'Qasr Passageway cleaning (Once a week)',
-                    'Qasr Lift Landing area cleaning (Once a week)',
-                    'Qasr 4th floor Laundry Area Vaccuum (Once every 2 weeks)',
-                    'Qasr 4th floor Terrace cleaning (Once every 2 weeks)'
-                ],
-                'Lift': [
-                    'Lift - Vaccuum',
-                    'Lift - Cabin dusting & Mirror cleaning',
-                    'Lift - All outer doors cleaning',
-                    'Gate No 5 Door & Green Wall - Dusting',
-                    'Lift landing area (All floors) - Dry Mop & Damp Mop',
-                    'Lift landing area (All floors) - Dusting'
-                ]
-            },
-            'Mahad Bldg': {
-                'Auditorium': [
-                    'Back Office Vaccuum',
-                    'Bathroom cleaning',
-                    'Back office - Windows-doors-walls & ceiling dusting',
-                    'Seating Area - Vaccuum',
-                    'Seats - Dusting',
-                    'Stage - Dry mop',
-                    'Audi - Doors-walls dusting',
-                    'Side Corridor - Cleaning',
-                    'Audi - AC vents & Ceiling cleaning (Once every 2 weeks)',
-                    'Audi Entrance passage - Vaccuum (2nd floor)'
-                ],
-                'Office area - 1st & 2nd floor': [
-                    'Vaccuum',
-                    'Bathroom cleaning',
-                    'Windows-doors-walls & dusting',
-                    'Glass Cleaning',
-                    'Window chajja cleaning',
-                    'Fans & AC vents cleaning (Once every 2 weeks)',
-                    'Corridor - Vaccuum & Dusting',
-                    'Studios - Vaccuum & Dusting (1st & 2nd floor)'
-                ],
-                'Qaat': [
-                    'Qaat - Vaccuum',
-                    'Qaat - Windows-doors-pillars & walls dusting',
-                    'Qaat - Door & Window Glass cleaning',
-                    'Mic Room & Video Room - Cleaning',
-                    'Walkaround - Dry Mop & Dusting',
-                    'Window Chajja cleaning',
-                    'Fans & Ac vents cleaning (Once every 2 weeks)',
-                    'Ceiling dusting (Once every 2 weeks)',
-                    'Mishkat cleaning (Once every 6 months)'
-                ],
-                '5th floor': [
-                    'Corridor - Vacuum & Dusting (Daily)',
-                    'Offices - Vaccuum (Weekly Once)',
-                    'Offices - Windows-doors-walls & dusting (Weekly Once)',
-                    'Window Chajja cleaning (Weekly Once)',
-                    'All Bathrooms cleaning (Weekly Once)',
-                    'Terrace & Balcony - Vacuum & Wet Mop',
-                    'Glass Cleaning (Once every 2 weeks)'
-                ],
-                '6th floor': [
-                    'Corridor - Vaccuum & Dusting (Daily)',
-                    'Garden Area - Dry Mop & Dusting (Daily)',
-                    'Offices & Coversation Rooms - Vacuum (Daily)',
-                    'Offices & Coversation Rooms - Windows-doors-walls & dusting',
-                    'Bathroom cleaning',
-                    'Glass Cleaning',
-                    'Window Chajja cleaning',
-                    'Fans & AC vents cleaning',
-                    'Sky Light - cleaning',
-                    'cleaning'
-                ],
-                'Lift & Staircase': [
-                    'Lift - Vaccuum',
-                    'Lift - Cabin dusting & Mirror cleaning',
-                    'Lift - All outer doors cleaning',
-                    'Lift landing area (All floors) - Dry Mop',
-                    'Lift landing area (All floors) - Dusting',
-                    'Staircase Steps - Dry Mop',
-                    'Staircase - Glass cleaning'
-                ]
-            },
-            'Admin Phase 1': {
-                'Ground & 1st Floor Offices': [
-                    'Vacuum & Dry Mop',
-                    'Damp Mop',
-                    'Windows-doors-pillars & walls dusting',
-                    'Glass cleaning',
-                    'Bathroom & Washroom sanitization',
-                    'Fans & AC vents cleaning (Once every 2 weeks)',
-                    'Ceiling dusting (Once every 2 weeks)'
-                ],
-                'Corridor, Lift & Staircase': [
-                    'Corridor Dry & Damp Mop',
-                    'Lift - Vacuum & Mirror cleaning',
-                    'Staircase Steps & Railing dusting'
-                ]
-            },
-            'Admin Phase 3': {
-                'Classrooms & Faculty Offices': [
-                    'Vacuum & Dry Mop',
-                    'Damp Mop',
-                    'Windows-doors-pillars & walls dusting',
-                    'Glass cleaning',
-                    'Bathroom cleaning',
-                    'Fans & AC vents cleaning (Once every 2 weeks)',
-                    'Ceiling dusting (Once every 2 weeks)'
-                ],
-                'Corridor, Lift & Staircase': [
-                    'Corridor Dry & Damp Mop',
-                    'Lift - Cabin dusting & Mirror cleaning',
-                    'Staircase Steps - Dry Mop'
-                ]
-            },
-            'Estates': {
-                'Estate Offices & Utility Rooms': [
-                    'Dry Mop & Damp Mop',
-                    'Windows-doors & walls dusting',
-                    'Glass cleaning',
-                    'Bathroom cleaning',
-                    'Ceiling & Fans dusting (Once every 2 weeks)'
-                ]
-            },
-            'Boys Hostel': {
-                'Hostel Floors & Common Rooms': [
-                    'Corridor Dry Mop & Damp Mop',
-                    'Common Room Vacuum & Dusting',
-                    'Windows-doors-pillars & walls dusting',
-                    'All Bathrooms & Washrooms cleaning',
-                    'Glass cleaning',
-                    'Fans & AC vents cleaning (Once every 2 weeks)',
-                    'Ceiling dusting (Once every 2 weeks)'
-                ],
-                'Lift & Staircase': [
-                    'Lift - Vacuum & Mirror cleaning',
-                    'Lift landing area (All floors) - Dry Mop & Dusting',
-                    'Staircase Steps - Dry Mop'
-                ]
-            },
-            'Girls Hostel': {
-                'Hostel Floors & Common Areas': [
-                    'Corridor Dry Mop & Damp Mop',
-                    'Common Area Vacuum & Dusting',
-                    'Windows-doors-pillars & walls dusting',
-                    'All Bathrooms & Washrooms cleaning',
-                    'Glass cleaning',
-                    'Fans & AC vents cleaning (Once every 2 weeks)',
-                    'Ceiling dusting (Once every 2 weeks)'
-                ],
-                'Lift & Staircase': [
-                    'Lift - Vacuum & Mirror cleaning',
-                    'Lift landing area (All floors) - Dry Mop & Dusting',
-                    'Staircase Steps - Dry Mop'
-                ]
-            },
-            'Compound Area': {
-                'Main Pathways, Driveways & Gates': [
-                    'Pathway sweeping & litter removal',
-                    'Gate doors & boundary walls dusting',
-                    'Outdoor seating & furniture cleaning',
-                    'Parking & driveway sweeping',
-                    'Storm drain & utility area cleaning (Once a week)'
-                ]
-            },
-            'Najmi Bldg': {
-                'All Floors, Corridor & Staircase': [
-                    'Corridor Dry Mop & Damp Mop',
-                    'Windows-doors-pillars & walls dusting',
-                    'Glass cleaning',
-                    'Bathroom cleaning',
-                    'Staircase Steps & Railing dusting',
-                    'Fans & Ceiling dusting (Once every 2 weeks)'
-                ]
-            }
-        };
-        // Mirror 'Mahad Bldg' under 'Mahad al Zahra' so both names resolve identically
-        DEFAULT_SCOPE_OF_WORK['Mahad al Zahra'] = JSON.parse(JSON.stringify(DEFAULT_SCOPE_OF_WORK['Mahad Bldg']));
-
-        var dbScopeOfWork = JSON.parse(JSON.stringify(DEFAULT_SCOPE_OF_WORK));
+        var DEFAULT_SCOPE_OF_WORK = {};
+        var dbScopeOfWork = {};
         var dbDailyWorkReports = [];
         var dbMediaCache = {};
         var deletedRecordIds = {};
@@ -2288,8 +2052,8 @@
                     return !isRecordDeleted(rId);
                 });
             }
-            if (snap.dbScopeOfWork && typeof snap.dbScopeOfWork === 'object' && Object.keys(snap.dbScopeOfWork).length > 0) {
-                dbScopeOfWork = Object.assign({}, DEFAULT_SCOPE_OF_WORK, snap.dbScopeOfWork);
+            if (snap.dbScopeOfWork && typeof snap.dbScopeOfWork === 'object') {
+                dbScopeOfWork = snap.dbScopeOfWork;
             }
             if (snap.dbDriveConfig && typeof snap.dbDriveConfig === 'object') {
                 if (snap.dbDriveConfig.scriptUrl) dbDriveConfig.scriptUrl = snap.dbDriveConfig.scriptUrl;
@@ -4193,27 +3957,25 @@
         }
 
         function getScopeSubAreasForArea(areaName) {
-            if (!areaName) return {};
-            var scopeObj = dbScopeOfWork || DEFAULT_SCOPE_OF_WORK;
-            if (scopeObj[areaName] && Object.keys(scopeObj[areaName]).length > 0) {
-                return scopeObj[areaName];
+            if (!areaName || !dbScopeOfWork) return {};
+            if (dbScopeOfWork[areaName] && typeof dbScopeOfWork[areaName] === 'object') {
+                return dbScopeOfWork[areaName];
             }
             var norm = normalizeAreaAlias(areaName);
-            if (scopeObj[norm] && Object.keys(scopeObj[norm]).length > 0) {
-                return scopeObj[norm];
+            if (dbScopeOfWork[norm] && typeof dbScopeOfWork[norm] === 'object') {
+                return dbScopeOfWork[norm];
             }
-            if (norm === 'Mahad Bldg' && scopeObj['Mahad al Zahra'] && Object.keys(scopeObj['Mahad al Zahra']).length > 0) {
-                return scopeObj['Mahad al Zahra'];
+            if (norm === 'Mahad Bldg' && dbScopeOfWork['Mahad al Zahra'] && typeof dbScopeOfWork['Mahad al Zahra'] === 'object') {
+                return dbScopeOfWork['Mahad al Zahra'];
             }
-            // Case-insensitive lookup
             var lowerTarget = norm.toLowerCase();
-            var keys = Object.keys(scopeObj);
+            var keys = Object.keys(dbScopeOfWork);
             for (var i = 0; i < keys.length; i++) {
                 if (normalizeAreaAlias(keys[i]).toLowerCase() === lowerTarget) {
-                    return scopeObj[keys[i]];
+                    return dbScopeOfWork[keys[i]];
                 }
             }
-            return DEFAULT_SCOPE_OF_WORK[norm] || DEFAULT_SCOPE_OF_WORK['Religious Block'] || {};
+            return {};
         }
 
         function buildTaskKey(subArea, taskName) {
@@ -4409,26 +4171,41 @@
             var isSup = currentUser && currentUser.role === 'Supervisor';
 
             // 1. Primary Action Buttons at the Top of Module 3:
+            // - "Create / Manage DWR Form" (Admin Only)
             // - "Add Daily Work Report" (DWR)
             // - "Add Deep Cleaning Reports"
             var dwrBtnActive = cleaningSubPage === 'add_dwr' ? 'ring-2 ring-offset-1 ring-teal-500 bg-[#00382c]' : 'bg-[#004d3d] hover:bg-[#00382c]';
-            actions.innerHTML =
-                '<div class="flex items-center space-x-2 flex-wrap gap-y-2">' +
-                    '<button type="button" onclick="openAddDwrPage()" class="' + dwrBtnActive + ' text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
-                        '<i class="fa-solid fa-clipboard-check text-emerald-300"></i>' +
-                        '<span>Add Daily Work Report</span>' +
-                    '</button>' +
-                    '<button type="button" onclick="openCleaningLogModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
-                        '<i class="fa-solid fa-broom"></i>' +
-                        '<span>Add Deep Cleaning Reports</span>' +
-                    '</button>' +
-                '</div>';
+            var builderBtnActive = cleaningSubPage === 'manage_dwr_form' ? 'ring-2 ring-offset-1 ring-indigo-500 bg-indigo-800' : 'bg-indigo-600 hover:bg-indigo-700';
+            var actionsHtml = '<div class="flex items-center space-x-2 flex-wrap gap-y-2">';
+            if (isAdmin) {
+                actionsHtml +=
+                    '<button type="button" onclick="openManageDwrFormPage()" class="' + builderBtnActive + ' text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                        '<i class="fa-solid fa-sliders text-indigo-200"></i>' +
+                        '<span>Create / Manage DWR Form</span>' +
+                    '</button>';
+            }
+            actionsHtml +=
+                '<button type="button" onclick="openAddDwrPage()" class="' + dwrBtnActive + ' text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                    '<i class="fa-solid fa-clipboard-check text-emerald-300"></i>' +
+                    '<span>Add Daily Work Report</span>' +
+                '</button>' +
+                '<button type="button" onclick="openCleaningLogModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                    '<i class="fa-solid fa-broom"></i>' +
+                    '<span>Add Deep Cleaning Reports</span>' +
+                '</button>' +
+            '</div>';
+            actions.innerHTML = actionsHtml;
 
             // Check Unread Comment Intimations whenever a user opens/navigates to Module 3
             if (!skipIntimationPopup) {
                 setTimeout(function() {
                     checkAndShowUnreadDwrComments();
                 }, 60);
+            }
+
+            if (cleaningSubPage === 'manage_dwr_form' && isAdmin) {
+                renderManageDwrFormPageView(container);
+                return;
             }
 
             if (cleaningSubPage === 'add_dwr') {
@@ -4949,7 +4726,16 @@
             html += '</div></div>';
 
             if (subAreaNames.length === 0) {
-                html += '<div class="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500 italic">No sub-areas configured for this area yet. Use "Import Scope of Work (Excel/CSV)" above to load tasks.</div>';
+                html += '<div class="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 space-y-3">';
+                html += '<div class="w-12 h-12 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center mx-auto text-lg"><i class="fa-solid fa-clipboard-list"></i></div>';
+                html += '<div class="text-xs font-bold text-slate-700">No DWR checklist tasks configured for <span class="text-teal-700">' + formatAreaDisplayLabel(dwrFormState.area) + '</span> yet.</div>';
+                if (isAdmin) {
+                    html += '<p class="text-[11px] text-slate-500 max-w-md mx-auto">Import your Scope of Work Excel file (matching your sample layout) or add sub-areas &amp; tasks manually in the DWR Form Builder.</p>';
+                    html += '<button type="button" onclick="openManageDwrFormPage(\'' + dwrFormState.area.replace(/'/g, "\\'") + '\')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition inline-flex items-center space-x-1.5"><i class="fa-solid fa-sliders"></i><span>Open Create / Manage DWR Form</span></button>';
+                } else {
+                    html += '<p class="text-[11px] text-slate-500">Please ask the Administrator to import or configure the DWR Scope of Work form for this area.</p>';
+                }
+                html += '</div>';
             } else {
                 html += '<div id="dwrDynamicSubAreasGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">';
                 var qFilter = (dwrFormState.taskSearchFilter || '').toLowerCase().trim();
@@ -5239,7 +5025,361 @@
             showAppNotification('Daily Work Report for ' + reportArea + ' (' + reportDate + ') saved to Firestore!', 'success');
         }
 
-        // ================= SECTION 3: SCOPE OF WORK EXCEL / CSV IMPORT ENGINE =================
+        // ================= SECTION 3: ADMIN DWR FORM BUILDER & SCOPE OF WORK EXCEL/CSV IMPORT ENGINE =================
+        var dwrBuilderSelectedArea = 'Religious Block';
+
+        function isKnownAreaHeaderName(str) {
+            if (!str) return false;
+            var lower = String(str).trim().toLowerCase();
+            var known = [
+                'religious block', 'mahad al zahra', 'mahad bldg', 'mahad building',
+                'admin phase 1', 'admin phase 3', 'estates', 'boys hostel',
+                'girls hostel', 'compound area', 'najmi bldg', 'najmi building'
+            ];
+            return known.indexOf(lower) !== -1;
+        }
+
+        function openManageDwrFormPage(prefillArea) {
+            if (!currentUser || currentUser.role !== 'Administrator') {
+                showAppNotification('Access Denied: Only Administrators can create or edit DWR forms.', 'error');
+                return;
+            }
+            var allAreas = getUserAssignedDwrAreas();
+            if (prefillArea) {
+                dwrBuilderSelectedArea = normalizeAreaAlias(prefillArea);
+            } else if (!dwrBuilderSelectedArea || allAreas.indexOf(dwrBuilderSelectedArea) === -1) {
+                // Default to first area that already has tasks, or ALL_AREAS[0]
+                var configuredKeys = Object.keys(dbScopeOfWork || {}).filter(function(k) {
+                    return k !== 'Mahad al Zahra' && dbScopeOfWork[k] && Object.keys(dbScopeOfWork[k]).length > 0;
+                });
+                dwrBuilderSelectedArea = configuredKeys.length > 0 ? configuredKeys[0] : (allAreas[0] || 'Religious Block');
+            }
+            cleaningSubPage = 'manage_dwr_form';
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function selectDwrBuilderArea(areaName) {
+            dwrBuilderSelectedArea = areaName;
+            renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+        }
+
+        function renderManageDwrFormPageView(container) {
+            if (!container) return;
+            var allAreas = getUserAssignedDwrAreas();
+            if (!dwrBuilderSelectedArea) dwrBuilderSelectedArea = allAreas[0] || 'Religious Block';
+
+            var subAreasMap = getScopeSubAreasForArea(dwrBuilderSelectedArea);
+            var subAreaNames = Object.keys(subAreasMap);
+            var totalTasksInSelectedArea = 0;
+            subAreaNames.forEach(function(s) {
+                totalTasksInSelectedArea += (Array.isArray(subAreasMap[s]) ? subAreasMap[s].length : 0);
+            });
+
+            // Count total configured areas & tasks across the entire portal
+            var totalConfiguredAreas = 0;
+            var grandTotalTasks = 0;
+            allAreas.forEach(function(a) {
+                var sMap = getScopeSubAreasForArea(a);
+                var sKeys = Object.keys(sMap);
+                if (sKeys.length > 0) {
+                    totalConfiguredAreas++;
+                    sKeys.forEach(function(sk) {
+                        grandTotalTasks += (Array.isArray(sMap[sk]) ? sMap[sk].length : 0);
+                    });
+                }
+            });
+
+            var safeArea = dwrBuilderSelectedArea.replace(/'/g, "\\'");
+
+            var html = '<div class="space-y-6">';
+
+            // 1. Header Banner: Back to Dashboard + Excel Import (Sample Format) + Publish Button
+            html += '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">';
+            html += '<div class="flex items-start sm:items-center space-x-3">';
+            html += '<button type="button" onclick="switchCleaningSubPage(\'dashboard\')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5 flex-shrink-0">';
+            html += '<i class="fa-solid fa-arrow-left"></i><span>Back to Dashboard</span>';
+            html += '</button>';
+            html += '<div>';
+            html += '<div class="flex items-center space-x-2 flex-wrap gap-y-1">';
+            html += '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-indigo-100 text-indigo-800 border border-indigo-200">Admin Form Builder</span>';
+            html += '<h3 class="text-base font-extrabold text-slate-900">Create &amp; Manage DWR Scope of Work Forms</h3>';
+            html += '</div>';
+            html += '<p class="text-xs text-slate-500 mt-0.5">Import your Excel sheet (matching your sample layout: Area &rarr; Sub-Area columns &rarr; Task rows) or add/edit/delete any Area, Sub-Area, or Task below. Changes sync live to <code class="font-mono text-indigo-700">settings/scope_of_work</code> for all users.</p>';
+            html += '</div></div>';
+
+            html += '<div class="flex items-center flex-wrap gap-2 self-start lg:self-center">';
+            html += '<label class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold px-4 py-2.5 rounded-xl shadow transition flex items-center space-x-2 cursor-pointer" title="Import Excel/CSV formatted like your sample image">';
+            html += '<i class="fa-solid fa-file-excel text-emerald-300 text-sm"></i>';
+            html += '<span>Import Excel / CSV (Sample Format)</span>';
+            html += '<input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleScopeOfWorkExcelImport(event)">';
+            html += '</label>';
+            html += '<button type="button" onclick="publishDwrScopeToFirestoreManual()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold px-4 py-2.5 rounded-xl shadow transition flex items-center space-x-1.5">';
+            html += '<i class="fa-solid fa-cloud-arrow-up"></i><span>Save &amp; Publish to All Users</span>';
+            html += '</button>';
+            html += '</div></div>';
+
+            // 2. Area Selector Pills & Area Management Bar
+            html += '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">';
+            html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">';
+            html += '<div>';
+            html += '<h4 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center space-x-2"><i class="fa-solid fa-building text-indigo-600"></i><span>1. Select Area / Building to Configure (' + totalConfiguredAreas + ' Active Areas, ' + grandTotalTasks + ' Total Tasks)</span></h4>';
+            html += '<p class="text-[11px] text-slate-500 mt-0.5">Supervisors and Executives assigned to each Area will automatically see the exact form configured here.</p>';
+            html += '</div>';
+            html += '<div class="flex items-center space-x-2">';
+            html += '<button type="button" onclick="promptAddNewDwrArea()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1"><i class="fa-solid fa-plus"></i><span>Add New Area</span></button>';
+            if (subAreaNames.length > 0) {
+                html += '<button type="button" onclick="clearDwrAreaScope(\'' + safeArea + '\')" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1"><i class="fa-solid fa-trash-can"></i><span>Clear Area Form</span></button>';
+            }
+            html += '</div></div>';
+
+            // Area Pills Grid
+            html += '<div class="flex flex-wrap gap-2">';
+            allAreas.forEach(function(areaName) {
+                var aMap = getScopeSubAreasForArea(areaName);
+                var aSubCount = Object.keys(aMap).length;
+                var aTaskCount = 0;
+                Object.keys(aMap).forEach(function(k) { aTaskCount += (Array.isArray(aMap[k]) ? aMap[k].length : 0); });
+                var isSelected = doAreasMatch(areaName, dwrBuilderSelectedArea);
+                var safeA = areaName.replace(/'/g, "\\'");
+
+                var pillCls = isSelected
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                    : (aTaskCount > 0 ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200');
+                var badgeCls = isSelected
+                    ? 'bg-indigo-800 text-indigo-100'
+                    : (aTaskCount > 0 ? 'bg-emerald-200/80 text-emerald-900' : 'bg-slate-200 text-slate-600');
+
+                html += '<button type="button" onclick="selectDwrBuilderArea(\'' + safeA + '\')" class="px-3.5 py-2 rounded-xl border text-xs font-bold transition flex items-center space-x-2 ' + pillCls + '">';
+                html += '<span>' + formatAreaDisplayLabel(areaName) + '</span>';
+                html += '<span class="text-[10px] font-mono px-2 py-0.5 rounded-full ' + badgeCls + '">' + aSubCount + ' Sub &bull; ' + aTaskCount + ' Tasks</span>';
+                html += '</button>';
+            });
+            html += '</div></div>';
+
+            // 3. Selected Area Sub-Areas & Tasks Editor
+            html += '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-5">';
+            html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">';
+            html += '<div>';
+            html += '<h4 class="text-sm font-extrabold text-slate-900 flex items-center space-x-2">';
+            html += '<i class="fa-solid fa-Layer-group text-teal-600"></i>';
+            html += '<span>2. Form Structure for: <span class="text-indigo-700">' + formatAreaDisplayLabel(dwrBuilderSelectedArea) + '</span></span>';
+            html += '</h4>';
+            html += '<p class="text-xs text-slate-500 mt-0.5">' + subAreaNames.length + ' Sub-Area(s) &bull; ' + totalTasksInSelectedArea + ' Checklist Task(s)</p>';
+            html += '</div>';
+
+            // Add Sub-Area Form inline
+            html += '<form onsubmit="handleAddDwrSubArea(event)" class="flex items-center space-x-2 w-full sm:w-auto">';
+            html += '<input type="text" id="newDwrSubAreaInput" required placeholder="New Sub-Area (e.g. Masjid, Auditorium)..." class="w-full sm:w-64 text-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">';
+            html += '<button type="submit" class="bg-[#004d3d] hover:bg-[#00382c] text-white text-xs font-bold px-4 py-2 rounded-xl shadow transition whitespace-nowrap flex items-center space-x-1.5">';
+            html += '<i class="fa-solid fa-plus text-emerald-300"></i><span>Add Sub-Area</span>';
+            html += '</button>';
+            html += '</form></div>';
+
+            if (subAreaNames.length === 0) {
+                html += '<div class="p-10 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 space-y-3">';
+                html += '<div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-file-excel"></i></div>';
+                html += '<h5 class="text-sm font-bold text-slate-800">No Sub-Areas or Tasks in ' + formatAreaDisplayLabel(dwrBuilderSelectedArea) + ' Yet</h5>';
+                html += '<p class="text-xs text-slate-500 max-w-lg mx-auto">Click <strong>"Import Excel / CSV (Sample Format)"</strong> above to automatically populate Areas, Sub-Area columns, and Tasks from your spreadsheet, or type a Sub-Area name in the box above to build it manually.</p>';
+                html += '</div>';
+            } else {
+                html += '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+                subAreaNames.forEach(function(subArea, sIdx) {
+                    var tasks = Array.isArray(subAreasMap[subArea]) ? subAreasMap[subArea] : [];
+                    var safeSub = subArea.replace(/'/g, "\\'");
+
+                    html += '<div class="rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col justify-between overflow-hidden shadow-2xs">';
+                    html += '<div>';
+                    // Sub-Area Card Header with Rename & Delete buttons
+                    html += '<div class="px-3.5 py-2.5 bg-slate-900 text-white flex items-center justify-between gap-2">';
+                    html += '<div class="flex items-center space-x-2 min-w-0">';
+                    html += '<span class="w-5 h-5 rounded bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">' + (sIdx + 1) + '</span>';
+                    html += '<span class="font-extrabold text-xs truncate" title="' + subArea + '">' + subArea + '</span>';
+                    html += '<span class="text-[10px] font-mono bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded">' + tasks.length + '</span>';
+                    html += '</div>';
+                    html += '<div class="flex items-center space-x-1.5 flex-shrink-0">';
+                    html += '<button type="button" onclick="promptRenameDwrSubArea(\'' + safeArea + '\', \'' + safeSub + '\')" class="text-slate-300 hover:text-white p-1 rounded hover:bg-slate-800 transition" title="Rename Sub-Area"><i class="fa-solid fa-pen text-[11px]"></i></button>';
+                    html += '<button type="button" onclick="deleteDwrSubArea(\'' + safeArea + '\', \'' + safeSub + '\')" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-slate-800 transition" title="Delete Sub-Area"><i class="fa-solid fa-trash-can text-[11px]"></i></button>';
+                    html += '</div></div>';
+
+                    // Tasks List inside Sub-Area
+                    html += '<div class="p-3 space-y-1.5 max-h-72 overflow-y-auto custom-scrollbar divide-y divide-slate-200/70">';
+                    if (tasks.length === 0) {
+                        html += '<p class="text-[11px] text-slate-400 italic py-2 text-center">No tasks yet. Add one below.</p>';
+                    } else {
+                        tasks.forEach(function(taskName, tIdx) {
+                            html += '<div class="pt-1.5 first:pt-0 flex items-center justify-between gap-2 group">';
+                            html += '<span class="text-xs text-slate-800 font-medium leading-snug break-words flex-1">' + taskName + '</span>';
+                            html += '<div class="flex items-center space-x-1 flex-shrink-0">';
+                            html += '<button type="button" onclick="promptEditDwrTask(\'' + safeArea + '\', \'' + safeSub + '\', ' + tIdx + ')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 p-1 rounded text-[10px] transition" title="Edit Task"><i class="fa-solid fa-pen"></i></button>';
+                            html += '<button type="button" onclick="deleteDwrTask(\'' + safeArea + '\', \'' + safeSub + '\', ' + tIdx + ')" class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1 rounded text-[10px] transition" title="Delete Task"><i class="fa-solid fa-xmark"></i></button>';
+                            html += '</div></div>';
+                        });
+                    }
+                    html += '</div></div>';
+
+                    // Quick Add Task Footer inside Sub-Area Card
+                    html += '<form onsubmit="handleAddDwrTaskToSubArea(event, \'' + safeArea + '\', \'' + safeSub + '\', ' + sIdx + ')" class="p-2.5 bg-white border-t border-slate-200 flex items-center space-x-1.5">';
+                    html += '<input type="text" id="newDwrTaskInput_' + sIdx + '" required placeholder="Add task to ' + subArea + '..." class="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500">';
+                    html += '<button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow-2xs transition flex-shrink-0" title="Add Task"><i class="fa-solid fa-plus"></i></button>';
+                    html += '</form>';
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+
+            html += '</div></div>';
+            container.innerHTML = html;
+        }
+
+        function ensureAreaExistsInScope(areaName) {
+            var canon = normalizeAreaAlias(areaName);
+            if (!dbScopeOfWork || typeof dbScopeOfWork !== 'object') dbScopeOfWork = {};
+            if (!dbScopeOfWork[canon] || typeof dbScopeOfWork[canon] !== 'object') {
+                dbScopeOfWork[canon] = {};
+            }
+            return canon;
+        }
+
+        async function syncModifiedScopeOfWork() {
+            if (dbScopeOfWork['Mahad Bldg']) {
+                dbScopeOfWork['Mahad al Zahra'] = JSON.parse(JSON.stringify(dbScopeOfWork['Mahad Bldg']));
+            }
+            saveStateToLocalBackup();
+            if (window.saveScopeOfWorkToFirestore) {
+                await window.saveScopeOfWorkToFirestore(dbScopeOfWork);
+            }
+        }
+
+        async function publishDwrScopeToFirestoreManual() {
+            await syncModifiedScopeOfWork();
+            showAppNotification('DWR Scope of Work saved & published to Firestore (settings/scope_of_work) for all users!', 'success');
+        }
+
+        function promptAddNewDwrArea() {
+            openPromptDialog('Add New Area / Building', 'Enter Area Name (e.g. Religious Block, Guest House)', async function(val) {
+                if (!val || !val.trim()) return;
+                var clean = normalizeAreaAlias(val.trim());
+                ensureAreaExistsInScope(clean);
+                if (ALL_AREAS.indexOf(clean) === -1 && clean !== 'Mahad al Zahra') {
+                    ALL_AREAS.push(clean);
+                }
+                dwrBuilderSelectedArea = clean;
+                await syncModifiedScopeOfWork();
+                renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+                showAppNotification('Area "' + clean + '" ready for Sub-Area & Task configuration.', 'success');
+            });
+        }
+
+        function clearDwrAreaScope(areaName) {
+            openConfirmDialog('Are you sure you want to clear all Sub-Areas and Tasks for "' + formatAreaDisplayLabel(areaName) + '"?', async function() {
+                var canon = normalizeAreaAlias(areaName);
+                delete dbScopeOfWork[canon];
+                if (canon === 'Mahad Bldg') delete dbScopeOfWork['Mahad al Zahra'];
+                await syncModifiedScopeOfWork();
+                renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+                showAppNotification('Cleared DWR form for ' + areaName + '.', 'info');
+            });
+        }
+
+        async function handleAddDwrSubArea(e) {
+            e.preventDefault();
+            var inp = document.getElementById('newDwrSubAreaInput');
+            if (!inp || !inp.value.trim()) return;
+            var subName = inp.value.trim();
+            var canon = ensureAreaExistsInScope(dwrBuilderSelectedArea);
+            if (dbScopeOfWork[canon][subName]) {
+                showAppNotification('Sub-Area "' + subName + '" already exists in ' + canon + '.', 'error');
+                return;
+            }
+            dbScopeOfWork[canon][subName] = [];
+            inp.value = '';
+            await syncModifiedScopeOfWork();
+            renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+            showAppNotification('Added Sub-Area "' + subName + '" to ' + canon + '!', 'success');
+        }
+
+        function promptRenameDwrSubArea(areaName, oldSubName) {
+            openPromptDialog('Rename Sub-Area (' + oldSubName + ')', oldSubName, async function(newVal) {
+                if (!newVal || !newVal.trim() || newVal.trim() === oldSubName) return;
+                var newSub = newVal.trim();
+                var canon = ensureAreaExistsInScope(areaName);
+                var currentMap = dbScopeOfWork[canon] || {};
+                var rebuilt = {};
+                Object.keys(currentMap).forEach(function(k) {
+                    if (k === oldSubName) {
+                        rebuilt[newSub] = currentMap[oldSubName];
+                    } else {
+                        rebuilt[k] = currentMap[k];
+                    }
+                });
+                dbScopeOfWork[canon] = rebuilt;
+                await syncModifiedScopeOfWork();
+                renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+                showAppNotification('Renamed Sub-Area to "' + newSub + '".', 'success');
+            });
+            setTimeout(function() {
+                var pInp = document.getElementById('appPromptInput');
+                if (pInp) pInp.value = oldSubName;
+            }, 70);
+        }
+
+        function deleteDwrSubArea(areaName, subName) {
+            openConfirmDialog('Delete Sub-Area "' + subName + '" and all its tasks from ' + areaName + '?', async function() {
+                var canon = ensureAreaExistsInScope(areaName);
+                if (dbScopeOfWork[canon]) {
+                    delete dbScopeOfWork[canon][subName];
+                }
+                await syncModifiedScopeOfWork();
+                renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+                showAppNotification('Deleted Sub-Area "' + subName + '".', 'info');
+            });
+        }
+
+        async function handleAddDwrTaskToSubArea(e, areaName, subName, sIdx) {
+            e.preventDefault();
+            var inp = document.getElementById('newDwrTaskInput_' + sIdx);
+            if (!inp || !inp.value.trim()) return;
+            var taskText = inp.value.trim();
+            var canon = ensureAreaExistsInScope(areaName);
+            if (!Array.isArray(dbScopeOfWork[canon][subName])) {
+                dbScopeOfWork[canon][subName] = [];
+            }
+            dbScopeOfWork[canon][subName].push(taskText);
+            inp.value = '';
+            await syncModifiedScopeOfWork();
+            renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+            showAppNotification('Task added to ' + subName + '!', 'success');
+        }
+
+        function promptEditDwrTask(areaName, subName, taskIdx) {
+            var canon = ensureAreaExistsInScope(areaName);
+            var tasks = (dbScopeOfWork[canon] && Array.isArray(dbScopeOfWork[canon][subName])) ? dbScopeOfWork[canon][subName] : [];
+            var currentTask = tasks[taskIdx];
+            if (currentTask === undefined) return;
+
+            openPromptDialog('Edit Checklist Task in ' + subName, currentTask, async function(newVal) {
+                if (!newVal || !newVal.trim()) return;
+                dbScopeOfWork[canon][subName][taskIdx] = newVal.trim();
+                await syncModifiedScopeOfWork();
+                renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+                showAppNotification('Task updated & synced!', 'success');
+            });
+            setTimeout(function() {
+                var pInp = document.getElementById('appPromptInput');
+                if (pInp) pInp.value = currentTask;
+            }, 70);
+        }
+
+        async function deleteDwrTask(areaName, subName, taskIdx) {
+            var canon = ensureAreaExistsInScope(areaName);
+            if (dbScopeOfWork[canon] && Array.isArray(dbScopeOfWork[canon][subName])) {
+                dbScopeOfWork[canon][subName].splice(taskIdx, 1);
+                await syncModifiedScopeOfWork();
+                renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+                showAppNotification('Task removed.', 'info');
+            }
+        }
+
         function handleScopeOfWorkExcelImport(e) {
             if (!currentUser || currentUser.role !== 'Administrator') {
                 showAppNotification('Access Denied: Only Administrators can import Scope of Work files.', 'error');
@@ -5274,9 +5414,9 @@
 
                         var isFlatThreeColumn = false;
                         if (firstNonEmptyRow) {
-                            var hasAreaCol = firstNonEmptyRow.some(function(h) { return h === 'area' || h === 'block' || h === 'level 1' || h.indexOf('area') !== -1; });
+                            var hasAreaCol = firstNonEmptyRow.some(function(h) { return h === 'area' || h === 'block' || h === 'level 1'; });
                             var hasSubAreaCol = firstNonEmptyRow.some(function(h) { return h.indexOf('sub') !== -1 || h === 'location' || h === 'level 2'; });
-                            var hasTaskCol = firstNonEmptyRow.some(function(h) { return h.indexOf('task') !== -1 || h.indexOf('checklist') !== -1 || h.indexOf('scope') !== -1 || h === 'level 3'; });
+                            var hasTaskCol = firstNonEmptyRow.some(function(h) { return h.indexOf('task') !== -1 || h.indexOf('checklist') !== -1 || h === 'level 3'; });
                             if (hasAreaCol && hasSubAreaCol && hasTaskCol) {
                                 isFlatThreeColumn = true;
                             }
@@ -5314,13 +5454,15 @@
                             return;
                         }
 
-                        // Otherwise parse the Hierarchical Block / Multi-Column Matrix format (as shown in Housekeeping Scope of Work Excel screenshot)
-                        // Level 1: Single-cell row = Area (e.g., "Religious Block", "Mahad al Zahra")
-                        // Level 2: Next multi-cell row = Sub-areas across columns (e.g., "Masjid", "Iwaan", "Corridor", ...)
-                        // Level 3: Subsequent rows = Checklist Tasks under each Sub-area column
+                        // Parse the Sample Image Hierarchical Block / Multi-Column Matrix Format:
+                        // - Title row ("Housekeeping Scope of work") is skipped
+                        // - Single-cell row at Col A (preceded by blank row / start of sheet, or matching a known Area name) = Level 1 Area (e.g., "Religious Block", "Mahad al Zahra")
+                        // - Immediate next row = Level 2 Sub-Areas across columns (e.g., "Masjid", "Iwaan", "Corridor", "Mawaid", ...)
+                        // - Subsequent rows until next blank row / next Area header = Level 3 Tasks under each Sub-Area column
                         var currentArea = '';
                         var activeSubAreaByCol = {};
                         var expectingSubAreaRow = false;
+                        var lastRowWasBlank = true;
 
                         for (var r = 0; r < matrix.length; r++) {
                             var row = matrix[r] || [];
@@ -5333,37 +5475,39 @@
                             }
 
                             if (nonEmptyIndices.length === 0) {
-                                // Blank row resets active sub-area columns so the next section can begin
+                                lastRowWasBlank = true;
                                 activeSubAreaByCol = {};
                                 expectingSubAreaRow = false;
                                 continue;
                             }
 
-                            if (nonEmptyIndices.length === 1) {
+                            if (nonEmptyIndices.length === 1 && nonEmptyIndices[0].col === 0) {
                                 var singleText = nonEmptyIndices[0].val;
                                 var lowerSingle = singleText.toLowerCase();
                                 if (lowerSingle.indexOf('housekeeping scope of work') !== -1 || lowerSingle === 'scope of work') {
+                                    lastRowWasBlank = true;
                                     continue;
                                 }
-                                // Check if the next non-empty row has multiple columns (indicating this single cell is a Level 1 Area Header)
-                                var nextNonEmptyCount = 0;
-                                for (var nr = r + 1; nr < matrix.length; nr++) {
-                                    var nextRow = matrix[nr] || [];
-                                    var nextCells = nextRow.filter(function(x) { return String(x || '').trim() !== ''; });
-                                    if (nextCells.length > 0) {
-                                        nextNonEmptyCount = nextCells.length;
-                                        break;
-                                    }
+
+                                // Check immediate next row to see if it is a multi-column Sub-Area header row
+                                var immediateNextCells = 0;
+                                if (r + 1 < matrix.length) {
+                                    immediateNextCells = (matrix[r + 1] || []).filter(function(x) { return String(x || '').trim() !== ''; }).length;
                                 }
 
-                                if (nextNonEmptyCount >= 2 || Object.keys(activeSubAreaByCol).length === 0) {
+                                var isAreaHeader = (lastRowWasBlank || isKnownAreaHeaderName(singleText) || Object.keys(activeSubAreaByCol).length === 0) && (immediateNextCells >= 1);
+                                if (isAreaHeader) {
                                     currentArea = normalizeAreaAlias(singleText);
                                     if (!parsedScope[currentArea]) {
                                         parsedScope[currentArea] = {};
                                         totalAreasParsed++;
                                     }
+                                    if (ALL_AREAS.indexOf(currentArea) === -1 && currentArea !== 'Mahad al Zahra') {
+                                        ALL_AREAS.push(currentArea);
+                                    }
                                     activeSubAreaByCol = {};
                                     expectingSubAreaRow = true;
+                                    lastRowWasBlank = false;
                                     continue;
                                 }
                             }
@@ -5378,10 +5522,11 @@
                                     }
                                 });
                                 expectingSubAreaRow = false;
+                                lastRowWasBlank = false;
                                 continue;
                             }
 
-                            // Task rows under active Sub-area columns
+                            // Level 3: Task rows under active Sub-Area columns
                             if (currentArea && Object.keys(activeSubAreaByCol).length > 0) {
                                 nonEmptyIndices.forEach(function(item) {
                                     var subName = activeSubAreaByCol[item.col];
@@ -5393,6 +5538,7 @@
                                     }
                                 });
                             }
+                            lastRowWasBlank = false;
                         }
                     });
 
@@ -5401,23 +5547,23 @@
                         return;
                     }
 
-                    // Merge parsedScope into dbScopeOfWork and sync to Firestore settings/scope_of_work
-                    Object.keys(parsedScope).forEach(function(areaKey) {
+                    // Merge imported Areas into dbScopeOfWork and sync to Firestore settings/scope_of_work
+                    var importedAreaKeys = Object.keys(parsedScope);
+                    importedAreaKeys.forEach(function(areaKey) {
                         dbScopeOfWork[areaKey] = parsedScope[areaKey];
                         if (areaKey === 'Mahad Bldg') {
                             dbScopeOfWork['Mahad al Zahra'] = JSON.parse(JSON.stringify(parsedScope[areaKey]));
                         }
                     });
 
-                    saveStateToLocalBackup();
-                    if (window.saveScopeOfWorkToFirestore) {
-                        await window.saveScopeOfWorkToFirestore(dbScopeOfWork);
-                    }
+                    dwrBuilderSelectedArea = importedAreaKeys[0] || dwrBuilderSelectedArea;
+                    await syncModifiedScopeOfWork();
 
                     if (activeModule === 'cleaning') {
+                        cleaningSubPage = 'manage_dwr_form';
                         renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
                     }
-                    showAppNotification('Imported Scope of Work (' + totalAreasParsed + ' Areas, ' + totalSubAreasParsed + ' Sub-areas, ' + totalTasksParsed + ' Tasks) & synced to settings/scope_of_work!', 'success');
+                    showAppNotification('Imported ' + totalAreasParsed + ' Area(s), ' + totalSubAreasParsed + ' Sub-Area(s), & ' + totalTasksParsed + ' Task(s) and published to all users!', 'success');
                 } catch (err) {
                     showAppNotification('Scope of Work import error: ' + err.message, 'error');
                 }
@@ -10288,12 +10434,10 @@
                                         cleanedScope[k] = remoteScope[k];
                                     }
                                 });
-                                if (Object.keys(cleanedScope).length > 0) {
-                                    window.dbScopeOfWork = Object.assign({}, window.DEFAULT_SCOPE_OF_WORK, cleanedScope);
-                                    saveStateToLocalBackup();
-                                    if (window.activeModule === "cleaning") {
-                                        window.renderCleaningModule(document.getElementById("moduleContainer"), document.getElementById("modulePrimaryActions"), true);
-                                    }
+                                window.dbScopeOfWork = cleanedScope;
+                                saveStateToLocalBackup();
+                                if (window.activeModule === "cleaning") {
+                                    window.renderCleaningModule(document.getElementById("moduleContainer"), document.getElementById("modulePrimaryActions"), true);
                                 }
                             }
                         } else if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0) {
