@@ -6608,28 +6608,28 @@
             html += '<div class="grid grid-cols-12 gap-3 items-stretch">';
 
             // Card 1: Total Assets + Category Bifurcation (6 cols)
-            html += '<div class="col-span-12 sm:col-span-6 bg-white rounded-xl px-3.5 py-2.5 border border-indigo-200 shadow-2xs flex items-center justify-between gap-3">';
+            html += '<div class="col-span-12 sm:col-span-6 bg-gradient-to-br from-indigo-600 to-indigo-800 text-white rounded-xl px-3.5 py-2.5 border border-indigo-500 shadow-2xs flex items-center justify-between gap-3">';
             html += '<div class="flex items-center space-x-3 flex-shrink-0">';
-            html += '<div class="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center text-sm flex-shrink-0"><i class="fa-solid fa-gears"></i></div>';
+            html += '<div class="w-9 h-9 rounded-lg bg-white/20 text-white flex items-center justify-center text-sm flex-shrink-0"><i class="fa-solid fa-gears"></i></div>';
             html += '<div>';
-            html += '<span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block leading-tight">Total Assets</span>';
-            html += '<span class="text-xl font-extrabold font-mono text-slate-900 leading-none">' + filteredMachinery.length + '</span>';
+            html += '<span class="text-[10px] font-bold uppercase tracking-wider text-indigo-100 block leading-tight">Total Assets</span>';
+            html += '<span class="text-xl font-extrabold font-mono text-white leading-none">' + filteredMachinery.length + '</span>';
             html += '</div>';
             html += '</div>';
 
-            html += '<div class="flex flex-wrap items-center justify-end gap-1.5 border-l border-slate-100 pl-3 flex-1">';
+            html += '<div class="flex flex-wrap items-center justify-end gap-1.5 border-l border-indigo-400/40 pl-3 flex-1">';
             var catKeys = Object.keys(categoryCounts);
             if (catKeys.length === 0) {
-                html += '<span class="text-[11px] text-slate-400 italic">No categories</span>';
+                html += '<span class="text-[11px] text-indigo-200 italic">No categories</span>';
             } else {
                 catKeys.forEach(function(catName) {
                     var cnt = categoryCounts[catName] || 0;
                     var pillClass = cnt > 0
-                        ? 'bg-indigo-50/90 border-indigo-200 text-indigo-900'
-                        : 'bg-slate-50 border-slate-200 text-slate-400';
+                        ? 'bg-white/20 border-white/30 text-white'
+                        : 'bg-indigo-900/40 border-indigo-400/25 text-indigo-200';
                     html += '<span class="px-2 py-0.5 rounded-md border text-[11px] inline-flex items-center space-x-1 ' + pillClass + '">';
                     html += '<span class="font-medium truncate max-w-[110px]">' + catName + ':</span>';
-                    html += '<strong class="font-mono font-bold text-slate-900">' + cnt + '</strong>';
+                    html += '<strong class="font-mono font-extrabold text-white">' + cnt + '</strong>';
                     html += '</span>';
                 });
             }
