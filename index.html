@@ -1595,6 +1595,79 @@
         </div>
     </div>
 
+    <!-- MODULE 3: UNREAD COMMENT INTIMATION POPUP MODAL (MANDATORY ON MODULE ENTRY) -->
+    <div id="unreadCommentsIntimationModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[65] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 border-2 border-amber-400 max-h-[90vh] flex flex-col">
+            <div class="flex items-start justify-between mb-4 pb-3 border-b border-amber-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl shadow-2xs flex-shrink-0 animate-bounce">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 flex items-center space-x-2">
+                            <span>New Comments Added!</span>
+                            <span id="unreadIntimationCountBadge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-600 text-white font-bold">0 Unread</span>
+                        </h3>
+                        <p class="text-xs text-slate-600 mt-0.5">Unread Executive / Admin comments on Daily Work Reports for your assigned area(s).</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeModal('unreadCommentsIntimationModal')" class="text-slate-400 hover:text-slate-600 p-1" title="Dismiss for now">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div id="unreadCommentsIntimationList" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1"></div>
+
+            <div class="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <span class="text-[11px] text-slate-500"><i class="fa-solid fa-circle-info text-amber-600 mr-1"></i>Clicking <strong>View Comments</strong> opens the report and marks the comment as read.</span>
+                <button type="button" id="unreadPrimaryViewBtn" onclick="openFirstUnreadDwrComment()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition whitespace-nowrap flex items-center space-x-1.5">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>View Comments</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODULE 3: DAILY WORK REPORT (DWR) RESPONSE & COMMENTS DETAIL MODAL -->
+    <div id="dwrDetailModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 border border-slate-100 max-h-[92vh] flex flex-col">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200">
+                <div>
+                    <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center space-x-1">
+                            <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                            <span>Filled DWR</span>
+                        </span>
+                        <h3 id="dwrDetailModalTitle" class="text-base sm:text-lg font-extrabold text-slate-900">Daily Work Report Details</h3>
+                    </div>
+                    <p id="dwrDetailModalSubtitle" class="text-xs text-slate-500 mt-1 font-medium"></p>
+                </div>
+                <div class="flex items-center space-x-2 self-end sm:self-auto">
+                    <button type="button" id="dwrDetailEditBtn" class="hidden bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Edit DWR</span>
+                    </button>
+                    <button type="button" id="dwrDetailDeleteBtn" class="hidden bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Delete</span>
+                    </button>
+                    <button type="button" onclick="closeModal('dwrDetailModal')" class="text-slate-400 hover:text-slate-600 pl-2">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="dwrDetailModalBody" class="flex-1 overflow-y-auto custom-scrollbar space-y-5 pr-1">
+                <!-- Populated dynamically via openDwrDetailModal(reportId) -->
+            </div>
+
+            <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
+                <span id="dwrDetailIdFooter" class="text-[11px] font-mono text-slate-400"></span>
+                <button type="button" onclick="closeModal('dwrDetailModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-5 py-2 rounded-lg transition">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN APPLICATION SCRIPT -->
     <script>
         var ADMIN_EXECUTIVE_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates'];
@@ -1805,8 +1878,247 @@
             ]
         };
 
-        // Module 3 Cleaning Logs & Media Cache State
+        // Module 3 Cleaning Logs, Daily Work Reports (DWR), & Scope of Work State
         var dbCleaningLogs = [];
+        var DEFAULT_SCOPE_OF_WORK = {
+            'Religious Block': {
+                'Masjid': [
+                    'Vacuum',
+                    'Windows-doors-pillars & walls dusting',
+                    'Glass cleaning',
+                    'Qibla cleaning',
+                    'Mic Room - Vacuum & dusting',
+                    'Fans & Ac vents cleaning (Once every 2 weeks)',
+                    'Ceiling dusting (Once every 2 weeks)',
+                    'Mishkat cleaning (Once every 6 months)'
+                ],
+                'Iwaan': [
+                    'Vacuum',
+                    'Windows-doors-pillars & walls dusting',
+                    'Glass cleaning',
+                    'Jharoka cleaning',
+                    'Fans & Ac vents cleaning (Once every 2 weeks)',
+                    'Ceiling dusting (Once every 2 weeks)',
+                    'Mishkat cleaning (Once every 6 months)',
+                    'Wooden railing jaali cleaning'
+                ],
+                'Corridor': [
+                    'Dry Mop - 3 times a day',
+                    'Damp Mop - 1 time a day',
+                    'Bathroom Cleaning',
+                    'Pillars & walls dusting',
+                    'Glass Barricade cleaning',
+                    'Ceiling dusting (Once every 2 weeks)',
+                    'Mishkat cleaning (Once every 6 months)',
+                    'Swingo cleaning (Once every month)',
+                    'Jaali cleaning',
+                    'Fans cleaning (Once every 2 weeks)'
+                ],
+                'Mawaid': [
+                    'Vaccuum',
+                    'Handwash Area cleaning',
+                    'Windows-doors-pillars & walls dusting',
+                    'Glass cleaning',
+                    'Designer window Jaali & inner area cleaning',
+                    'Outside Windows chajja cleaning',
+                    'Fans & Ac vents cleaning (Once every 2 weeks)',
+                    'Ceiling dusting (Once every 2 weeks)',
+                    'Wooden Railing jaali cleaning',
+                    'Railing outer area cleaning'
+                ],
+                'Salat al Zahab': [
+                    'Vacuum',
+                    'Windows-doors-pillars & walls dusting',
+                    'Glass cleaning',
+                    'Fans & Ac vents cleaning (Once every 2 weeks)',
+                    'Ceiling dusting (Once every 2 weeks)',
+                    'MPH Corridor - Dry & Damp Mop',
+                    'MPH Corridor - Walls & Door Dusting',
+                    'Tank room cleaning (Once a week)'
+                ],
+                'Iwan and Masjid Terrace': [
+                    'Turf cleaning - Vacuum',
+                    'Pathway dry dusting',
+                    'Skylight glass cleaning',
+                    'Boundary walls dusting & cleaning',
+                    'Furniture cleaning',
+                    'Qasr Passageway cleaning (Once a week)',
+                    'Qasr Lift Landing area cleaning (Once a week)',
+                    'Qasr 4th floor Laundry Area Vaccuum (Once every 2 weeks)',
+                    'Qasr 4th floor Terrace cleaning (Once every 2 weeks)'
+                ],
+                'Lift': [
+                    'Lift - Vaccuum',
+                    'Lift - Cabin dusting & Mirror cleaning',
+                    'Lift - All outer doors cleaning',
+                    'Gate No 5 Door & Green Wall - Dusting',
+                    'Lift landing area (All floors) - Dry Mop & Damp Mop',
+                    'Lift landing area (All floors) - Dusting'
+                ]
+            },
+            'Mahad Bldg': {
+                'Auditorium': [
+                    'Back Office Vaccuum',
+                    'Bathroom cleaning',
+                    'Back office - Windows-doors-walls & ceiling dusting',
+                    'Seating Area - Vaccuum',
+                    'Seats - Dusting',
+                    'Stage - Dry mop',
+                    'Audi - Doors-walls dusting',
+                    'Side Corridor - Cleaning',
+                    'Audi - AC vents & Ceiling cleaning (Once every 2 weeks)',
+                    'Audi Entrance passage - Vaccuum (2nd floor)'
+                ],
+                'Office area - 1st & 2nd floor': [
+                    'Vaccuum',
+                    'Bathroom cleaning',
+                    'Windows-doors-walls & dusting',
+                    'Glass Cleaning',
+                    'Window chajja cleaning',
+                    'Fans & AC vents cleaning (Once every 2 weeks)',
+                    'Corridor - Vaccuum & Dusting',
+                    'Studios - Vaccuum & Dusting (1st & 2nd floor)'
+                ],
+                'Qaat': [
+                    'Qaat - Vaccuum',
+                    'Qaat - Windows-doors-pillars & walls dusting',
+                    'Qaat - Door & Window Glass cleaning',
+                    'Mic Room & Video Room - Cleaning',
+                    'Walkaround - Dry Mop & Dusting',
+                    'Window Chajja cleaning',
+                    'Fans & Ac vents cleaning (Once every 2 weeks)',
+                    'Ceiling dusting (Once every 2 weeks)',
+                    'Mishkat cleaning (Once every 6 months)'
+                ],
+                '5th floor': [
+                    'Corridor - Vacuum & Dusting (Daily)',
+                    'Offices - Vaccuum (Weekly Once)',
+                    'Offices - Windows-doors-walls & dusting (Weekly Once)',
+                    'Window Chajja cleaning (Weekly Once)',
+                    'All Bathrooms cleaning (Weekly Once)',
+                    'Terrace & Balcony - Vacuum & Wet Mop',
+                    'Glass Cleaning (Once every 2 weeks)'
+                ],
+                '6th floor': [
+                    'Corridor - Vaccuum & Dusting (Daily)',
+                    'Garden Area - Dry Mop & Dusting (Daily)',
+                    'Offices & Coversation Rooms - Vacuum (Daily)',
+                    'Offices & Coversation Rooms - Windows-doors-walls & dusting',
+                    'Bathroom cleaning',
+                    'Glass Cleaning',
+                    'Window Chajja cleaning',
+                    'Fans & AC vents cleaning',
+                    'Sky Light - cleaning',
+                    'cleaning'
+                ],
+                'Lift & Staircase': [
+                    'Lift - Vaccuum',
+                    'Lift - Cabin dusting & Mirror cleaning',
+                    'Lift - All outer doors cleaning',
+                    'Lift landing area (All floors) - Dry Mop',
+                    'Lift landing area (All floors) - Dusting',
+                    'Staircase Steps - Dry Mop',
+                    'Staircase - Glass cleaning'
+                ]
+            },
+            'Admin Phase 1': {
+                'Ground & 1st Floor Offices': [
+                    'Vacuum & Dry Mop',
+                    'Damp Mop',
+                    'Windows-doors-pillars & walls dusting',
+                    'Glass cleaning',
+                    'Bathroom & Washroom sanitization',
+                    'Fans & AC vents cleaning (Once every 2 weeks)',
+                    'Ceiling dusting (Once every 2 weeks)'
+                ],
+                'Corridor, Lift & Staircase': [
+                    'Corridor Dry & Damp Mop',
+                    'Lift - Vacuum & Mirror cleaning',
+                    'Staircase Steps & Railing dusting'
+                ]
+            },
+            'Admin Phase 3': {
+                'Classrooms & Faculty Offices': [
+                    'Vacuum & Dry Mop',
+                    'Damp Mop',
+                    'Windows-doors-pillars & walls dusting',
+                    'Glass cleaning',
+                    'Bathroom cleaning',
+                    'Fans & AC vents cleaning (Once every 2 weeks)',
+                    'Ceiling dusting (Once every 2 weeks)'
+                ],
+                'Corridor, Lift & Staircase': [
+                    'Corridor Dry & Damp Mop',
+                    'Lift - Cabin dusting & Mirror cleaning',
+                    'Staircase Steps - Dry Mop'
+                ]
+            },
+            'Estates': {
+                'Estate Offices & Utility Rooms': [
+                    'Dry Mop & Damp Mop',
+                    'Windows-doors & walls dusting',
+                    'Glass cleaning',
+                    'Bathroom cleaning',
+                    'Ceiling & Fans dusting (Once every 2 weeks)'
+                ]
+            },
+            'Boys Hostel': {
+                'Hostel Floors & Common Rooms': [
+                    'Corridor Dry Mop & Damp Mop',
+                    'Common Room Vacuum & Dusting',
+                    'Windows-doors-pillars & walls dusting',
+                    'All Bathrooms & Washrooms cleaning',
+                    'Glass cleaning',
+                    'Fans & AC vents cleaning (Once every 2 weeks)',
+                    'Ceiling dusting (Once every 2 weeks)'
+                ],
+                'Lift & Staircase': [
+                    'Lift - Vacuum & Mirror cleaning',
+                    'Lift landing area (All floors) - Dry Mop & Dusting',
+                    'Staircase Steps - Dry Mop'
+                ]
+            },
+            'Girls Hostel': {
+                'Hostel Floors & Common Areas': [
+                    'Corridor Dry Mop & Damp Mop',
+                    'Common Area Vacuum & Dusting',
+                    'Windows-doors-pillars & walls dusting',
+                    'All Bathrooms & Washrooms cleaning',
+                    'Glass cleaning',
+                    'Fans & AC vents cleaning (Once every 2 weeks)',
+                    'Ceiling dusting (Once every 2 weeks)'
+                ],
+                'Lift & Staircase': [
+                    'Lift - Vacuum & Mirror cleaning',
+                    'Lift landing area (All floors) - Dry Mop & Dusting',
+                    'Staircase Steps - Dry Mop'
+                ]
+            },
+            'Compound Area': {
+                'Main Pathways, Driveways & Gates': [
+                    'Pathway sweeping & litter removal',
+                    'Gate doors & boundary walls dusting',
+                    'Outdoor seating & furniture cleaning',
+                    'Parking & driveway sweeping',
+                    'Storm drain & utility area cleaning (Once a week)'
+                ]
+            },
+            'Najmi Bldg': {
+                'All Floors, Corridor & Staircase': [
+                    'Corridor Dry Mop & Damp Mop',
+                    'Windows-doors-pillars & walls dusting',
+                    'Glass cleaning',
+                    'Bathroom cleaning',
+                    'Staircase Steps & Railing dusting',
+                    'Fans & Ceiling dusting (Once every 2 weeks)'
+                ]
+            }
+        };
+        // Mirror 'Mahad Bldg' under 'Mahad al Zahra' so both names resolve identically
+        DEFAULT_SCOPE_OF_WORK['Mahad al Zahra'] = JSON.parse(JSON.stringify(DEFAULT_SCOPE_OF_WORK['Mahad Bldg']));
+
+        var dbScopeOfWork = JSON.parse(JSON.stringify(DEFAULT_SCOPE_OF_WORK));
+        var dbDailyWorkReports = [];
         var dbMediaCache = {};
         var deletedRecordIds = {};
         var LOCAL_STORAGE_STATE_KEY = 'siyanat_marol_portal_v2_state';
@@ -1895,6 +2207,8 @@
                 dbVendorRates: dbVendorRates || {},
                 dbProcurements: dbProcurements || [],
                 dbCleaningLogs: dbCleaningLogs || [],
+                dbDailyWorkReports: dbDailyWorkReports || [],
+                dbScopeOfWork: dbScopeOfWork || {},
                 dbDriveConfig: dbDriveConfig || {},
                 deletedRecordIds: deletedRecordIds || {}
             };
@@ -1967,6 +2281,15 @@
             }
             if (Array.isArray(snap.dbCleaningLogs)) {
                 dbCleaningLogs = snap.dbCleaningLogs.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.dbDailyWorkReports)) {
+                dbDailyWorkReports = snap.dbDailyWorkReports.filter(function(x) {
+                    var rId = x.reportId || x.id;
+                    return !isRecordDeleted(rId);
+                });
+            }
+            if (snap.dbScopeOfWork && typeof snap.dbScopeOfWork === 'object' && Object.keys(snap.dbScopeOfWork).length > 0) {
+                dbScopeOfWork = Object.assign({}, DEFAULT_SCOPE_OF_WORK, snap.dbScopeOfWork);
             }
             if (snap.dbDriveConfig && typeof snap.dbDriveConfig === 'object') {
                 if (snap.dbDriveConfig.scriptUrl) dbDriveConfig.scriptUrl = snap.dbDriveConfig.scriptUrl;
@@ -2696,12 +3019,14 @@
 
             if (isAdmin && (activeModule === 'inventory' || activeModule === 'hr')) {
                 importContainer.innerHTML = '<label class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-2 cursor-pointer"><i class="fa-solid fa-file-import text-emerald-300"></i><span>Import Excel</span><input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelImport(event)"></label>';
+            } else if (isAdmin && activeModule === 'cleaning') {
+                importContainer.innerHTML = '<label class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition flex items-center space-x-2 cursor-pointer" title="Upload Hierarchical Scope of Work Excel/CSV (Area -> Sub-Area -> Task List)"><i class="fa-solid fa-file-excel text-emerald-300"></i><span>Import Scope of Work (Excel/CSV)</span><input type="file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleScopeOfWorkExcelImport(event)"></label>';
             } else {
                 importContainer.innerHTML = '';
             }
 
             if (exportContainer) {
-                if (isAdmin || (currentUser && currentUser.role.indexOf('Executive') === 0)) {
+                if (isAdmin) {
                     exportContainer.classList.remove('hidden');
                 } else {
                     exportContainer.classList.add('hidden');
@@ -3793,30 +4118,1622 @@
             });
         }
 
-        // ================= MODULE 3: CLEANING REPORTS & SCHEDULE =================
-        function renderCleaningModule(container, actions) {
-            var isAdmin = currentUser && currentUser.role === 'Administrator';
-            var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
-            var visibleAreas = (isAdmin || isExec) ? ALL_AREAS : (currentUser ? currentUser.areas : ALL_AREAS);
+        // ================= MODULE 3: CLEANING REPORTS & SCHEDULE (DWR + DEEP CLEANING + SCOPE OF WORK + UNREAD COMMENT ENGINE) =================
+        var cleaningSubPage = 'dashboard'; // 'dashboard' | 'add_dwr' | 'deep_cleaning'
+        var dwrSelectedYear = new Date().getFullYear();
+        var dwrSelectedMonth = new Date().getMonth(); // 0-indexed (0 = Jan, 9 = Oct)
+        var dwrExecViewStyle = 'matrix'; // 'matrix' | 'calendar'
+        var dwrExecCalendarArea = '';
+        var dwrFormState = {
+            editReportId: '',
+            date: '',
+            area: '',
+            tasksCompleted: [],
+            remarks: '',
+            photoURLs: [],
+            taskSearchFilter: ''
+        };
+        var activeDwrModalReportId = '';
+        var dwrIntimationCheckedKey = '';
 
-            actions.innerHTML = '<button onclick="openCleaningLogModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Log Cleaning Task</span></button>';
+        function getTodayLocalIsoDate() {
+            var now = new Date();
+            var yyyy = now.getFullYear();
+            var mm = String(now.getMonth() + 1).padStart(2, '0');
+            var dd = String(now.getDate()).padStart(2, '0');
+            return yyyy + '-' + mm + '-' + dd;
+        }
 
-            var visibleLogs = (dbCleaningLogs || []).filter(function(l) {
-                return (isAdmin || isExec) || visibleAreas.indexOf(l.area) !== -1;
+        function normalizeAreaAlias(areaName) {
+            if (!areaName) return '';
+            var trimmed = String(areaName).trim();
+            var lower = trimmed.toLowerCase();
+            if (lower === 'mahad al zahra' || lower === 'mahad bldg' || lower === 'mahad building' || lower === 'mahad') {
+                return 'Mahad Bldg';
+            }
+            if (lower === 'religious block' || lower === 'masjid & religious block') {
+                return 'Religious Block';
+            }
+            for (var i = 0; i < ALL_AREAS.length; i++) {
+                if (ALL_AREAS[i].toLowerCase() === lower) {
+                    return ALL_AREAS[i];
+                }
+            }
+            return trimmed;
+        }
+
+        function doAreasMatch(areaA, areaB) {
+            if (!areaA || !areaB) return false;
+            return normalizeAreaAlias(areaA).toLowerCase() === normalizeAreaAlias(areaB).toLowerCase();
+        }
+
+        function formatAreaDisplayLabel(areaName) {
+            var norm = normalizeAreaAlias(areaName);
+            if (norm === 'Mahad Bldg') return 'Mahad Bldg (Mahad al Zahra)';
+            return areaName;
+        }
+
+        function getUserAssignedDwrAreas() {
+            if (!currentUser) return ALL_AREAS.slice();
+            var isAdmin = currentUser.role === 'Administrator';
+            if (isAdmin) {
+                var combined = ALL_AREAS.slice();
+                Object.keys(dbScopeOfWork || {}).forEach(function(k) {
+                    var normK = normalizeAreaAlias(k);
+                    if (combined.indexOf(normK) === -1 && k !== 'Mahad al Zahra') {
+                        combined.push(k);
+                    }
+                });
+                return combined;
+            }
+            if (Array.isArray(currentUser.areas) && currentUser.areas.length > 0) {
+                return currentUser.areas.slice();
+            }
+            return [ALL_AREAS[0]];
+        }
+
+        function getScopeSubAreasForArea(areaName) {
+            if (!areaName) return {};
+            var scopeObj = dbScopeOfWork || DEFAULT_SCOPE_OF_WORK;
+            if (scopeObj[areaName] && Object.keys(scopeObj[areaName]).length > 0) {
+                return scopeObj[areaName];
+            }
+            var norm = normalizeAreaAlias(areaName);
+            if (scopeObj[norm] && Object.keys(scopeObj[norm]).length > 0) {
+                return scopeObj[norm];
+            }
+            if (norm === 'Mahad Bldg' && scopeObj['Mahad al Zahra'] && Object.keys(scopeObj['Mahad al Zahra']).length > 0) {
+                return scopeObj['Mahad al Zahra'];
+            }
+            // Case-insensitive lookup
+            var lowerTarget = norm.toLowerCase();
+            var keys = Object.keys(scopeObj);
+            for (var i = 0; i < keys.length; i++) {
+                if (normalizeAreaAlias(keys[i]).toLowerCase() === lowerTarget) {
+                    return scopeObj[keys[i]];
+                }
+            }
+            return DEFAULT_SCOPE_OF_WORK[norm] || DEFAULT_SCOPE_OF_WORK['Religious Block'] || {};
+        }
+
+        function buildTaskKey(subArea, taskName) {
+            return subArea + ' :: ' + taskName;
+        }
+
+        function isTaskMarkedCompleted(tasksCompletedArr, subArea, taskName) {
+            if (!Array.isArray(tasksCompletedArr)) return false;
+            var fullKey = buildTaskKey(subArea, taskName);
+            var dashKey = subArea + ' - ' + taskName;
+            var colonKey = subArea + ': ' + taskName;
+            return tasksCompletedArr.indexOf(fullKey) !== -1 ||
+                   tasksCompletedArr.indexOf(dashKey) !== -1 ||
+                   tasksCompletedArr.indexOf(colonKey) !== -1 ||
+                   tasksCompletedArr.indexOf(taskName) !== -1;
+        }
+
+        function findDwrReportByDateAndArea(dateStr, areaName) {
+            if (!dateStr || !areaName) return null;
+            for (var i = 0; i < dbDailyWorkReports.length; i++) {
+                var rep = dbDailyWorkReports[i];
+                if (rep && rep.date === dateStr && (doAreasMatch(rep.area, areaName) || doAreasMatch(rep.block, areaName))) {
+                    return rep;
+                }
+            }
+            return null;
+        }
+
+        function findDwrReportById(reportId) {
+            if (!reportId) return null;
+            for (var i = 0; i < dbDailyWorkReports.length; i++) {
+                var rep = dbDailyWorkReports[i];
+                if (rep && (rep.reportId === reportId || rep.id === reportId)) {
+                    return rep;
+                }
+            }
+            return null;
+        }
+
+        // ================= SECTION 4: UNREAD COMMENT INTIMATION POPUP ENGINE =================
+        function getUnreadDwrCommentsForCurrentUser() {
+            if (!currentUser || !currentUser.email) return [];
+            var myEmail = currentUser.email.toLowerCase().trim();
+            var myUid = (currentUser.uid || currentUser.email).toLowerCase().trim();
+            var isAdmin = currentUser.role === 'Administrator';
+            var assignedAreas = getUserAssignedDwrAreas();
+
+            var unreadList = [];
+            (dbDailyWorkReports || []).forEach(function(rep) {
+                if (!rep) return;
+                var areaAllowed = isAdmin || assignedAreas.some(function(a) {
+                    return doAreasMatch(a, rep.area) || doAreasMatch(a, rep.block);
+                });
+                if (!areaAllowed) return;
+
+                var comments = Array.isArray(rep.comments) ? rep.comments : [];
+                comments.forEach(function(cmt) {
+                    if (!cmt || !cmt.commentText) return;
+                    // Check if submitted by Admin or Executive (or any reviewer) and current user is NOT in viewedBy
+                    var roleStr = String(cmt.userRole || '').toLowerCase();
+                    var isAdminOrExecComment = roleStr.indexOf('admin') !== -1 || roleStr.indexOf('executive') !== -1 || true;
+                    if (!isAdminOrExecComment) return;
+
+                    var viewedByArr = Array.isArray(cmt.viewedBy) ? cmt.viewedBy.map(function(v) { return String(v).toLowerCase().trim(); }) : [];
+                    var cmtAuthorEmail = String(cmt.userEmail || '').toLowerCase().trim();
+                    var alreadyViewed = viewedByArr.indexOf(myEmail) !== -1 || viewedByArr.indexOf(myUid) !== -1;
+
+                    if (!alreadyViewed && cmtAuthorEmail !== myEmail) {
+                        unreadList.push({
+                            reportId: rep.reportId || rep.id,
+                            date: rep.date,
+                            area: rep.area || rep.block,
+                            commentId: cmt.commentId,
+                            userEmail: cmt.userEmail || 'Unknown',
+                            userRole: cmt.userRole || 'Executive',
+                            commentText: cmt.commentText,
+                            timestamp: cmt.timestamp || ''
+                        });
+                    }
+                });
             });
 
-            var html = '<div class="space-y-6">';
-            html += '<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
-            html += '<div><h3 class="text-base font-bold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-broom text-teal-600"></i><span>Cleaning Reports &amp; Schedule Operations</span></h3>';
-            html += '<p class="text-xs text-slate-500 mt-1">Track routine housekeeping cleaning logs, deep-cleaning schedules, and supervisor verification checklists across all campus blocks.</p></div>';
-            html += '<div class="flex items-center space-x-3"><span class="px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">Total Reports: ' + visibleLogs.length + '</span>';
-            html += '<button type="button" onclick="openCleaningLogModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition"><i class="fa-solid fa-plus mr-1"></i>Add Report</button></div></div>';
+            unreadList.sort(function(a, b) {
+                return new Date(b.timestamp || b.date || 0) - new Date(a.timestamp || a.date || 0);
+            });
+            return unreadList;
+        }
 
-            html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
-            html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-800 flex justify-between items-center"><span>Logged Cleaning Checklists &amp; Schedule Reports</span><span class="text-[11px] text-teal-700 font-semibold">Synced with Firestore &amp; fm.marol Drive</span></div>';
+        function checkAndShowUnreadDwrComments() {
+            if (!currentUser || activeModule !== 'cleaning') return;
+            var unreadEntries = getUnreadDwrCommentsForCurrentUser();
+            var modalEl = document.getElementById('unreadCommentsIntimationModal');
+            var listEl = document.getElementById('unreadCommentsIntimationList');
+            var badgeEl = document.getElementById('unreadIntimationCountBadge');
+
+            if (!modalEl || !listEl) return;
+
+            if (unreadEntries.length === 0) {
+                modalEl.classList.add('hidden');
+                return;
+            }
+
+            if (badgeEl) {
+                badgeEl.innerText = unreadEntries.length + ' Unread';
+            }
+
+            var html = '';
+            unreadEntries.forEach(function(entry) {
+                var safeRepId = String(entry.reportId).replace(/'/g, "\\'");
+                var safeCmtId = String(entry.commentId).replace(/'/g, "\\'");
+                var authorDisp = entry.userRole + ' - ' + entry.userEmail;
+                var timeLabel = entry.timestamp ? entry.timestamp.replace('T', ' ').substring(0, 16) : entry.date;
+
+                html += '<div class="p-4 rounded-xl bg-amber-50/90 border border-amber-300 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-amber-400 transition">';
+                html += '<div class="space-y-1.5 min-w-0">';
+                html += '<div class="flex items-center space-x-2 flex-wrap gap-y-1">';
+                html += '<span class="px-2.5 py-0.5 rounded-md bg-teal-900 text-white font-mono font-bold text-xs"><i class="fa-regular fa-calendar mr-1 text-teal-300"></i>' + entry.date + '</span>';
+                html += '<span class="px-2.5 py-0.5 rounded-md bg-amber-200/80 text-amber-950 font-extrabold text-xs"><i class="fa-solid fa-location-dot mr-1 text-amber-700"></i>' + entry.area + '</span>';
+                html += '</div>';
+                html += '<div class="text-xs text-slate-700 font-semibold"><i class="fa-solid fa-user-tie text-amber-700 mr-1.5"></i>Comment Author: <span class="text-slate-900 font-bold">' + authorDisp + '</span></div>';
+                html += '<p class="text-xs text-slate-800 bg-white p-2.5 rounded-lg border border-amber-200 italic line-clamp-2">"' + entry.commentText + '"</p>';
+                html += '<div class="text-[10px] text-slate-400 font-mono">Posted: ' + timeLabel + '</div>';
+                html += '</div>';
+                html += '<div class="flex-shrink-0 self-end sm:self-center">';
+                html += '<button type="button" onclick="handleViewUnreadDwrComment(\'' + safeRepId + '\', \'' + safeCmtId + '\')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5 whitespace-nowrap">';
+                html += '<i class="fa-solid fa-eye"></i><span>View Comments</span>';
+                html += '</button>';
+                html += '</div>';
+                html += '</div>';
+            });
+
+            listEl.innerHTML = html;
+            openModal('unreadCommentsIntimationModal');
+        }
+
+        function openFirstUnreadDwrComment() {
+            var unreadEntries = getUnreadDwrCommentsForCurrentUser();
+            if (unreadEntries.length > 0) {
+                handleViewUnreadDwrComment(unreadEntries[0].reportId, unreadEntries[0].commentId);
+            } else {
+                closeModal('unreadCommentsIntimationModal');
+            }
+        }
+
+        async function markDwrCommentsViewedByCurrentUser(report, specificCommentId) {
+            if (!report || !currentUser || !currentUser.email) return false;
+            var myEmail = currentUser.email.toLowerCase().trim();
+            var changed = false;
+            if (!Array.isArray(report.comments)) report.comments = [];
+
+            report.comments.forEach(function(cmt) {
+                if (!cmt) return;
+                if (!Array.isArray(cmt.viewedBy)) cmt.viewedBy = [];
+                var lowerList = cmt.viewedBy.map(function(v) { return String(v).toLowerCase().trim(); });
+                // When user opens the report to view comments, mark either the targeted comment or all comments on that report as viewed by this user
+                if (!specificCommentId || cmt.commentId === specificCommentId || true) {
+                    if (lowerList.indexOf(myEmail) === -1) {
+                        cmt.viewedBy.push(myEmail);
+                        changed = true;
+                    }
+                }
+            });
+
+            if (changed) {
+                report.updatedAt = new Date().toISOString();
+                saveStateToLocalBackup();
+                if (window.saveDailyWorkReportToFirestore) {
+                    await window.saveDailyWorkReportToFirestore(report);
+                }
+            }
+            return changed;
+        }
+
+        async function handleViewUnreadDwrComment(reportId, commentId) {
+            var rep = findDwrReportById(reportId);
+            if (!rep) {
+                closeModal('unreadCommentsIntimationModal');
+                return;
+            }
+            await markDwrCommentsViewedByCurrentUser(rep, commentId);
+            closeModal('unreadCommentsIntimationModal');
+            openDwrDetailModal(reportId, true, commentId);
+            if (activeModule === 'cleaning' && cleaningSubPage === 'dashboard') {
+                renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+            }
+        }
+
+        // ================= SECTION 1 & 5: MAIN MODULE 3 RENDERER & DASHBOARD =================
+        function renderCleaningModule(container, actions, skipIntimationPopup) {
+            if (!container || !actions) return;
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
+            var isSup = currentUser && currentUser.role === 'Supervisor';
+
+            // 1. Primary Action Buttons at the Top of Module 3:
+            // - "Add Daily Work Report" (DWR)
+            // - "Add Deep Cleaning Reports"
+            var dwrBtnActive = cleaningSubPage === 'add_dwr' ? 'ring-2 ring-offset-1 ring-teal-500 bg-[#00382c]' : 'bg-[#004d3d] hover:bg-[#00382c]';
+            actions.innerHTML =
+                '<div class="flex items-center space-x-2 flex-wrap gap-y-2">' +
+                    '<button type="button" onclick="openAddDwrPage()" class="' + dwrBtnActive + ' text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                        '<i class="fa-solid fa-clipboard-check text-emerald-300"></i>' +
+                        '<span>Add Daily Work Report</span>' +
+                    '</button>' +
+                    '<button type="button" onclick="openCleaningLogModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                        '<i class="fa-solid fa-broom"></i>' +
+                        '<span>Add Deep Cleaning Reports</span>' +
+                    '</button>' +
+                '</div>';
+
+            // Check Unread Comment Intimations whenever a user opens/navigates to Module 3
+            if (!skipIntimationPopup) {
+                setTimeout(function() {
+                    checkAndShowUnreadDwrComments();
+                }, 60);
+            }
+
+            if (cleaningSubPage === 'add_dwr') {
+                renderAddDwrPageView(container);
+                return;
+            }
+
+            if (cleaningSubPage === 'deep_cleaning') {
+                renderDeepCleaningSubPageView(container);
+                return;
+            }
+
+            // Default: Main Module Dashboard (Calendar & Status View)
+            var assignedAreas = getUserAssignedDwrAreas();
+            var unreadList = getUnreadDwrCommentsForCurrentUser();
+
+            var monthPrefix = dwrSelectedYear + '-' + String(dwrSelectedMonth + 1).padStart(2, '0');
+            var monthName = new Date(dwrSelectedYear, dwrSelectedMonth, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+            var daysInMonth = new Date(dwrSelectedYear, dwrSelectedMonth + 1, 0).getDate();
+
+            // Count monthly stats for visible areas
+            var monthFilledCount = 0;
+            var monthCommentsCount = 0;
+            (dbDailyWorkReports || []).forEach(function(r) {
+                if (r && r.date && r.date.indexOf(monthPrefix) === 0) {
+                    var isVisible = isAdmin || assignedAreas.some(function(a) { return doAreasMatch(a, r.area) || doAreasMatch(a, r.block); });
+                    if (isVisible) {
+                        monthFilledCount++;
+                        monthCommentsCount += (Array.isArray(r.comments) ? r.comments.length : 0);
+                    }
+                }
+            });
+
+            var visibleDeepLogs = (dbCleaningLogs || []).filter(function(l) {
+                return isAdmin || isExec || assignedAreas.some(function(a) { return doAreasMatch(a, l.area); });
+            });
+
+            var html = '<div class="space-y-5">';
+
+            // Top Banner & Navigation Strip
+            html += '<div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">';
+            html += '<div class="space-y-1">';
+            html += '<div class="flex items-center space-x-2.5 flex-wrap gap-y-1">';
+            html += '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-teal-100 text-teal-800 border border-teal-200">' + (currentUser ? currentUser.role : 'User') + ' View</span>';
+            html += '<h3 class="text-base font-extrabold text-slate-900">Daily Work Reports (DWR) &amp; Deep Cleaning Dashboard</h3>';
+            html += '</div>';
+            html += '<p class="text-xs text-slate-500">Assigned Area(s): <strong class="text-slate-800">' + (isAdmin ? 'All Campus Areas (' + assignedAreas.length + ')' : assignedAreas.join(', ')) + '</strong></p>';
+            html += '</div>';
+
+            html += '<div class="flex items-center flex-wrap gap-2">';
+            if (unreadList.length > 0) {
+                html += '<button type="button" onclick="checkAndShowUnreadDwrComments()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-400 text-xs font-extrabold px-3 py-2 rounded-xl transition flex items-center space-x-1.5 animate-pulse">';
+                html += '<i class="fa-solid fa-bell text-amber-600"></i><span>' + unreadList.length + ' Unread Comment(s)</span>';
+                html += '</button>';
+            }
+            html += '<button type="button" onclick="switchCleaningSubPage(\'deep_cleaning\')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-semibold px-3 py-2 rounded-xl transition flex items-center space-x-1.5">';
+            html += '<i class="fa-solid fa-list-check text-teal-600"></i><span>View Deep Cleaning Logs (' + visibleDeepLogs.length + ')</span>';
+            html += '</button>';
+            html += '</div></div>';
+
+            // Calendar Month Controls & View Switcher Bar
+            html += '<div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
+            html += '<div class="flex items-center space-x-2 flex-wrap gap-y-2">';
+            html += '<button type="button" onclick="changeDwrDashboardMonth(-1)" class="p-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition" title="Previous Month"><i class="fa-solid fa-chevron-left"></i></button>';
+            html += '<div class="px-3.5 py-1.5 rounded-lg bg-slate-900 text-white font-extrabold text-xs sm:text-sm min-w-[160px] text-center"><i class="fa-regular fa-calendar-days text-emerald-400 mr-1.5"></i>' + monthName + '</div>';
+            html += '<button type="button" onclick="changeDwrDashboardMonth(1)" class="p-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition" title="Next Month"><i class="fa-solid fa-chevron-right"></i></button>';
+            html += '<button type="button" onclick="resetDwrDashboardToToday()" class="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold transition">Current Month</button>';
+            html += '</div>';
+
+            html += '<div class="flex items-center space-x-3 flex-wrap gap-y-2">';
+            html += '<div class="flex items-center space-x-2 text-xs font-semibold text-slate-600">';
+            html += '<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Filled (' + monthFilledCount + ')</span></span>';
+            html += '<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-rose-50 text-rose-700 border border-rose-200"><span class="w-2 h-2 rounded-full bg-rose-500"></span><span>Not Filled</span></span>';
+            html += '</div>';
+
+            if (isAdmin || isExec) {
+                var matrixBtnCls = dwrExecViewStyle === 'matrix' ? 'bg-[#004d3d] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+                var calBtnCls = dwrExecViewStyle === 'calendar' ? 'bg-[#004d3d] text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+                html += '<div class="flex items-center rounded-lg border border-slate-300 p-0.5 bg-slate-100">';
+                html += '<button type="button" onclick="setDwrExecViewStyle(\'matrix\')" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition ' + matrixBtnCls + '"><i class="fa-solid fa-table-cells mr-1"></i>Matrix View</button>';
+                html += '<button type="button" onclick="setDwrExecViewStyle(\'calendar\')" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition ' + calBtnCls + '"><i class="fa-solid fa-calendar-days mr-1"></i>Calendar Grid</button>';
+                html += '</div>';
+            }
+            html += '</div></div>';
+
+            // Role-Based Main View Rendering:
+            // A. Supervisor View (or Executive/Admin when toggled to single-area Calendar Grid)
+            if (isSup || ((isAdmin || isExec) && dwrExecViewStyle === 'calendar')) {
+                var targetCalArea = isSup
+                    ? (assignedAreas[0] || 'Admin Phase 1')
+                    : (dwrExecCalendarArea && assignedAreas.indexOf(dwrExecCalendarArea) !== -1 ? dwrExecCalendarArea : assignedAreas[0]);
+                dwrExecCalendarArea = targetCalArea;
+                html += renderSupervisorMonthlyCalendarGrid(targetCalArea, assignedAreas, isSup, isAdmin);
+            } else {
+                // B. Executive & Admin View: Monthly Calendar / Table Matrix View showing columns for each assigned Area
+                html += renderExecutiveAdminMonthlyMatrixView(assignedAreas, daysInMonth, monthPrefix, monthName, isAdmin);
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function switchCleaningSubPage(page) {
+            cleaningSubPage = page || 'dashboard';
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function changeDwrDashboardMonth(delta) {
+            dwrSelectedMonth += delta;
+            if (dwrSelectedMonth < 0) {
+                dwrSelectedMonth = 11;
+                dwrSelectedYear--;
+            } else if (dwrSelectedMonth > 11) {
+                dwrSelectedMonth = 0;
+                dwrSelectedYear++;
+            }
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function resetDwrDashboardToToday() {
+            var now = new Date();
+            dwrSelectedYear = now.getFullYear();
+            dwrSelectedMonth = now.getMonth();
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function setDwrExecViewStyle(style) {
+            dwrExecViewStyle = style;
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function setDwrExecCalendarArea(areaName) {
+            dwrExecCalendarArea = areaName;
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        // ================= SECTION 5A: SUPERVISOR MONTHLY CALENDAR GRID VIEW =================
+        function renderSupervisorMonthlyCalendarGrid(targetArea, assignedAreas, isSup, isAdmin) {
+            var firstDayOfWeek = new Date(dwrSelectedYear, dwrSelectedMonth, 1).getDay(); // 0 (Sun) to 6 (Sat)
+            var daysInMonth = new Date(dwrSelectedYear, dwrSelectedMonth + 1, 0).getDate();
+            var monthPrefix = dwrSelectedYear + '-' + String(dwrSelectedMonth + 1).padStart(2, '0');
+            var todayIso = getTodayLocalIsoDate();
+            var myEmail = currentUser && currentUser.email ? currentUser.email.toLowerCase().trim() : '';
+
+            var html = '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
+            html += '<div class="px-5 py-3.5 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
+            html += '<div class="flex items-center space-x-2.5">';
+            html += '<div class="w-8 h-8 rounded-lg bg-emerald-600/30 border border-emerald-400/40 flex items-center justify-center text-emerald-300"><i class="fa-solid fa-calendar-check"></i></div>';
+            html += '<div>';
+            html += '<h4 class="text-sm font-extrabold text-white">Monthly DWR Calendar Grid — ' + formatAreaDisplayLabel(targetArea) + '</h4>';
+            html += '<p class="text-[11px] text-slate-300">Click any green <strong>Filled</strong> status or <strong>View Response</strong> button to inspect tasks, remarks, photos &amp; comments.</p>';
+            html += '</div></div>';
+
+            if (!isSup && assignedAreas.length > 1) {
+                html += '<div class="flex items-center space-x-2">';
+                html += '<span class="text-xs text-slate-300 font-semibold">Area:</span>';
+                html += '<select onchange="setDwrExecCalendarArea(this.value)" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 text-white border border-slate-600 font-bold focus:outline-none">';
+                assignedAreas.forEach(function(a) {
+                    html += '<option value="' + a + '" ' + (doAreasMatch(a, targetArea) ? 'selected' : '') + '>' + formatAreaDisplayLabel(a) + '</option>';
+                });
+                html += '</select></div>';
+            }
+            html += '</div>';
+
+            // Days of Week Header
+            var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            html += '<div class="grid grid-cols-7 bg-slate-100 border-b border-slate-200 text-center text-[11px] font-extrabold uppercase tracking-wider text-slate-600">';
+            weekdays.forEach(function(w) {
+                html += '<div class="py-2.5 border-r last:border-r-0 border-slate-200">' + w + '</div>';
+            });
+            html += '</div>';
+
+            // Calendar Days Grid
+            html += '<div class="grid grid-cols-7 divide-x divide-y divide-slate-200 bg-slate-50/40">';
+
+            // Leading blank cells before the 1st of the month
+            for (var b = 0; b < firstDayOfWeek; b++) {
+                html += '<div class="min-h-[112px] bg-slate-100/50 p-2"></div>';
+            }
+
+            var safeTargetArea = targetArea.replace(/'/g, "\\'");
+
+            for (var day = 1; day <= daysInMonth; day++) {
+                var dateIso = monthPrefix + '-' + String(day).padStart(2, '0');
+                var rep = findDwrReportByDateAndArea(dateIso, targetArea);
+                var isToday = dateIso === todayIso;
+                var isPastOrToday = dateIso <= todayIso;
+
+                var cellBg = rep
+                    ? 'bg-emerald-50/40 hover:bg-emerald-50/80'
+                    : (isToday ? 'bg-amber-50/40' : 'bg-white hover:bg-slate-50');
+
+                html += '<div class="min-h-[118px] p-2.5 flex flex-col justify-between transition ' + cellBg + '">';
+                html += '<div class="flex items-center justify-between gap-1">';
+                html += '<span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-extrabold ' + (isToday ? 'bg-teal-700 text-white shadow-2xs' : 'text-slate-700') + '">' + day + '</span>';
+
+                if (rep) {
+                    var safeRepId = String(rep.reportId || rep.id).replace(/'/g, "\\'");
+                    html += '<button type="button" onclick="openDwrDetailModal(\'' + safeRepId + '\')" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 transition cursor-pointer flex items-center space-x-1" title="Click to View DWR Response">';
+                    html += '<i class="fa-solid fa-circle-check text-emerald-600 text-[9px]"></i><span>Filled</span>';
+                    html += '</button>';
+                } else {
+                    var notFilledCls = isPastOrToday
+                        ? 'bg-rose-100 text-rose-800 border-rose-300'
+                        : 'bg-slate-100 text-slate-500 border-slate-200';
+                    html += '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + notFilledCls + '">Not Filled</span>';
+                }
+                html += '</div>';
+
+                if (rep) {
+                    var safeRepId2 = String(rep.reportId || rep.id).replace(/'/g, "\\'");
+                    var tasksCount = Array.isArray(rep.tasksCompleted) ? rep.tasksCompleted.length : 0;
+                    var photosCount = Array.isArray(rep.photoURLs) ? rep.photoURLs.length : 0;
+                    var commentsArr = Array.isArray(rep.comments) ? rep.comments : [];
+                    var hasUnreadForMe = commentsArr.some(function(c) {
+                        var vArr = Array.isArray(c.viewedBy) ? c.viewedBy.map(function(v) { return String(v).toLowerCase().trim(); }) : [];
+                        return vArr.indexOf(myEmail) === -1 && String(c.userEmail || '').toLowerCase().trim() !== myEmail;
+                    });
+
+                    html += '<div class="my-1.5 space-y-1">';
+                    html += '<div class="text-[11px] font-semibold text-slate-700 flex items-center justify-between">';
+                    html += '<span><i class="fa-solid fa-list-check text-emerald-600 mr-1"></i>' + tasksCount + ' Tasks</span>';
+                    if (photosCount > 0) {
+                        html += '<span class="text-[10px] text-sky-700 font-bold"><i class="fa-solid fa-camera mr-0.5"></i>' + photosCount + '</span>';
+                    }
+                    html += '</div>';
+                    if (commentsArr.length > 0) {
+                        var cmtBadgeCls = hasUnreadForMe
+                            ? 'bg-amber-100 text-amber-900 border-amber-400 font-extrabold animate-pulse'
+                            : 'bg-indigo-50 text-indigo-800 border-indigo-200 font-semibold';
+                        html += '<div onclick="openDwrDetailModal(\'' + safeRepId2 + '\', true)" class="px-1.5 py-0.5 rounded border text-[10px] cursor-pointer flex items-center justify-between ' + cmtBadgeCls + '">';
+                        html += '<span><i class="fa-solid fa-comments mr-1"></i>' + commentsArr.length + (commentsArr.length === 1 ? ' Comment' : ' Comments') + '</span>';
+                        if (hasUnreadForMe) html += '<span class="w-2 h-2 rounded-full bg-amber-600"></span>';
+                        html += '</div>';
+                    }
+                    html += '</div>';
+
+                    html += '<button type="button" onclick="openDwrDetailModal(\'' + safeRepId2 + '\')" class="w-full mt-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1 px-2 rounded-lg shadow-2xs transition flex items-center justify-center space-x-1">';
+                    html += '<i class="fa-solid fa-eye"></i><span>View Response</span>';
+                    html += '</button>';
+                } else {
+                    html += '<div class="my-auto text-center">';
+                    if (isToday || isAdmin) {
+                        html += '<button type="button" onclick="openAddDwrPage(\'' + dateIso + '\', \'' + safeTargetArea + '\')" class="text-[10px] font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2 py-1 rounded-md transition inline-flex items-center space-x-1">';
+                        html += '<i class="fa-solid fa-plus"></i><span>' + (isToday ? 'Fill Today\'s DWR' : 'Fill DWR') + '</span>';
+                        html += '</button>';
+                    } else {
+                        html += '<span class="text-[10px] text-slate-400 italic">' + (isPastOrToday ? 'No report submitted' : 'Upcoming') + '</span>';
+                    }
+                    html += '</div>';
+                }
+
+                html += '</div>';
+            }
+
+            // Trailing blank cells to complete the 7-column grid
+            var totalCellsUsed = firstDayOfWeek + daysInMonth;
+            var trailingBlanks = (7 - (totalCellsUsed % 7)) % 7;
+            for (var t = 0; t < trailingBlanks; t++) {
+                html += '<div class="min-h-[112px] bg-slate-100/50 p-2"></div>';
+            }
+
+            html += '</div></div>';
+            return html;
+        }
+
+        // ================= SECTION 5B: EXECUTIVE & ADMIN MONTHLY MATRIX TABLE VIEW =================
+        function renderExecutiveAdminMonthlyMatrixView(assignedAreas, daysInMonth, monthPrefix, monthName, isAdmin) {
+            var todayIso = getTodayLocalIsoDate();
+            var myEmail = currentUser && currentUser.email ? currentUser.email.toLowerCase().trim() : '';
+
+            var html = '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
+            html += '<div class="px-5 py-3.5 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
+            html += '<div>';
+            html += '<h4 class="text-sm font-extrabold flex items-center space-x-2"><i class="fa-solid fa-table-cells text-emerald-400"></i><span>Monthly DWR Status Matrix — ' + monthName + '</span></h4>';
+            html += '<p class="text-[11px] text-slate-300 mt-0.5">Columns show each assigned Area. Click any green <strong>Filled</strong> hyperlink to open the detailed report &amp; add Executive/Admin comments.</p>';
+            html += '</div>';
+            html += '<span class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-900/90 text-emerald-200 border border-emerald-700 self-start sm:self-auto">' + assignedAreas.length + ' Assigned Area(s)</span>';
+            html += '</div>';
+
+            html += '<div class="overflow-x-auto custom-scrollbar max-h-[680px]">';
+            html += '<table class="w-full text-left text-xs border-collapse whitespace-nowrap">';
+            html += '<thead class="bg-slate-100 text-slate-700 uppercase font-extrabold border-b-2 border-slate-300 sticky top-0 z-20 shadow-2xs">';
+            html += '<tr>';
+            html += '<th class="p-3 bg-slate-100 sticky left-0 z-30 border-r border-slate-300 min-w-[130px]">Date</th>';
+            assignedAreas.forEach(function(areaName) {
+                html += '<th class="p-3 text-center border-r last:border-r-0 border-slate-200 min-w-[140px]">' + formatAreaDisplayLabel(areaName) + '</th>';
+            });
+            html += '</tr></thead>';
+            html += '<tbody class="divide-y divide-slate-200 text-slate-700">';
+
+            for (var day = 1; day <= daysInMonth; day++) {
+                var dateIso = monthPrefix + '-' + String(day).padStart(2, '0');
+                var dateObj = new Date(dwrSelectedYear, dwrSelectedMonth, day);
+                var weekdayShort = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                var isToday = dateIso === todayIso;
+                var isPastOrToday = dateIso <= todayIso;
+
+                var rowBg = isToday ? 'bg-teal-50/60' : 'hover:bg-slate-50/80';
+                html += '<tr class="transition ' + rowBg + '">';
+                html += '<td class="p-2.5 font-mono font-bold text-slate-900 sticky left-0 z-10 border-r border-slate-300 ' + (isToday ? 'bg-teal-100/90' : 'bg-white') + '">';
+                html += '<div class="flex items-center justify-between space-x-2">';
+                html += '<span>' + dateIso + '</span>';
+                html += '<span class="text-[10px] font-sans px-1.5 py-0.5 rounded ' + (weekdayShort === 'Fri' || weekdayShort === 'Sun' ? 'bg-amber-100 text-amber-800 font-bold' : 'bg-slate-100 text-slate-500') + '">' + weekdayShort + '</span>';
+                html += '</div>';
+                if (isToday) {
+                    html += '<span class="text-[9px] font-sans font-extrabold uppercase text-teal-800 block mt-0.5">Today</span>';
+                }
+                html += '</td>';
+
+                assignedAreas.forEach(function(areaName) {
+                    var rep = findDwrReportByDateAndArea(dateIso, areaName);
+                    var safeArea = areaName.replace(/'/g, "\\'");
+
+                    html += '<td class="p-2.5 text-center border-r last:border-r-0 border-slate-100 align-middle">';
+                    if (rep) {
+                        var safeRepId = String(rep.reportId || rep.id).replace(/'/g, "\\'");
+                        var tasksCount = Array.isArray(rep.tasksCompleted) ? rep.tasksCompleted.length : 0;
+                        var photosCount = Array.isArray(rep.photoURLs) ? rep.photoURLs.length : 0;
+                        var commentsArr = Array.isArray(rep.comments) ? rep.comments : [];
+                        var hasUnread = commentsArr.some(function(c) {
+                            var vArr = Array.isArray(c.viewedBy) ? c.viewedBy.map(function(v) { return String(v).toLowerCase().trim(); }) : [];
+                            return vArr.indexOf(myEmail) === -1 && String(c.userEmail || '').toLowerCase().trim() !== myEmail;
+                        });
+
+                        html += '<div class="inline-flex flex-col items-center space-y-1">';
+                        // Interactive Hyperlink on the word "Filled"
+                        html += '<a href="javascript:void(0)" onclick="openDwrDetailModal(\'' + safeRepId + '\')" class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 font-extrabold text-xs underline decoration-emerald-600 decoration-2 underline-offset-2 transition shadow-2xs" title="Click to open DWR details &amp; comments">';
+                        html += '<i class="fa-solid fa-circle-check text-emerald-600 text-[10px]"></i>';
+                        html += '<span>Filled</span>';
+                        html += '</a>';
+
+                        html += '<div class="flex items-center space-x-1.5 text-[10px] text-slate-500 font-semibold">';
+                        html += '<span>' + tasksCount + ' tasks</span>';
+                        if (photosCount > 0) {
+                            html += '<span class="text-sky-600"><i class="fa-solid fa-camera"></i> ' + photosCount + '</span>';
+                        }
+                        if (commentsArr.length > 0) {
+                            html += '<span onclick="openDwrDetailModal(\'' + safeRepId + '\', true)" class="cursor-pointer px-1.5 py-0.2 rounded ' + (hasUnread ? 'bg-amber-200 text-amber-950 font-extrabold animate-pulse' : 'bg-indigo-50 text-indigo-700 font-bold') + '"><i class="fa-solid fa-comment-dots"></i> ' + commentsArr.length + '</span>';
+                        }
+                        html += '</div>';
+                        html += '</div>';
+                    } else {
+                        var badgeTone = isPastOrToday
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : 'bg-slate-100 text-slate-400 border-slate-200';
+                        html += '<div class="inline-flex flex-col items-center space-y-1">';
+                        html += '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ' + badgeTone + '">Not Filled</span>';
+                        if (isAdmin || isToday) {
+                            html += '<button type="button" onclick="openAddDwrPage(\'' + dateIso + '\', \'' + safeArea + '\')" class="text-[10px] text-teal-600 hover:text-teal-800 hover:underline font-semibold">+ Fill</button>';
+                        }
+                        html += '</div>';
+                    }
+                    html += '</td>';
+                });
+
+                html += '</tr>';
+            }
+
+            html += '</tbody></table></div></div>';
+            return html;
+        }
+
+        // ================= SECTION 2 & 3: "ADD DAILY WORK REPORT" PAGE & DYNAMIC FORM BUILDER =================
+        function openAddDwrPage(prefillDate, prefillArea, editReportId) {
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isSup = currentUser && currentUser.role === 'Supervisor';
+            var assignedAreas = getUserAssignedDwrAreas();
+            var todayIso = getTodayLocalIsoDate();
+
+            if (editReportId) {
+                var existingById = findDwrReportById(editReportId);
+                if (existingById) {
+                    dwrFormState = {
+                        editReportId: existingById.reportId || existingById.id,
+                        date: isAdmin ? (existingById.date || todayIso) : todayIso,
+                        area: existingById.area || existingById.block || assignedAreas[0],
+                        tasksCompleted: Array.isArray(existingById.tasksCompleted) ? existingById.tasksCompleted.slice() : [],
+                        remarks: existingById.remarks || '',
+                        photoURLs: Array.isArray(existingById.photoURLs) ? existingById.photoURLs.slice() : [],
+                        taskSearchFilter: ''
+                    };
+                    cleaningSubPage = 'add_dwr';
+                    renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+                    return;
+                }
+            }
+
+            var initialDate = (isAdmin && prefillDate) ? prefillDate : todayIso;
+            var initialArea = '';
+            if (isSup) {
+                // Supervisor: Automatically select and show their designated Area form based on logged-in user profile/permissions
+                initialArea = assignedAreas[0] || 'Admin Phase 1';
+            } else if (prefillArea && assignedAreas.some(function(a) { return doAreasMatch(a, prefillArea); })) {
+                initialArea = prefillArea;
+            } else {
+                initialArea = assignedAreas[0] || ALL_AREAS[0];
+            }
+
+            // Check if a DWR already exists for (initialDate, initialArea) so user can edit/update seamlessly
+            var existingRep = findDwrReportByDateAndArea(initialDate, initialArea);
+            dwrFormState = {
+                editReportId: existingRep ? (existingRep.reportId || existingRep.id) : '',
+                date: initialDate,
+                area: initialArea,
+                tasksCompleted: existingRep && Array.isArray(existingRep.tasksCompleted) ? existingRep.tasksCompleted.slice() : [],
+                remarks: existingRep ? (existingRep.remarks || '') : '',
+                photoURLs: existingRep && Array.isArray(existingRep.photoURLs) ? existingRep.photoURLs.slice() : [],
+                taskSearchFilter: ''
+            };
+
+            cleaningSubPage = 'add_dwr';
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function renderAddDwrPageView(container) {
+            if (!container) return;
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
+            var isSup = currentUser && currentUser.role === 'Supervisor';
+            var assignedAreas = getUserAssignedDwrAreas();
+
+            if (!dwrFormState.date) dwrFormState.date = getTodayLocalIsoDate();
+            if (!isAdmin) dwrFormState.date = getTodayLocalIsoDate(); // Lock to today's date for non-Admins
+            if (!dwrFormState.area) dwrFormState.area = assignedAreas[0] || ALL_AREAS[0];
+
+            var subAreasMap = getScopeSubAreasForArea(dwrFormState.area);
+            var subAreaNames = Object.keys(subAreasMap);
+            var totalTasksInArea = 0;
+            var totalCheckedInArea = 0;
+
+            subAreaNames.forEach(function(sub) {
+                var tasks = Array.isArray(subAreasMap[sub]) ? subAreasMap[sub] : [];
+                tasks.forEach(function(t) {
+                    totalTasksInArea++;
+                    if (isTaskMarkedCompleted(dwrFormState.tasksCompleted, sub, t)) {
+                        totalCheckedInArea++;
+                    }
+                });
+            });
+
+            var pct = totalTasksInArea > 0 ? Math.round((totalCheckedInArea / totalTasksInArea) * 100) : 0;
+
+            var html = '<div class="space-y-6">';
+
+            // Top Bar: Back Button & Form Header
+            html += '<div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
+            html += '<div class="flex items-center space-x-3">';
+            html += '<button type="button" onclick="switchCleaningSubPage(\'dashboard\')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5">';
+            html += '<i class="fa-solid fa-arrow-left"></i><span>Back to Calendar Dashboard</span>';
+            html += '</button>';
+            html += '<div>';
+            html += '<h3 class="text-base font-extrabold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-clipboard-check text-teal-600"></i><span>' + (dwrFormState.editReportId ? 'Update Daily Work Report (DWR)' : 'Add Daily Work Report (DWR)') + '</span></h3>';
+            html += '<p class="text-xs text-slate-500">Complete the area-wise Sub-area checklist, add supervisor/executive remarks, and attach inspection photos.</p>';
+            html += '</div></div></div>';
+
+            // Main DWR Form Card
+            html += '<form onsubmit="handleSaveDailyWorkReport(event)" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-6 p-5 sm:p-6">';
+
+            // 1. Date Field & Role-Based Area Selector
+            html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">';
+
+            // Date Field (Auto-generated & locked to today's date YYYY-MM-DD, editable ONLY by Admins)
+            html += '<div>';
+            html += '<label class="block text-xs font-bold text-slate-700 uppercase mb-1 flex items-center justify-between">';
+            html += '<span><i class="fa-regular fa-calendar text-teal-600 mr-1"></i>Report Date (YYYY-MM-DD)</span>';
+            if (!isAdmin) {
+                html += '<span class="text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded border border-amber-200"><i class="fa-solid fa-lock mr-1"></i>Locked (Admin Only)</span>';
+            } else {
+                html += '<span class="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">Admin Editable</span>';
+            }
+            html += '</label>';
+            html += '<input type="date" id="dwrFormDateInput" value="' + dwrFormState.date + '" ' + (isAdmin ? 'onchange="handleDwrDateChange(this.value)"' : 'readonly disabled') + ' required class="w-full text-xs px-3 py-2.5 rounded-lg border font-mono font-bold ' + (isAdmin ? 'border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-teal-500' : 'border-slate-200 bg-slate-200/70 text-slate-600 cursor-not-allowed') + '">';
+            html += '</div>';
+
+            // Area Field (Supervisor: Auto-selected & locked to designated Area; Executive: Dropdown of ONLY assigned areas; Admin: Dropdown of all areas)
+            html += '<div>';
+            html += '<label class="block text-xs font-bold text-slate-700 uppercase mb-1 flex items-center justify-between">';
+            html += '<span><i class="fa-solid fa-location-dot text-teal-600 mr-1"></i>Designated Area / Block</span>';
+            html += '<span class="text-[10px] font-semibold text-teal-700">' + (isSup ? 'Auto-Selected (Supervisor)' : (isExec ? 'Assigned Areas Only' : 'All Campus Areas')) + '</span>';
+            html += '</label>';
+            if (isSup && assignedAreas.length <= 1) {
+                html += '<input type="text" value="' + formatAreaDisplayLabel(dwrFormState.area) + '" readonly disabled class="w-full text-xs px-3 py-2.5 rounded-lg border border-teal-300 bg-teal-50/70 font-extrabold text-teal-950 cursor-not-allowed">';
+            } else {
+                html += '<select id="dwrFormAreaSelect" onchange="handleDwrAreaChange(this.value)" class="w-full text-xs px-3 py-2.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500">';
+                assignedAreas.forEach(function(a) {
+                    html += '<option value="' + a + '" ' + (doAreasMatch(a, dwrFormState.area) ? 'selected' : '') + '>' + formatAreaDisplayLabel(a) + '</option>';
+                });
+                html += '</select>';
+            }
+            html += '</div>';
+
+            // Live Checklist Progress Summary
+            html += '<div class="flex flex-col justify-between bg-white p-3 rounded-lg border border-slate-200">';
+            html += '<div class="flex items-center justify-between text-xs font-bold text-slate-700">';
+            html += '<span>Checklist Progress</span>';
+            html += '<span id="dwrProgressCounterText" class="font-mono text-teal-700">' + totalCheckedInArea + ' / ' + totalTasksInArea + ' (' + pct + '%)</span>';
+            html += '</div>';
+            html += '<div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden my-1.5 border border-slate-200">';
+            html += '<div id="dwrProgressBarFill" class="h-full bg-emerald-600 transition-all duration-300" style="width: ' + pct + '%"></div>';
+            html += '</div>';
+            html += '<div class="flex items-center justify-between text-[11px]">';
+            html += '<button type="button" onclick="toggleAllDwrAreaTasks(true)" class="text-teal-700 hover:underline font-bold">Check All Tasks</button>';
+            html += '<button type="button" onclick="toggleAllDwrAreaTasks(false)" class="text-slate-500 hover:underline font-semibold">Clear All</button>';
+            html += '</div></div>';
+            html += '</div>';
+
+            // 2. Dynamic Scope of Work Checklist Section (Sub-area headings + Task Checkboxes)
+            html += '<div class="space-y-4">';
+            html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200">';
+            html += '<div>';
+            html += '<h4 class="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center space-x-2"><i class="fa-solid fa-sitemap text-teal-600"></i><span>Scope of Work Checklist — ' + formatAreaDisplayLabel(dwrFormState.area) + '</span></h4>';
+            html += '<p class="text-[11px] text-slate-500">Synced with Firestore document <code class="font-mono text-teal-700">settings/scope_of_work</code> (' + subAreaNames.length + ' Sub-areas, ' + totalTasksInArea + ' Tasks)</p>';
+            html += '</div>';
+            html += '<div class="relative w-full sm:w-64">';
+            html += '<i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
+            html += '<input type="text" placeholder="Filter tasks or sub-areas..." value="' + (dwrFormState.taskSearchFilter || '') + '" oninput="handleDwrTaskFilterInput(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500">';
+            html += '</div></div>';
+
+            if (subAreaNames.length === 0) {
+                html += '<div class="p-8 text-center bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500 italic">No sub-areas configured for this area yet. Use "Import Scope of Work (Excel/CSV)" above to load tasks.</div>';
+            } else {
+                html += '<div id="dwrDynamicSubAreasGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+                var qFilter = (dwrFormState.taskSearchFilter || '').toLowerCase().trim();
+
+                subAreaNames.forEach(function(subArea, sIdx) {
+                    var tasks = Array.isArray(subAreasMap[subArea]) ? subAreasMap[subArea] : [];
+                    var matchingTasks = tasks.filter(function(t) {
+                        if (!qFilter) return true;
+                        return subArea.toLowerCase().indexOf(qFilter) !== -1 || t.toLowerCase().indexOf(qFilter) !== -1;
+                    });
+                    if (qFilter && matchingTasks.length === 0) return;
+
+                    var subCheckedCount = 0;
+                    tasks.forEach(function(t) {
+                        if (isTaskMarkedCompleted(dwrFormState.tasksCompleted, subArea, t)) subCheckedCount++;
+                    });
+                    var allSubChecked = tasks.length > 0 && subCheckedCount === tasks.length;
+                    var safeSubArea = subArea.replace(/'/g, "\\'");
+
+                    html += '<div class="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden flex flex-col shadow-2xs">';
+                    html += '<div class="px-4 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center justify-between gap-2">';
+                    html += '<div class="flex items-center space-x-2 min-w-0">';
+                    html += '<span class="w-5 h-5 rounded-md bg-teal-700 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">' + (sIdx + 1) + '</span>';
+                    html += '<h5 class="font-extrabold text-xs text-slate-900 truncate" title="' + subArea + '">' + subArea + '</h5>';
+                    html += '</div>';
+                    html += '<div class="flex items-center space-x-2 flex-shrink-0">';
+                    html += '<span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ' + (allSubChecked ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-white text-slate-600 border border-slate-200') + '">' + subCheckedCount + '/' + tasks.length + '</span>';
+                    html += '<button type="button" onclick="toggleSubAreaDwrTasks(\'' + safeSubArea + '\', ' + (!allSubChecked) + ')" class="text-[10px] font-bold text-teal-700 hover:text-teal-900 hover:underline">' + (allSubChecked ? 'Uncheck' : 'Check All') + '</button>';
+                    html += '</div></div>';
+
+                    html += '<div class="p-3 space-y-2 flex-1 divide-y divide-slate-100">';
+                    matchingTasks.forEach(function(taskName, tIdx) {
+                        var fullTaskKey = buildTaskKey(subArea, taskName);
+                        var isChecked = isTaskMarkedCompleted(dwrFormState.tasksCompleted, subArea, taskName);
+                        var safeSub = subArea.replace(/'/g, "\\'");
+                        var safeTask = taskName.replace(/'/g, "\\'");
+                        var chkId = 'dwrChk_' + sIdx + '_' + tIdx;
+
+                        html += '<label for="' + chkId + '" class="flex items-start space-x-2.5 pt-2 first:pt-0 cursor-pointer group">';
+                        html += '<input type="checkbox" id="' + chkId + '" ' + (isChecked ? 'checked' : '') + ' onchange="handleDwrTaskCheckboxToggle(\'' + safeSub + '\', \'' + safeTask + '\', this.checked)" class="mt-0.5 w-4 h-4 rounded text-teal-600 border-slate-300 focus:ring-teal-500 cursor-pointer">';
+                        html += '<span class="text-xs leading-snug select-none ' + (isChecked ? 'font-bold text-emerald-900' : 'text-slate-700 group-hover:text-slate-900') + '">' + taskName + '</span>';
+                        html += '</label>';
+                    });
+                    html += '</div></div>';
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+
+            // 3. Form Bottom / Output Section: Remarks Input & Image-Only Photo Attachment (fm.marol drive / Firebase Storage)
+            html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-4 border-t border-slate-200">';
+
+            // Remarks Input
+            html += '<div class="space-y-2">';
+            html += '<label for="dwrRemarksInput" class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-comment-medical text-teal-600 mr-1.5"></i>Supervisor / Executive Remarks</label>';
+            html += '<textarea id="dwrRemarksInput" rows="4" oninput="dwrFormState.remarks = this.value" placeholder="Enter inspection observations, pending maintenance notes, or special cleaning remarks..." class="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500">' + (dwrFormState.remarks || '') + '</textarea>';
+            html += '</div>';
+
+            // Photo Attachment (Images ONLY, accept="image/*", multiple, NO videos allowed)
+            html += '<div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">';
+            html += '<div class="flex items-center justify-between">';
+            html += '<label class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-camera text-teal-600 mr-1.5"></i>Photo Attachments (Images Only)</label>';
+            html += '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"><i class="fa-brands fa-google-drive mr-1"></i>fm.marol Drive / Cloud</span>';
+            html += '</div>';
+            html += '<p class="text-[11px] text-slate-500">Select one or more photos (<code class="font-mono">accept="image/*"</code>). Video files are strictly disabled.</p>';
+            html += '<input type="file" id="dwrPhotosFileInput" accept="image/*" multiple onchange="handleDwrPhotoUpload(this)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white cursor-pointer">';
+            html += '<div id="dwrPhotosPreviewContainer" class="flex flex-wrap gap-2.5 pt-2">';
+            html += renderDwrFormPhotoThumbnailsHtml();
+            html += '</div>';
+            html += '</div>';
+
+            html += '</div>';
+
+            // Form Submit Footer
+            html += '<div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
+            html += '<div class="text-xs text-slate-500"><i class="fa-solid fa-shield-halved text-teal-600 mr-1"></i>Report saves to Firestore <code class="font-mono text-slate-700">daily_work_reports</code> collection and updates calendar status to <strong class="text-emerald-700">Filled</strong>.</div>';
+            html += '<div class="flex items-center space-x-3 self-end sm:self-auto">';
+            html += '<button type="button" onclick="switchCleaningSubPage(\'dashboard\')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl transition">Cancel</button>';
+            html += '<button type="submit" id="dwrSubmitBtn" class="bg-[#004d3d] hover:bg-[#00382c] text-white text-xs font-extrabold px-6 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2">';
+            html += '<i class="fa-solid fa-floppy-disk text-emerald-300"></i><span>' + (dwrFormState.editReportId ? 'Update Daily Work Report' : 'Submit Daily Work Report') + '</span>';
+            html += '</button>';
+            html += '</div></div>';
+
+            html += '</form></div>';
+            container.innerHTML = html;
+        }
+
+        function renderDwrFormPhotoThumbnailsHtml() {
+            var urls = Array.isArray(dwrFormState.photoURLs) ? dwrFormState.photoURLs : [];
+            if (urls.length === 0) {
+                return '<span class="text-[11px] text-slate-400 italic">No photos attached yet.</span>';
+            }
+            return urls.map(function(url, idx) {
+                var resolved = resolveMediaUrl(url);
+                var safeUrl = String(url).replace(/'/g, "\\'");
+                return '<div class="relative inline-block group border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs">' +
+                    '<img src="' + resolved + '" onclick="expandPhotoModal(\'' + safeUrl + '\', \'DWR Photo #' + (idx + 1) + ' — ' + dwrFormState.area + ' (' + dwrFormState.date + ')\')" class="h-16 w-20 object-cover cursor-pointer hover:opacity-85 transition" title="Click to view enlarged photo">' +
+                    '<button type="button" onclick="removeDwrFormPhoto(' + idx + ')" class="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px] shadow z-10" title="Remove photo"><i class="fa-solid fa-xmark"></i></button>' +
+                '</div>';
+            }).join('');
+        }
+
+        function handleDwrDateChange(newDate) {
+            if (!currentUser || currentUser.role !== 'Administrator') {
+                dwrFormState.date = getTodayLocalIsoDate();
+                return;
+            }
+            dwrFormState.date = newDate;
+            var existingRep = findDwrReportByDateAndArea(newDate, dwrFormState.area);
+            dwrFormState.editReportId = existingRep ? (existingRep.reportId || existingRep.id) : '';
+            dwrFormState.tasksCompleted = existingRep && Array.isArray(existingRep.tasksCompleted) ? existingRep.tasksCompleted.slice() : [];
+            dwrFormState.remarks = existingRep ? (existingRep.remarks || '') : '';
+            dwrFormState.photoURLs = existingRep && Array.isArray(existingRep.photoURLs) ? existingRep.photoURLs.slice() : [];
+            renderAddDwrPageView(document.getElementById('moduleContainer'));
+        }
+
+        function handleDwrAreaChange(newArea) {
+            dwrFormState.area = newArea;
+            var existingRep = findDwrReportByDateAndArea(dwrFormState.date, newArea);
+            dwrFormState.editReportId = existingRep ? (existingRep.reportId || existingRep.id) : '';
+            dwrFormState.tasksCompleted = existingRep && Array.isArray(existingRep.tasksCompleted) ? existingRep.tasksCompleted.slice() : [];
+            dwrFormState.remarks = existingRep ? (existingRep.remarks || '') : '';
+            dwrFormState.photoURLs = existingRep && Array.isArray(existingRep.photoURLs) ? existingRep.photoURLs.slice() : [];
+            renderAddDwrPageView(document.getElementById('moduleContainer'));
+        }
+
+        function handleDwrTaskFilterInput(val) {
+            dwrFormState.taskSearchFilter = val;
+            renderAddDwrPageView(document.getElementById('moduleContainer'));
+        }
+
+        function handleDwrTaskCheckboxToggle(subArea, taskName, isChecked) {
+            if (!Array.isArray(dwrFormState.tasksCompleted)) dwrFormState.tasksCompleted = [];
+            var fullKey = buildTaskKey(subArea, taskName);
+            // Remove any legacy/variant representations of this subArea + taskName
+            dwrFormState.tasksCompleted = dwrFormState.tasksCompleted.filter(function(k) {
+                return k !== fullKey && k !== (subArea + ' - ' + taskName) && k !== (subArea + ': ' + taskName);
+            });
+            if (isChecked) {
+                dwrFormState.tasksCompleted.push(fullKey);
+            }
+            renderAddDwrPageView(document.getElementById('moduleContainer'));
+        }
+
+        function toggleSubAreaDwrTasks(subArea, checkAll) {
+            var subAreasMap = getScopeSubAreasForArea(dwrFormState.area);
+            var tasks = Array.isArray(subAreasMap[subArea]) ? subAreasMap[subArea] : [];
+            if (!Array.isArray(dwrFormState.tasksCompleted)) dwrFormState.tasksCompleted = [];
+
+            tasks.forEach(function(taskName) {
+                var fullKey = buildTaskKey(subArea, taskName);
+                dwrFormState.tasksCompleted = dwrFormState.tasksCompleted.filter(function(k) {
+                    return k !== fullKey && k !== (subArea + ' - ' + taskName) && k !== (subArea + ': ' + taskName);
+                });
+                if (checkAll) {
+                    dwrFormState.tasksCompleted.push(fullKey);
+                }
+            });
+            renderAddDwrPageView(document.getElementById('moduleContainer'));
+        }
+
+        function toggleAllDwrAreaTasks(checkAll) {
+            var subAreasMap = getScopeSubAreasForArea(dwrFormState.area);
+            dwrFormState.tasksCompleted = [];
+            if (checkAll) {
+                Object.keys(subAreasMap).forEach(function(subArea) {
+                    var tasks = Array.isArray(subAreasMap[subArea]) ? subAreasMap[subArea] : [];
+                    tasks.forEach(function(taskName) {
+                        dwrFormState.tasksCompleted.push(buildTaskKey(subArea, taskName));
+                    });
+                });
+            }
+            renderAddDwrPageView(document.getElementById('moduleContainer'));
+        }
+
+        async function handleDwrPhotoUpload(inputEl) {
+            var files = Array.from(inputEl.files || []);
+            if (files.length === 0) return;
+
+            var validImageFiles = [];
+            for (var i = 0; i < files.length; i++) {
+                var f = files[i];
+                var mime = (f.type || '').toLowerCase();
+                var ext = (f.name || '').toLowerCase();
+                var isVideoOrNonImage = mime.indexOf('video/') === 0 || ext.match(/\.(mp4|mov|avi|mkv|webm|pdf|doc|docx)$/);
+                if (isVideoOrNonImage || (mime && mime.indexOf('image/') !== 0)) {
+                    showAppNotification('Rejected "' + f.name + '": Only image files are allowed in Daily Work Reports (NO videos allowed).', 'error');
+                    continue;
+                }
+                validImageFiles.push(f);
+            }
+
+            if (validImageFiles.length === 0) {
+                inputEl.value = '';
+                return;
+            }
+
+            showAppNotification('Uploading ' + validImageFiles.length + ' photo(s) to fm.marol Drive / Cloud...', 'info');
+            for (var j = 0; j < validImageFiles.length; j++) {
+                var uploadedUrl = await processAndUploadImageFile(validImageFiles[j], 'Daily_Work_Reports');
+                if (uploadedUrl) {
+                    if (!Array.isArray(dwrFormState.photoURLs)) dwrFormState.photoURLs = [];
+                    dwrFormState.photoURLs.push(uploadedUrl);
+                }
+            }
+            inputEl.value = '';
+            var prevContainer = document.getElementById('dwrPhotosPreviewContainer');
+            if (prevContainer) {
+                prevContainer.innerHTML = renderDwrFormPhotoThumbnailsHtml();
+            }
+        }
+
+        function removeDwrFormPhoto(idx) {
+            if (!Array.isArray(dwrFormState.photoURLs)) return;
+            dwrFormState.photoURLs.splice(idx, 1);
+            var prevContainer = document.getElementById('dwrPhotosPreviewContainer');
+            if (prevContainer) {
+                prevContainer.innerHTML = renderDwrFormPhotoThumbnailsHtml();
+            }
+        }
+
+        async function handleSaveDailyWorkReport(e) {
+            e.preventDefault();
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var reportDate = isAdmin ? (dwrFormState.date || getTodayLocalIsoDate()) : getTodayLocalIsoDate();
+            var reportArea = dwrFormState.area || getUserAssignedDwrAreas()[0];
+            var remarksEl = document.getElementById('dwrRemarksInput');
+            var remarksVal = remarksEl ? remarksEl.value.trim() : (dwrFormState.remarks || '').trim();
+
+            if (!Array.isArray(dwrFormState.tasksCompleted) || dwrFormState.tasksCompleted.length === 0) {
+                showAppNotification('Please check at least one completed task in the checklist before submitting.', 'error');
+                return;
+            }
+
+            var submitBtn = document.getElementById('dwrSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Saving DWR...</span>';
+            }
+
+            var existingRep = dwrFormState.editReportId
+                ? findDwrReportById(dwrFormState.editReportId)
+                : findDwrReportByDateAndArea(reportDate, reportArea);
+
+            var reportId = existingRep
+                ? (existingRep.reportId || existingRep.id)
+                : ('DWR-' + reportDate + '-' + normalizeAreaAlias(reportArea).replace(/[^a-zA-Z0-9]/g, '') + '-' + Date.now());
+
+            var dwrDocument = {
+                id: reportId,
+                reportId: reportId,
+                date: reportDate,
+                block: reportArea,
+                area: reportArea,
+                createdBy: existingRep ? (existingRep.createdBy || (currentUser ? currentUser.email : 'System')) : (currentUser ? currentUser.email : 'System'),
+                userRole: existingRep ? (existingRep.userRole || (currentUser ? currentUser.role : 'Supervisor')) : (currentUser ? currentUser.role : 'Supervisor'),
+                tasksCompleted: dwrFormState.tasksCompleted.slice(),
+                remarks: remarksVal,
+                photoURLs: Array.isArray(dwrFormState.photoURLs) ? dwrFormState.photoURLs.slice() : [],
+                comments: existingRep && Array.isArray(existingRep.comments) ? existingRep.comments : [],
+                updatedAt: new Date().toISOString()
+            };
+
+            var existingIdx = dbDailyWorkReports.findIndex(function(r) {
+                return (r.reportId || r.id) === reportId;
+            });
+            if (existingIdx >= 0) {
+                dbDailyWorkReports[existingIdx] = dwrDocument;
+            } else {
+                dbDailyWorkReports.unshift(dwrDocument);
+            }
+
+            saveStateToLocalBackup();
+            if (window.saveDailyWorkReportToFirestore) {
+                await window.saveDailyWorkReportToFirestore(dwrDocument);
+            }
+
+            // Set dashboard month/year to the submitted report's date so the user immediately sees it marked "Filled"
+            var dParts = reportDate.split('-');
+            if (dParts.length === 3) {
+                dwrSelectedYear = parseInt(dParts[0], 10) || dwrSelectedYear;
+                dwrSelectedMonth = (parseInt(dParts[1], 10) - 1);
+            }
+
+            cleaningSubPage = 'dashboard';
+            switchModule('cleaning');
+            showAppNotification('Daily Work Report for ' + reportArea + ' (' + reportDate + ') saved to Firestore!', 'success');
+        }
+
+        // ================= SECTION 3: SCOPE OF WORK EXCEL / CSV IMPORT ENGINE =================
+        function handleScopeOfWorkExcelImport(e) {
+            if (!currentUser || currentUser.role !== 'Administrator') {
+                showAppNotification('Access Denied: Only Administrators can import Scope of Work files.', 'error');
+                return;
+            }
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = async function(evt) {
+                try {
+                    var data = new Uint8Array(evt.target.result);
+                    var workbook = XLSX.read(data, { type: 'array' });
+                    var parsedScope = {};
+                    var totalAreasParsed = 0;
+                    var totalSubAreasParsed = 0;
+                    var totalTasksParsed = 0;
+
+                    workbook.SheetNames.forEach(function(sheetName) {
+                        var sheet = workbook.Sheets[sheetName];
+                        var matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                        if (!matrix || matrix.length === 0) return;
+
+                        // Check if this sheet is a 3-column tabular list (Area | Sub-Area | Task)
+                        var firstNonEmptyRow = null;
+                        for (var r0 = 0; r0 < Math.min(matrix.length, 10); r0++) {
+                            var nonEmptyCells = (matrix[r0] || []).filter(function(c) { return String(c || '').trim() !== ''; });
+                            if (nonEmptyCells.length >= 2) {
+                                firstNonEmptyRow = matrix[r0].map(function(c) { return String(c || '').trim().toLowerCase(); });
+                                break;
+                            }
+                        }
+
+                        var isFlatThreeColumn = false;
+                        if (firstNonEmptyRow) {
+                            var hasAreaCol = firstNonEmptyRow.some(function(h) { return h === 'area' || h === 'block' || h === 'level 1' || h.indexOf('area') !== -1; });
+                            var hasSubAreaCol = firstNonEmptyRow.some(function(h) { return h.indexOf('sub') !== -1 || h === 'location' || h === 'level 2'; });
+                            var hasTaskCol = firstNonEmptyRow.some(function(h) { return h.indexOf('task') !== -1 || h.indexOf('checklist') !== -1 || h.indexOf('scope') !== -1 || h === 'level 3'; });
+                            if (hasAreaCol && hasSubAreaCol && hasTaskCol) {
+                                isFlatThreeColumn = true;
+                            }
+                        }
+
+                        if (isFlatThreeColumn) {
+                            var jsonRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+                            var lastArea = '';
+                            var lastSubArea = '';
+                            jsonRows.forEach(function(rowObj) {
+                                var keys = Object.keys(rowObj);
+                                var areaVal = '';
+                                var subVal = '';
+                                var taskVal = '';
+                                keys.forEach(function(k) {
+                                    var kl = k.trim().toLowerCase();
+                                    var v = String(rowObj[k] || '').trim();
+                                    if (!v) return;
+                                    if (!areaVal && (kl === 'area' || kl === 'block' || kl === 'level 1')) areaVal = v;
+                                    else if (!subVal && (kl.indexOf('sub') !== -1 || kl === 'location' || kl === 'level 2')) subVal = v;
+                                    else if (!taskVal && (kl.indexOf('task') !== -1 || kl.indexOf('checklist') !== -1 || kl.indexOf('scope') !== -1 || kl === 'level 3')) taskVal = v;
+                                });
+                                if (areaVal) lastArea = areaVal;
+                                if (subVal) lastSubArea = subVal;
+                                if (lastArea && lastSubArea && taskVal) {
+                                    var canonArea = normalizeAreaAlias(lastArea);
+                                    if (!parsedScope[canonArea]) { parsedScope[canonArea] = {}; totalAreasParsed++; }
+                                    if (!parsedScope[canonArea][lastSubArea]) { parsedScope[canonArea][lastSubArea] = []; totalSubAreasParsed++; }
+                                    if (parsedScope[canonArea][lastSubArea].indexOf(taskVal) === -1) {
+                                        parsedScope[canonArea][lastSubArea].push(taskVal);
+                                        totalTasksParsed++;
+                                    }
+                                }
+                            });
+                            return;
+                        }
+
+                        // Otherwise parse the Hierarchical Block / Multi-Column Matrix format (as shown in Housekeeping Scope of Work Excel screenshot)
+                        // Level 1: Single-cell row = Area (e.g., "Religious Block", "Mahad al Zahra")
+                        // Level 2: Next multi-cell row = Sub-areas across columns (e.g., "Masjid", "Iwaan", "Corridor", ...)
+                        // Level 3: Subsequent rows = Checklist Tasks under each Sub-area column
+                        var currentArea = '';
+                        var activeSubAreaByCol = {};
+                        var expectingSubAreaRow = false;
+
+                        for (var r = 0; r < matrix.length; r++) {
+                            var row = matrix[r] || [];
+                            var nonEmptyIndices = [];
+                            for (var c = 0; c < row.length; c++) {
+                                var cellStr = String(row[c] || '').trim();
+                                if (cellStr !== '') {
+                                    nonEmptyIndices.push({ col: c, val: cellStr });
+                                }
+                            }
+
+                            if (nonEmptyIndices.length === 0) {
+                                // Blank row resets active sub-area columns so the next section can begin
+                                activeSubAreaByCol = {};
+                                expectingSubAreaRow = false;
+                                continue;
+                            }
+
+                            if (nonEmptyIndices.length === 1) {
+                                var singleText = nonEmptyIndices[0].val;
+                                var lowerSingle = singleText.toLowerCase();
+                                if (lowerSingle.indexOf('housekeeping scope of work') !== -1 || lowerSingle === 'scope of work') {
+                                    continue;
+                                }
+                                // Check if the next non-empty row has multiple columns (indicating this single cell is a Level 1 Area Header)
+                                var nextNonEmptyCount = 0;
+                                for (var nr = r + 1; nr < matrix.length; nr++) {
+                                    var nextRow = matrix[nr] || [];
+                                    var nextCells = nextRow.filter(function(x) { return String(x || '').trim() !== ''; });
+                                    if (nextCells.length > 0) {
+                                        nextNonEmptyCount = nextCells.length;
+                                        break;
+                                    }
+                                }
+
+                                if (nextNonEmptyCount >= 2 || Object.keys(activeSubAreaByCol).length === 0) {
+                                    currentArea = normalizeAreaAlias(singleText);
+                                    if (!parsedScope[currentArea]) {
+                                        parsedScope[currentArea] = {};
+                                        totalAreasParsed++;
+                                    }
+                                    activeSubAreaByCol = {};
+                                    expectingSubAreaRow = true;
+                                    continue;
+                                }
+                            }
+
+                            if (expectingSubAreaRow && currentArea) {
+                                activeSubAreaByCol = {};
+                                nonEmptyIndices.forEach(function(item) {
+                                    activeSubAreaByCol[item.col] = item.val;
+                                    if (!parsedScope[currentArea][item.val]) {
+                                        parsedScope[currentArea][item.val] = [];
+                                        totalSubAreasParsed++;
+                                    }
+                                });
+                                expectingSubAreaRow = false;
+                                continue;
+                            }
+
+                            // Task rows under active Sub-area columns
+                            if (currentArea && Object.keys(activeSubAreaByCol).length > 0) {
+                                nonEmptyIndices.forEach(function(item) {
+                                    var subName = activeSubAreaByCol[item.col];
+                                    if (subName && parsedScope[currentArea] && parsedScope[currentArea][subName]) {
+                                        if (parsedScope[currentArea][subName].indexOf(item.val) === -1) {
+                                            parsedScope[currentArea][subName].push(item.val);
+                                            totalTasksParsed++;
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    });
+
+                    if (totalTasksParsed === 0) {
+                        showAppNotification('Could not detect Scope of Work tasks in the uploaded file. Please check the Excel/CSV layout.', 'error');
+                        return;
+                    }
+
+                    // Merge parsedScope into dbScopeOfWork and sync to Firestore settings/scope_of_work
+                    Object.keys(parsedScope).forEach(function(areaKey) {
+                        dbScopeOfWork[areaKey] = parsedScope[areaKey];
+                        if (areaKey === 'Mahad Bldg') {
+                            dbScopeOfWork['Mahad al Zahra'] = JSON.parse(JSON.stringify(parsedScope[areaKey]));
+                        }
+                    });
+
+                    saveStateToLocalBackup();
+                    if (window.saveScopeOfWorkToFirestore) {
+                        await window.saveScopeOfWorkToFirestore(dbScopeOfWork);
+                    }
+
+                    if (activeModule === 'cleaning') {
+                        renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+                    }
+                    showAppNotification('Imported Scope of Work (' + totalAreasParsed + ' Areas, ' + totalSubAreasParsed + ' Sub-areas, ' + totalTasksParsed + ' Tasks) & synced to settings/scope_of_work!', 'success');
+                } catch (err) {
+                    showAppNotification('Scope of Work import error: ' + err.message, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            e.target.value = '';
+        }
+
+        // ================= SECTION 5: DETAILED DWR RESPONSE & COMMENTS POPUP MODAL =================
+        async function openDwrDetailModal(reportId, highlightComments, specificCommentId) {
+            var rep = findDwrReportById(reportId);
+            if (!rep) {
+                showAppNotification('Report not found.', 'error');
+                return;
+            }
+            activeDwrModalReportId = rep.reportId || rep.id;
+
+            // Automatically mark comments on this report as viewed by current user when opened
+            await markDwrCommentsViewedByCurrentUser(rep, specificCommentId);
+
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
+            var isSup = currentUser && currentUser.role === 'Supervisor';
+
+            var titleEl = document.getElementById('dwrDetailModalTitle');
+            var subEl = document.getElementById('dwrDetailModalSubtitle');
+            var footerIdEl = document.getElementById('dwrDetailIdFooter');
+            var editBtn = document.getElementById('dwrDetailEditBtn');
+            var delBtn = document.getElementById('dwrDetailDeleteBtn');
+            var bodyEl = document.getElementById('dwrDetailModalBody');
+
+            var areaDisp = formatAreaDisplayLabel(rep.area || rep.block || '');
+            if (titleEl) titleEl.innerText = areaDisp + ' — ' + rep.date;
+            if (subEl) subEl.innerText = 'Submitted by: ' + (rep.createdBy || 'Supervisor') + ' (' + (rep.userRole || 'Supervisor') + ')';
+            if (footerIdEl) footerIdEl.innerText = 'Report ID: ' + (rep.reportId || rep.id);
+
+            if (editBtn) {
+                if (isAdmin || (rep.date === getTodayLocalIsoDate())) {
+                    editBtn.classList.remove('hidden');
+                    editBtn.onclick = function() {
+                        closeModal('dwrDetailModal');
+                        openAddDwrPage(rep.date, rep.area || rep.block, rep.reportId || rep.id);
+                    };
+                } else {
+                    editBtn.classList.add('hidden');
+                }
+            }
+
+            if (delBtn) {
+                if (isAdmin) {
+                    delBtn.classList.remove('hidden');
+                    delBtn.onclick = function() {
+                        deleteDailyWorkReportRecord(rep.reportId || rep.id);
+                    };
+                } else {
+                    delBtn.classList.add('hidden');
+                }
+            }
+
+            // Group completed tasks by Sub-area for clean presentation
+            var groupedTasks = {};
+            var completedArr = Array.isArray(rep.tasksCompleted) ? rep.tasksCompleted : [];
+            completedArr.forEach(function(itemStr) {
+                var str = String(itemStr || '');
+                var sub = 'Completed Tasks';
+                var tName = str;
+                if (str.indexOf(' :: ') !== -1) {
+                    var parts = str.split(' :: ');
+                    sub = parts[0].trim();
+                    tName = parts.slice(1).join(' :: ').trim();
+                } else if (str.indexOf(': ') !== -1) {
+                    var parts2 = str.split(': ');
+                    sub = parts2[0].trim();
+                    tName = parts2.slice(1).join(': ').trim();
+                }
+                if (!groupedTasks[sub]) groupedTasks[sub] = [];
+                groupedTasks[sub].push(tName);
+            });
+
+            var photosArr = Array.isArray(rep.photoURLs) ? rep.photoURLs : [];
+            var commentsArr = Array.isArray(rep.comments) ? rep.comments : [];
+
+            var html = '';
+
+            // 1. Checked Tasks Section
+            html += '<div class="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">';
+            html += '<div class="flex items-center justify-between border-b border-slate-200 pb-2.5">';
+            html += '<h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center space-x-2"><i class="fa-solid fa-list-check text-emerald-600"></i><span>Completed Checklist Tasks (' + completedArr.length + ')</span></h4>';
+            html += '<span class="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">Verified Response</span>';
+            html += '</div>';
+
+            if (completedArr.length === 0) {
+                html += '<p class="text-xs text-slate-400 italic">No checklist tasks recorded in this report.</p>';
+            } else {
+                html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">';
+                Object.keys(groupedTasks).forEach(function(subName) {
+                    var tList = groupedTasks[subName];
+                    html += '<div class="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-1.5">';
+                    html += '<div class="flex items-center justify-between border-b border-slate-100 pb-1">';
+                    html += '<span class="font-extrabold text-xs text-teal-900">' + subName + '</span>';
+                    html += '<span class="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">' + tList.length + ' done</span>';
+                    html += '</div>';
+                    html += '<ul class="space-y-1 pt-1">';
+                    tList.forEach(function(t) {
+                        html += '<li class="text-xs text-slate-700 flex items-start space-x-2"><i class="fa-solid fa-check text-emerald-600 mt-0.5 text-[11px] flex-shrink-0"></i><span>' + t + '</span></li>';
+                    });
+                    html += '</ul></div>';
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+
+            // 2. Entered Remarks & Attached Photos Section (with direct view option)
+            html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+
+            // Remarks Box
+            html += '<div class="bg-white rounded-xl border border-slate-200 p-4 space-y-2 shadow-2xs">';
+            html += '<h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center space-x-2"><i class="fa-solid fa-align-left text-teal-600"></i><span>Supervisor / Executive Remarks</span></h4>';
+            if (rep.remarks) {
+                html += '<p class="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 whitespace-pre-line leading-relaxed">' + rep.remarks + '</p>';
+            } else {
+                html += '<p class="text-xs text-slate-400 italic">No additional remarks entered for this report.</p>';
+            }
+            html += '</div>';
+
+            // Attached Photos Box
+            html += '<div class="bg-white rounded-xl border border-slate-200 p-4 space-y-2 shadow-2xs">';
+            html += '<div class="flex items-center justify-between">';
+            html += '<h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center space-x-2"><i class="fa-solid fa-images text-sky-600"></i><span>Attached Photos (' + photosArr.length + ')</span></h4>';
+            html += '<span class="text-[10px] font-semibold text-slate-400">Click image to enlarge / view</span>';
+            html += '</div>';
+            if (photosArr.length === 0) {
+                html += '<p class="text-xs text-slate-400 italic">No photos attached to this report.</p>';
+            } else {
+                html += '<div class="flex flex-wrap gap-3 pt-1">';
+                photosArr.forEach(function(url, pIdx) {
+                    var resolved = resolveMediaUrl(url);
+                    var safeUrl = String(url).replace(/'/g, "\\'");
+                    var cap = 'DWR Photo #' + (pIdx + 1) + ' — ' + areaDisp + ' (' + rep.date + ')';
+                    var safeCap = cap.replace(/'/g, "\\'");
+                    html += '<div class="border border-slate-200 rounded-xl p-1.5 bg-slate-50 flex flex-col items-center space-y-1 shadow-2xs">';
+                    html += '<img src="' + resolved + '" onclick="expandPhotoModal(\'' + safeUrl + '\', \'' + safeCap + '\')" class="h-20 w-24 object-cover rounded-lg cursor-pointer hover:opacity-85 transition border border-slate-300">';
+                    html += '<div class="flex items-center space-x-2 text-[10px] font-bold">';
+                    html += '<button type="button" onclick="expandPhotoModal(\'' + safeUrl + '\', \'' + safeCap + '\')" class="text-teal-700 hover:underline"><i class="fa-solid fa-magnifying-glass-plus mr-0.5"></i>View</button>';
+                    if (resolved && resolved.indexOf('http') === 0) {
+                        html += '<a href="' + resolved + '" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline"><i class="fa-solid fa-arrow-up-right-from-square mr-0.5"></i>Drive</a>';
+                    }
+                    html += '</div></div>';
+                });
+                html += '</div>';
+            }
+            html += '</div></div>';
+
+            // 3. Executive & Admin Comments Section
+            var highlightRingCls = highlightComments ? 'ring-2 ring-amber-400 bg-amber-50/40' : 'bg-slate-50';
+            html += '<div id="dwrDetailCommentsBox" class="rounded-xl border border-slate-200 p-4 space-y-4 transition ' + highlightRingCls + '">';
+            html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2.5">';
+            html += '<div>';
+            html += '<h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center space-x-2"><i class="fa-solid fa-comments text-indigo-600"></i><span>Executive &amp; Admin Comments (' + commentsArr.length + ')</span></h4>';
+            html += '<p class="text-[11px] text-slate-500">Comments are synced to Firestore and trigger mandatory unread intimation popups for assigned users.</p>';
+            html += '</div>';
+            if (isAdmin || isExec) {
+                html += '<button type="button" onclick="focusDwrCommentInput()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-2xs transition flex items-center space-x-1.5 self-start sm:self-auto">';
+                html += '<i class="fa-solid fa-plus"></i><span>Add Comments</span>';
+                html += '</button>';
+            }
+            html += '</div>';
+
+            // Comments List
+            if (commentsArr.length === 0) {
+                html += '<div class="p-4 text-center bg-white rounded-lg border border-slate-200 text-xs text-slate-400 italic">No comments submitted by Executives or Admins for this report yet.</div>';
+            } else {
+                html += '<div class="space-y-2.5">';
+                commentsArr.forEach(function(cmt) {
+                    var isTargetCmt = specificCommentId && cmt.commentId === specificCommentId;
+                    var cmtCardCls = isTargetCmt ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-400' : 'bg-white border-slate-200';
+                    var timeStr = cmt.timestamp ? cmt.timestamp.replace('T', ' ').substring(0, 16) : '';
+                    var viewedList = Array.isArray(cmt.viewedBy) ? cmt.viewedBy : [];
+
+                    html += '<div class="p-3.5 rounded-xl border shadow-2xs space-y-1.5 ' + cmtCardCls + '">';
+                    html += '<div class="flex flex-wrap items-center justify-between gap-2">';
+                    html += '<div class="flex items-center space-x-2">';
+                    html += '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-100 text-indigo-900 border border-indigo-200">' + (cmt.userRole || 'Executive') + ' - ' + (cmt.userEmail || '') + '</span>';
+                    if (isTargetCmt) {
+                        html += '<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-500 text-white uppercase">New</span>';
+                    }
+                    html += '</div>';
+                    html += '<span class="text-[10px] font-mono text-slate-400">' + timeStr + '</span>';
+                    html += '</div>';
+                    html += '<p class="text-xs text-slate-800 font-medium leading-relaxed whitespace-pre-line">' + cmt.commentText + '</p>';
+                    html += '<div class="text-[10px] text-slate-400 flex items-center space-x-1 pt-1 border-t border-slate-100">';
+                    html += '<i class="fa-solid fa-check-double text-emerald-600"></i>';
+                    html += '<span>Viewed by: ' + (viewedList.length > 0 ? viewedList.join(', ') : 'Author') + '</span>';
+                    html += '</div></div>';
+                });
+                html += '</div>';
+            }
+
+            // Add Comment Form (Available for Executives & Admins)
+            if (isAdmin || isExec) {
+                html += '<form onsubmit="handleSaveDwrComment(event)" class="bg-white p-3.5 rounded-xl border border-indigo-200 space-y-2.5">';
+                html += '<label for="dwrNewCommentInput" class="block text-xs font-bold text-indigo-950"><i class="fa-solid fa-pen-clip text-indigo-600 mr-1"></i>Post Executive / Admin Comment</label>';
+                html += '<textarea id="dwrNewCommentInput" rows="2" required placeholder="Write feedback, inspection remarks, or action items for the area Supervisor..." class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>';
+                html += '<div class="flex justify-end">';
+                html += '<button type="submit" id="dwrCommentSubmitBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow transition flex items-center space-x-1.5">';
+                html += '<i class="fa-solid fa-paper-plane"></i><span>Submit Comment</span>';
+                html += '</button>';
+                html += '</div></form>';
+            }
+
+            html += '</div>';
+
+            if (bodyEl) bodyEl.innerHTML = html;
+            openModal('dwrDetailModal');
+
+            if (highlightComments) {
+                setTimeout(function() {
+                    var cBox = document.getElementById('dwrDetailCommentsBox');
+                    if (cBox) cBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            }
+        }
+
+        function focusDwrCommentInput() {
+            var inp = document.getElementById('dwrNewCommentInput');
+            if (inp) {
+                inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                inp.focus();
+            }
+        }
+
+        async function handleSaveDwrComment(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+            var rep = findDwrReportById(activeDwrModalReportId);
+            if (!rep) return;
+
+            var inputEl = document.getElementById('dwrNewCommentInput');
+            var commentText = inputEl ? inputEl.value.trim() : '';
+            if (!commentText) return;
+
+            var btn = document.getElementById('dwrCommentSubmitBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Saving...';
+            }
+
+            if (!Array.isArray(rep.comments)) rep.comments = [];
+            var myEmail = currentUser.email.toLowerCase().trim();
+            var newCommentObj = {
+                commentId: 'CMT-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+                userId: currentUser.uid || currentUser.email,
+                userEmail: currentUser.email,
+                userRole: currentUser.role,
+                commentText: commentText,
+                timestamp: new Date().toISOString(),
+                viewedBy: [myEmail]
+            };
+
+            rep.comments.push(newCommentObj);
+            rep.updatedAt = new Date().toISOString();
+            saveStateToLocalBackup();
+
+            if (window.saveDailyWorkReportToFirestore) {
+                await window.saveDailyWorkReportToFirestore(rep);
+            }
+
+            await openDwrDetailModal(rep.reportId || rep.id, true, newCommentObj.commentId);
+            if (activeModule === 'cleaning' && cleaningSubPage === 'dashboard') {
+                renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+            }
+            showAppNotification('Comment added & synced! Assigned area users will receive an intimation popup.', 'success');
+        }
+
+        function deleteDailyWorkReportRecord(reportId) {
+            openConfirmDialog('Are you sure you want to permanently delete this Daily Work Report?', async function() {
+                markRecordDeleted(reportId);
+                dbDailyWorkReports = dbDailyWorkReports.filter(function(r) {
+                    return (r.reportId || r.id) !== reportId;
+                });
+                saveStateToLocalBackup();
+                if (window.deleteDailyWorkReportFromFirestore) {
+                    await window.deleteDailyWorkReportFromFirestore(reportId);
+                }
+                closeModal('dwrDetailModal');
+                switchModule('cleaning');
+                showAppNotification('Daily Work Report deleted.', 'info');
+            });
+        }
+
+        // ================= DEEP CLEANING REPORTS SUB-VIEW & MODAL HANDLERS =================
+        function renderDeepCleaningSubPageView(container) {
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
+            var visibleAreas = getUserAssignedDwrAreas();
+
+            var visibleLogs = (dbCleaningLogs || []).filter(function(l) {
+                return (isAdmin || isExec) || visibleAreas.some(function(a) { return doAreasMatch(a, l.area); });
+            });
+
+            var html = '<div class="space-y-5">';
+            html += '<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
+            html += '<div class="flex items-center space-x-3">';
+            html += '<button type="button" onclick="switchCleaningSubPage(\'dashboard\')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5">';
+            html += '<i class="fa-solid fa-arrow-left"></i><span>Back to DWR Calendar Dashboard</span>';
+            html += '</button>';
+            html += '<div><h3 class="text-base font-extrabold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-broom text-teal-600"></i><span>Deep Cleaning &amp; Special Schedule Reports</span></h3>';
+            html += '<p class="text-xs text-slate-500 mt-0.5">Track weekly deep-cleaning schedules, facade/glass cleaning, and special event sanitization logs.</p></div>';
+            html += '</div>';
+            html += '<div class="flex items-center space-x-3"><span class="px-3 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold">Total Deep Cleaning Reports: ' + visibleLogs.length + '</span></div></div>';
+
+            html += '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
+            html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-800 flex justify-between items-center"><span>Logged Deep Cleaning Reports</span><span class="text-[11px] text-teal-700 font-semibold">Synced with Firestore &amp; fm.marol Drive</span></div>';
 
             if (visibleLogs.length === 0) {
-                html += '<div class="p-8 text-center text-xs text-slate-400 italic">No cleaning reports logged yet. Click "Log Cleaning Task" to record an entry.</div>';
+                html += '<div class="p-8 text-center text-xs text-slate-400 italic">No deep cleaning reports logged yet. Click "Add Deep Cleaning Reports" to record an entry.</div>';
             } else {
                 html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
                 html += '<th class="p-3">Date</th><th class="p-3">Area / Block</th><th class="p-3">Cleaning Type</th><th class="p-3">Status</th><th class="p-3">Remarks</th><th class="p-3 text-center">Media</th><th class="p-3">Logged By</th>';
@@ -3827,7 +5744,7 @@
                         ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                         : (log.status === 'In Progress' ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-rose-100 text-rose-800 border-rose-300');
                     var mediaCell = log.media
-                        ? '<div class="inline-block">' + renderInlineMediaThumbnail(log.media, 'Cleaning Report — ' + log.area + ' (' + log.date + ')', 'h-12 w-16') + '</div>'
+                        ? '<div class="inline-block">' + renderInlineMediaThumbnail(log.media, 'Deep Cleaning Report — ' + log.area + ' (' + log.date + ')', 'h-12 w-16') + '</div>'
                         : '<span class="text-slate-400 italic">No Media</span>';
                     html += '<tr class="hover:bg-slate-50 transition">';
                     html += '<td class="p-3 font-mono font-semibold text-slate-800">' + log.date + '</td>';
@@ -3850,10 +5767,11 @@
 
         function openCleaningLogModal() {
             var areaSelect = document.getElementById('cleaningLogArea');
-            var visibleAreas = (currentUser && currentUser.role === 'Administrator') ? ALL_AREAS : (currentUser ? currentUser.areas : ALL_AREAS);
-            areaSelect.innerHTML = visibleAreas.map(function(a) { return '<option value="' + a + '">' + a + '</option>'; }).join('');
+            var visibleAreas = getUserAssignedDwrAreas();
+            areaSelect.innerHTML = visibleAreas.map(function(a) { return '<option value="' + a + '">' + formatAreaDisplayLabel(a) + '</option>'; }).join('');
             document.getElementById('cleaningLogEditId').value = '';
-            document.getElementById('cleaningLogDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('cleaningLogDate').value = getTodayLocalIsoDate();
+            document.getElementById('cleaningLogType').value = 'Weekly Deep Cleaning';
             document.getElementById('cleaningLogRemarks').value = '';
             document.getElementById('cleaningLogMediaData').value = '';
             document.getElementById('cleaningLogMediaInput').value = '';
@@ -3865,12 +5783,12 @@
         async function previewCleaningLogMedia(inputEl) {
             var file = inputEl.files[0];
             if (!file) return;
-            var uploadedUrl = await processAndUploadImageFile(file, 'Cleaning_Reports');
+            var uploadedUrl = await processAndUploadImageFile(file, 'Deep_Cleaning_Reports');
             if (!uploadedUrl) return;
             document.getElementById('cleaningLogMediaData').value = uploadedUrl;
             var prev = document.getElementById('cleaningLogMediaPreview');
             if (prev) {
-                prev.innerHTML = renderInlineMediaThumbnail(uploadedUrl, 'Cleaning Media Preview', 'h-16 w-20');
+                prev.innerHTML = renderInlineMediaThumbnail(uploadedUrl, 'Deep Cleaning Media Preview', 'h-16 w-20');
                 prev.classList.remove('hidden');
             }
         }
@@ -3894,8 +5812,9 @@
                 await window.saveCleaningLogToFirestore(logObj);
             }
             closeModal('cleaningLogModal');
+            cleaningSubPage = 'deep_cleaning';
             switchModule('cleaning');
-            showAppNotification('Cleaning report saved!', 'success');
+            showAppNotification('Deep cleaning report saved!', 'success');
         }
 
         function deleteCleaningLogRecord(logId) {
@@ -7321,6 +9240,10 @@
         // Unified Module Export Functionality (Excel & PDF across HR, Waste, Compost, Water Tanks, Procurement, etc.)
         function exportCurrentModule(type) {
             document.getElementById('exportDropdown').classList.add('hidden');
+            if (!currentUser || currentUser.role !== 'Administrator') {
+                showAppNotification('Access Denied: Only Administrators can export module data.', 'error');
+                return;
+            }
             var exportRows = [];
             var sheetName = "Report";
             var fileName = "Siyanat_" + activeModule.toUpperCase() + "_Report";
@@ -7477,19 +9400,38 @@
                 fileName = "Siyanat_Pest_Control_Report";
                 reportTitle = "Siyanat Marol - Pest Control Treatments";
             } else if (activeModule === 'cleaning') {
-                dbCleaningLogs.forEach(function(l) {
-                    exportRows.push({
-                        'Date': l.date,
-                        'Area': l.area,
-                        'Cleaning Type': l.type,
-                        'Status': l.status,
-                        'Remarks': l.remarks || '',
-                        'Logged By': l.loggedBy || ''
+                if (cleaningSubPage === 'deep_cleaning' && dbCleaningLogs.length > 0) {
+                    dbCleaningLogs.forEach(function(l) {
+                        exportRows.push({
+                            'Date': l.date,
+                            'Area': l.area,
+                            'Cleaning Type': l.type,
+                            'Status': l.status,
+                            'Remarks': l.remarks || '',
+                            'Logged By': l.loggedBy || ''
+                        });
                     });
-                });
-                sheetName = "Cleaning Logs";
-                fileName = "Siyanat_Cleaning_Schedule_Report";
-                reportTitle = "Siyanat Marol - Cleaning Reports & Checklists";
+                    sheetName = "Deep Cleaning Logs";
+                    fileName = "Siyanat_Deep_Cleaning_Report";
+                    reportTitle = "Siyanat Marol - Deep Cleaning Reports";
+                } else {
+                    (dbDailyWorkReports || []).forEach(function(r) {
+                        exportRows.push({
+                            'Report ID': r.reportId || r.id,
+                            'Date': r.date,
+                            'Area / Block': r.area || r.block,
+                            'Tasks Completed Count': Array.isArray(r.tasksCompleted) ? r.tasksCompleted.length : 0,
+                            'Completed Tasks': Array.isArray(r.tasksCompleted) ? r.tasksCompleted.join(' | ') : '',
+                            'Remarks': r.remarks || '',
+                            'Photos Count': Array.isArray(r.photoURLs) ? r.photoURLs.length : 0,
+                            'Comments Count': Array.isArray(r.comments) ? r.comments.length : 0,
+                            'Created By': (r.createdBy || '') + ' (' + (r.userRole || '') + ')'
+                        });
+                    });
+                    sheetName = "Daily Work Reports";
+                    fileName = "Siyanat_Daily_Work_Reports_DWR";
+                    reportTitle = "Siyanat Marol - Daily Work Reports (DWR)";
+                }
             } else if (activeModule === 'machinery') {
                 var macListForExport = dbData.machinery.filter(function(m) {
                     var areaOk = (machineryFilterArea === 'All') || (m.area === machineryFilterArea);
@@ -8269,6 +10211,102 @@
                 )
             );
 
+            // 18B. Sync Module 3 Daily Work Reports (daily_work_reports) & Scope of Work (settings/scope_of_work)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "daily_work_reports"),
+                    (snapshot) => {
+                        const cloudReports = [];
+                        snapshot.forEach((docSnap) => {
+                            const d = docSnap.data();
+                            const repId = d.reportId || d.id || docSnap.id;
+                            cloudReports.push({ ...d, id: repId, reportId: repId });
+                        });
+                        // Merge cloud DWRs with local DWRs while preserving comments and viewedBy arrays
+                        const localReports = window.dbDailyWorkReports || [];
+                        const mergedMap = {};
+                        const mergeCommentsList = (cArr1, cArr2) => {
+                            const cMap = {};
+                            [...(cArr1 || []), ...(cArr2 || [])].forEach((c) => {
+                                if (!c || !c.commentId) return;
+                                if (!cMap[c.commentId]) {
+                                    cMap[c.commentId] = { ...c, viewedBy: Array.isArray(c.viewedBy) ? [...c.viewedBy] : [] };
+                                } else {
+                                    const combinedViewed = new Set([...(cMap[c.commentId].viewedBy || []), ...(c.viewedBy || [])]);
+                                    cMap[c.commentId] = { ...cMap[c.commentId], ...c, viewedBy: Array.from(combinedViewed) };
+                                }
+                            });
+                            return Object.values(cMap).sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+                        };
+
+                        cloudReports.forEach((cRep) => {
+                            const rKey = cRep.reportId || cRep.id;
+                            if (!rKey || isRecordDeleted(rKey)) return;
+                            mergedMap[rKey] = cRep;
+                        });
+                        localReports.forEach((lRep) => {
+                            const rKey = lRep.reportId || lRep.id;
+                            if (!rKey || isRecordDeleted(rKey)) return;
+                            if (!mergedMap[rKey]) {
+                                mergedMap[rKey] = lRep;
+                            } else {
+                                const cTime = mergedMap[rKey].updatedAt ? new Date(mergedMap[rKey].updatedAt).getTime() : 0;
+                                const lTime = lRep.updatedAt ? new Date(lRep.updatedAt).getTime() : 0;
+                                const mergedComments = mergeCommentsList(mergedMap[rKey].comments, lRep.comments);
+                                if (lTime > cTime) {
+                                    mergedMap[rKey] = { ...mergedMap[rKey], ...lRep, comments: mergedComments };
+                                } else {
+                                    mergedMap[rKey] = { ...mergedMap[rKey], comments: mergedComments };
+                                }
+                            }
+                        });
+
+                        const finalReports = Object.values(mergedMap).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+                        window.dbDailyWorkReports = finalReports;
+                        saveStateToLocalBackup();
+                        if (window.activeModule === "cleaning") {
+                            if (typeof window.renderCleaningModule === "function") {
+                                window.renderCleaningModule(document.getElementById("moduleContainer"), document.getElementById("modulePrimaryActions"), false);
+                            }
+                        }
+                    },
+                    (err) => handleSnapshotError("daily_work_reports", err)
+                )
+            );
+
+            activeUnsubscribers.push(
+                onSnapshot(
+                    doc(db, "settings", "scope_of_work"),
+                    (docSnap) => {
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            const remoteScope = data.scope || data;
+                            if (remoteScope && typeof remoteScope === "object") {
+                                const cleanedScope = {};
+                                Object.keys(remoteScope).forEach((k) => {
+                                    if (k !== "updatedAt" && k !== "updatedBy" && typeof remoteScope[k] === "object") {
+                                        cleanedScope[k] = remoteScope[k];
+                                    }
+                                });
+                                if (Object.keys(cleanedScope).length > 0) {
+                                    window.dbScopeOfWork = Object.assign({}, window.DEFAULT_SCOPE_OF_WORK, cleanedScope);
+                                    saveStateToLocalBackup();
+                                    if (window.activeModule === "cleaning") {
+                                        window.renderCleaningModule(document.getElementById("moduleContainer"), document.getElementById("modulePrimaryActions"), true);
+                                    }
+                                }
+                            }
+                        } else if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0) {
+                            setDoc(doc(db, "settings", "scope_of_work"), {
+                                scope: window.dbScopeOfWork,
+                                updatedAt: new Date().toISOString()
+                            }, { merge: true }).catch(() => {});
+                        }
+                    },
+                    (err) => handleSnapshotError("settings/scope_of_work", err)
+                )
+            );
+
             // 19. Sync Module 9 Machinery Assets (machinery), Breakdowns (machinery_breakdowns) & Categories (settings/machinery_categories)
             activeUnsubscribers.push(
                 onSnapshot(
@@ -8478,6 +10516,40 @@
                 await deleteDoc(doc(db, "cleaning_logs", logId));
             } catch (err) {
                 handleWriteError("cleaning_logs", err);
+            }
+        };
+
+        window.saveDailyWorkReportToFirestore = async function(dwrObj) {
+            saveStateToLocalBackup();
+            try {
+                const docId = dwrObj.reportId || dwrObj.id || ("DWR-" + Date.now());
+                dwrObj.reportId = docId;
+                dwrObj.id = docId;
+                await setDoc(doc(db, "daily_work_reports", docId), dwrObj, { merge: true });
+            } catch (err) {
+                handleWriteError("daily_work_reports", err);
+            }
+        };
+
+        window.deleteDailyWorkReportFromFirestore = async function(reportId) {
+            saveStateToLocalBackup();
+            try {
+                await deleteDoc(doc(db, "daily_work_reports", reportId));
+            } catch (err) {
+                handleWriteError("daily_work_reports", err);
+            }
+        };
+
+        window.saveScopeOfWorkToFirestore = async function(scopeObj) {
+            saveStateToLocalBackup();
+            try {
+                await setDoc(doc(db, "settings", "scope_of_work"), {
+                    scope: scopeObj,
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: window.currentUser ? window.currentUser.email : "System"
+                }, { merge: true });
+            } catch (err) {
+                handleWriteError("settings/scope_of_work", err);
             }
         };
 
@@ -8861,6 +10933,18 @@
                 await setDoc(doc(db, "settings", "executives_data"), { executives: window.executivesData, updatedAt: new Date().toISOString() }, { merge: true });
                 for (const cln of (window.dbCleaningLogs || [])) {
                     await setDoc(doc(db, "cleaning_logs", cln.id), cln, { merge: true });
+                }
+                for (const dwr of (window.dbDailyWorkReports || [])) {
+                    const dwrId = dwr.reportId || dwr.id;
+                    if (dwrId) {
+                        await setDoc(doc(db, "daily_work_reports", dwrId), dwr, { merge: true });
+                    }
+                }
+                if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0) {
+                    await setDoc(doc(db, "settings", "scope_of_work"), {
+                        scope: window.dbScopeOfWork,
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
                 }
                 for (const pst of (window.dbPestControlRecords || [])) {
                     await setDoc(doc(db, "pest_control", pst.id), pst, { merge: true });
