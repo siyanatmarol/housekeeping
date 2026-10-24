@@ -422,6 +422,7 @@
                             <option value="Executive – Admin">Executive – Admin</option>
                             <option value="Executive – Hostels">Executive – Hostels</option>
                             <option value="Supervisor">Supervisor</option>
+                            <option value="Waste Management Supervisor">Waste Management Supervisor (Compost &amp; Dry Waste Only)</option>
                         </select>
                     </div>
 
@@ -614,7 +615,7 @@
                 </div>
 
                 <div class="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                    <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider">Item Quantities (KG), Auto Rates & Calculated Amounts</h4>
+                    <h4 id="offloadModalSectionHeading" class="font-bold text-xs text-slate-800 uppercase tracking-wider">Item Quantities (KG), Auto Rates & Calculated Amounts</h4>
 
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs">
@@ -622,57 +623,57 @@
                                 <tr>
                                     <th class="p-2">Waste Material</th>
                                     <th class="p-2 w-28">Qty (KG)</th>
-                                    <th class="p-2 w-24 text-right">Rate (₹)</th>
-                                    <th class="p-2 w-28 text-right">Amount (₹)</th>
+                                    <th class="p-2 w-24 text-right offload-financial-col">Rate (₹)</th>
+                                    <th class="p-2 w-28 text-right offload-financial-col">Amount (₹)</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-200 text-slate-700">
                                 <tr>
                                     <td class="p-2 font-semibold">Soft Plastic</td>
                                     <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtySoftPlastic" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
-                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateSoftPlastic">₹0.00</td>
-                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtSoftPlastic">₹0.00</td>
+                                    <td class="p-2 text-right font-mono text-slate-600 offload-financial-col" id="dispRateSoftPlastic">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700 offload-financial-col" id="dispAmtSoftPlastic">₹0.00</td>
                                 </tr>
                                 <tr>
                                     <td class="p-2 font-semibold">Hard Plastic</td>
                                     <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtyHardPlastic" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
-                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateHardPlastic">₹0.00</td>
-                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtHardPlastic">₹0.00</td>
+                                    <td class="p-2 text-right font-mono text-slate-600 offload-financial-col" id="dispRateHardPlastic">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700 offload-financial-col" id="dispAmtHardPlastic">₹0.00</td>
                                 </tr>
                                 <tr>
                                     <td class="p-2 font-semibold">Cardboard</td>
                                     <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtyCardboard" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
-                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateCardboard">₹0.00</td>
-                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtCardboard">₹0.00</td>
+                                    <td class="p-2 text-right font-mono text-slate-600 offload-financial-col" id="dispRateCardboard">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700 offload-financial-col" id="dispAmtCardboard">₹0.00</td>
                                 </tr>
                                 <tr>
                                     <td class="p-2 font-semibold">Colour Paper</td>
                                     <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtyColourPaper" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
-                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateColourPaper">₹0.00</td>
-                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtColourPaper">₹0.00</td>
+                                    <td class="p-2 text-right font-mono text-slate-600 offload-financial-col" id="dispRateColourPaper">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700 offload-financial-col" id="dispAmtColourPaper">₹0.00</td>
                                 </tr>
                                 <tr>
                                     <td class="p-2 font-semibold">Metal / Tin</td>
                                     <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtyMetalTin" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
-                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateMetalTin">₹0.00</td>
-                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtMetalTin">₹0.00</td>
+                                    <td class="p-2 text-right font-mono text-slate-600 offload-financial-col" id="dispRateMetalTin">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700 offload-financial-col" id="dispAmtMetalTin">₹0.00</td>
                                 </tr>
                                 <tr>
                                     <td class="p-2 font-semibold">Glass</td>
                                     <td class="p-2"><input type="number" step="0.1" min="0" value="0" id="offloadQtyGlass" oninput="calculateOffloadLiveTotals()" class="w-full px-2 py-1 rounded border border-slate-300 font-mono text-xs"></td>
-                                    <td class="p-2 text-right font-mono text-slate-600" id="dispRateGlass">₹0.00</td>
-                                    <td class="p-2 text-right font-mono font-bold text-emerald-700" id="dispAmtGlass">₹0.00</td>
+                                    <td class="p-2 text-right font-mono text-slate-600 offload-financial-col" id="dispRateGlass">₹0.00</td>
+                                    <td class="p-2 text-right font-mono font-bold text-emerald-700 offload-financial-col" id="dispAmtGlass">₹0.00</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
 
-                    <div class="pt-2.5 border-t border-slate-300 grid grid-cols-2 gap-2 text-xs font-bold">
+                    <div id="offloadTotalsSummaryGrid" class="pt-2.5 border-t border-slate-300 grid grid-cols-2 gap-2 text-xs font-bold">
                         <div class="bg-white p-2.5 rounded-lg border text-slate-700 flex justify-between items-center">
                             <span>Total Weight:</span>
                             <span id="liveOffloadTotalQty" class="text-orange-600 font-mono text-sm">0.0 KG</span>
                         </div>
-                        <div class="bg-white p-2.5 rounded-lg border text-slate-700 flex justify-between items-center">
+                        <div id="offloadTotalAmtBox" class="bg-white p-2.5 rounded-lg border text-slate-700 flex justify-between items-center offload-financial-col">
                             <span>Total Amount:</span>
                             <span id="liveOffloadTotalAmt" class="text-emerald-600 font-mono text-sm">₹0.00</span>
                         </div>
@@ -2249,11 +2250,18 @@
                 }
             }
 
+            if (currentUser && currentUser.role === 'Waste Management Supervisor') {
+                currentUser.allowedModules = ['waste', 'compost'];
+                if (activeModule !== 'waste' && activeModule !== 'compost') {
+                    activeModule = 'waste';
+                }
+            }
+
             updateUserDisplay();
 
             if (currentUser) {
                 closeModal('authModal');
-                switchModule(activeModule || 'inventory');
+                switchModule(activeModule || (currentUser.role === 'Waste Management Supervisor' ? 'waste' : 'inventory'));
             }
         };
 
@@ -2766,7 +2774,11 @@
             var adminTabBtn = document.getElementById('mainTabAdmin');
 
             if (currentUser) {
-                var areaSummary = currentUser.role === 'Administrator' ? 'All Areas' : currentUser.areas.join(', ');
+                var areaSummary = currentUser.role === 'Administrator'
+                    ? 'All Areas'
+                    : (currentUser.role === 'Waste Management Supervisor'
+                        ? 'Dry Waste & Compost'
+                        : (currentUser.areas ? currentUser.areas.join(', ') : 'Assigned Area'));
                 if (emailEl) emailEl.innerText = currentUser.email;
 
                 if (roleEl) {
@@ -2798,11 +2810,20 @@
             if (!container || !currentUser) return;
             container.innerHTML = '';
 
-            MODULES.forEach(function(mod) {
-                var isCoreModule = (mod.id === 'inventory' || mod.id === 'hr' || mod.id === 'cleaning');
-                var isAllowedExtra = currentUser.role === 'Administrator' || (currentUser.allowedModules && currentUser.allowedModules.indexOf(mod.id) !== -1);
+            var isWasteSup = currentUser.role === 'Waste Management Supervisor';
 
-                if (isCoreModule || isAllowedExtra) {
+            MODULES.forEach(function(mod) {
+                var isAllowed = false;
+                if (isWasteSup) {
+                    // Waste Management Supervisor has access ONLY to Dry Waste and Compost modules and none other
+                    isAllowed = (mod.id === 'waste' || mod.id === 'compost');
+                } else {
+                    var isCoreModule = (mod.id === 'inventory' || mod.id === 'hr' || mod.id === 'cleaning');
+                    var isAllowedExtra = currentUser.role === 'Administrator' || (currentUser.allowedModules && currentUser.allowedModules.indexOf(mod.id) !== -1);
+                    isAllowed = isCoreModule || isAllowedExtra;
+                }
+
+                if (isAllowed) {
                     var isActive = activeModule === mod.id;
                     var btn = document.createElement('button');
                     btn.className = "px-3.5 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex items-center space-x-2 " + (isActive ? 'bg-[#004d3d] text-white shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200');
@@ -2837,8 +2858,17 @@
             }
         }
 
+        function isWasteFinancialRestrictedUser() {
+            if (!currentUser) return false;
+            return currentUser.role === 'Waste Management Supervisor' || currentUser.role === 'Supervisor';
+        }
+
         function switchModule(moduleId) {
             if (!currentUser) { renderUnauthenticatedGate(); return; }
+
+            if (currentUser.role === 'Waste Management Supervisor' && moduleId !== 'waste' && moduleId !== 'compost') {
+                moduleId = 'waste';
+            }
 
             activeModule = moduleId;
             renderHeaderNavigation();
@@ -2866,7 +2896,7 @@
                     'hr': 'Department hierarchy, staff allocations, and uniform tracking',
                     'cleaning': 'Routine cleaning schedules and supervisor checklists',
                     'pest': 'Area-wise recurring and complaint-based pest treatments',
-                    'waste': 'Dry waste offloading receipts, rates, and revenue summaries',
+                    'waste': isWasteFinancialRestrictedUser() ? 'Dry waste offloading quantities and category weight summaries' : 'Dry waste offloading receipts, rates, and revenue summaries',
                     'compost': 'Wet waste intake, 90-crate lifecycle tracking, and daily/monthly compost logs',
                     'water': 'Campus water tank registry, cleaning schedules, and before/after photo history',
                     'procurement': 'Vendor rates and purchase requisitions',
@@ -3340,9 +3370,10 @@
                     } else {
                         suggBox.innerHTML = matches.slice(0, 12).map(function(item) {
                             var stk = calculateCurrentStock(item, storeName);
+                            var unitBracket = item.unit ? ' (' + item.unit + ')' : '';
                             return '<button type="button" onclick="selectInvTxRowSuggestion(this, \'' + item.id + '\')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 transition flex items-center justify-between text-xs">' +
                                 '<span class="font-semibold text-slate-800 truncate"><span class="font-mono text-blue-700 mr-1">' + item.code + '</span>' + item.name + '</span>' +
-                                '<span class="text-[10px] font-mono text-slate-500 ml-2 whitespace-nowrap">' + stk + ' ' + (item.unit || 'Nos') + '</span>' +
+                                '<span class="text-[10px] font-mono text-slate-500 ml-2 whitespace-nowrap">' + stk + unitBracket + '</span>' +
                             '</button>';
                         }).join('');
                     }
@@ -3442,7 +3473,8 @@
             var storeName = getInvTxRelevantStoreForStock();
             if (item) {
                 var stock = calculateCurrentStock(item, storeName);
-                badge.innerText = storeName + ': ' + stock + ' ' + (item.unit || '');
+                var unitBracket = item.unit ? ' (' + item.unit + ')' : '';
+                badge.innerText = storeName + ': ' + stock + unitBracket;
             } else {
                 badge.innerText = 'Stock: -';
             }
@@ -6493,6 +6525,7 @@
         // ================= MODULE 5: DRY WASTE MANAGEMENT =================
         function renderDryWasteModule(container, actions) {
             var isAdmin = currentUser.role === 'Administrator';
+            var hideFinancials = isWasteFinancialRestrictedUser();
 
             var actionHtml = '<div class="flex items-center space-x-2">';
             if (isAdmin) {
@@ -6553,16 +6586,18 @@
 
             var html = '<div class="space-y-6">';
 
-            html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">';
+            html += '<div class="grid grid-cols-1 ' + (hideFinancials ? '' : 'sm:grid-cols-2 ') + 'gap-4">';
             html += '<div class="bg-gradient-to-r from-orange-600 to-amber-600 text-white p-5 rounded-2xl shadow-md border border-orange-500 flex items-center justify-between">';
             html += '<div><span class="text-xs font-bold uppercase text-orange-100 tracking-wider">Total Offloaded Weight (' + wasteViewType + ')</span>';
             html += '<div class="text-2xl font-extrabold mt-1">' + periodTotalQty.toFixed(1) + ' <span class="text-sm font-semibold">KG</span></div></div>';
             html += '<div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-xl text-white"><i class="fa-solid fa-weight-hanging"></i></div></div>';
 
-            html += '<div class="bg-gradient-to-r from-emerald-700 to-teal-700 text-white p-5 rounded-2xl shadow-md border border-emerald-600 flex items-center justify-between">';
-            html += '<div><span class="text-xs font-bold uppercase text-emerald-100 tracking-wider">Total Financial Revenue (' + wasteViewType + ')</span>';
-            html += '<div class="text-2xl font-extrabold mt-1">₹' + periodTotalAmt.toFixed(2) + '</div></div>';
-            html += '<div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-xl text-white"><i class="fa-solid fa-indian-rupee-sign"></i></div></div>';
+            if (!hideFinancials) {
+                html += '<div class="bg-gradient-to-r from-emerald-700 to-teal-700 text-white p-5 rounded-2xl shadow-md border border-emerald-600 flex items-center justify-between">';
+                html += '<div><span class="text-xs font-bold uppercase text-emerald-100 tracking-wider">Total Financial Revenue (' + wasteViewType + ')</span>';
+                html += '<div class="text-2xl font-extrabold mt-1">₹' + periodTotalAmt.toFixed(2) + '</div></div>';
+                html += '<div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-xl text-white"><i class="fa-solid fa-indian-rupee-sign"></i></div></div>';
+            }
             html += '</div>';
 
             html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">';
@@ -6601,10 +6636,13 @@
             html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-800 flex justify-between items-center">';
             html += '<span>Waste Category Summary Breakdown (' + wasteViewType + ' View)</span>';
-            html += '<span class="text-[11px] text-slate-500 font-normal">Calculated directly from stored immutable receipt fields</span></div>';
+            html += '<span class="text-[11px] text-slate-500 font-normal">' + (hideFinancials ? 'Category-wise offloaded weight summary' : 'Calculated directly from stored immutable receipt fields') + '</span></div>';
 
             html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
-            html += '<th class="p-3">Waste Material Type</th><th class="p-3 font-mono">Aggregated Weight (KG)</th><th class="p-3 font-mono">Aggregated Value (₹)</th>';
+            html += '<th class="p-3">Waste Material Type</th><th class="p-3 font-mono">Aggregated Weight (KG)</th>';
+            if (!hideFinancials) {
+                html += '<th class="p-3 font-mono">Aggregated Value (₹)</th>';
+            }
             html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
             Object.keys(wasteTypeBreakdown).forEach(function(itemType) {
@@ -6612,45 +6650,75 @@
                 html += '<tr class="hover:bg-slate-50 transition">';
                 html += '<td class="p-3 font-bold text-slate-900">' + itemType + '</td>';
                 html += '<td class="p-3 font-mono font-semibold text-orange-700">' + itemData.qty.toFixed(1) + ' KG</td>';
-                html += '<td class="p-3 font-mono font-bold text-emerald-700">₹' + itemData.amt.toFixed(2) + '</td>';
+                if (!hideFinancials) {
+                    html += '<td class="p-3 font-mono font-bold text-emerald-700">₹' + itemData.amt.toFixed(2) + '</td>';
+                }
                 html += '</tr>';
             });
 
             html += '</tbody><tfoot class="bg-slate-100/80 font-extrabold text-slate-900 border-t-2 border-slate-300"><tr>';
             html += '<td class="p-3 uppercase">Total Period Summary</td>';
             html += '<td class="p-3 font-mono text-orange-800 text-sm">' + periodTotalQty.toFixed(1) + ' KG</td>';
-            html += '<td class="p-3 font-mono text-emerald-800 text-sm">₹' + periodTotalAmt.toFixed(2) + '</td>';
+            if (!hideFinancials) {
+                html += '<td class="p-3 font-mono text-emerald-800 text-sm">₹' + periodTotalAmt.toFixed(2) + '</td>';
+            }
             html += '</tr></tfoot></table></div></div>';
 
             // 4. Offloading Archive List
             html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-800 flex justify-between items-center">';
-            html += '<span>Offloading Historical Receipts Archive</span>';
-            html += '<span class="text-[11px] font-semibold text-orange-600">' + dbWasteOffloadings.length + ' Saved Receipts</span></div>';
+            html += '<span>' + (hideFinancials ? 'Offloading Historical Quantities Log' : 'Offloading Historical Receipts Archive') + '</span>';
+            html += '<span class="text-[11px] font-semibold text-orange-600">' + dbWasteOffloadings.length + (hideFinancials ? ' Logged Entries' : ' Saved Receipts') + '</span></div>';
 
             if (dbWasteOffloadings.length === 0) {
-                html += '<div class="p-6 text-xs text-slate-400 italic text-center">No dry waste offloading receipts recorded yet.</div>';
+                html += '<div class="p-6 text-xs text-slate-400 italic text-center">No dry waste offloading entries recorded yet.</div>';
             } else {
                 html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
-                html += '<th class="p-3">Receipt Date</th><th class="p-3 font-mono">Total Weight</th><th class="p-3 font-mono">Grand Total</th><th class="p-3">Logged By</th>';
-                html += '<th class="p-3 text-center">Actions</th>';
+                html += '<th class="p-3">' + (hideFinancials ? 'Date' : 'Receipt Date') + '</th>';
+                if (hideFinancials) {
+                    html += '<th class="p-3">Category Quantities (KG)</th>';
+                }
+                html += '<th class="p-3 font-mono">Total Weight</th>';
+                if (!hideFinancials) {
+                    html += '<th class="p-3 font-mono">Grand Total</th>';
+                }
+                html += '<th class="p-3">Logged By</th>';
+                if (!hideFinancials) {
+                    html += '<th class="p-3 text-center">Actions</th>';
+                }
                 html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
                 dbWasteOffloadings.forEach(function(off) {
                     html += '<tr class="hover:bg-slate-50 transition">';
-                    html += '<td class="p-3 font-mono font-bold text-slate-800">' + off.date + '</td>';
-                    html += '<td class="p-3 font-mono font-semibold text-slate-700">' + (off.totalQty || 0).toFixed(1) + ' KG</td>';
-                    html += '<td class="p-3 font-mono font-bold text-emerald-700">₹' + (off.totalAmt || 0).toFixed(2) + '</td>';
+                    html += '<td class="p-3 font-mono font-bold text-slate-800 whitespace-nowrap">' + off.date + '</td>';
+                    if (hideFinancials) {
+                        var qtyPills = [];
+                        if (off.breakdown) {
+                            Object.keys(off.breakdown).forEach(function(k) {
+                                var qVal = parseFloat(off.breakdown[k] && off.breakdown[k].qty) || 0;
+                                if (qVal > 0) {
+                                    qtyPills.push('<span class="inline-flex items-center px-2 py-0.5 rounded bg-orange-50 text-orange-900 border border-orange-200 text-[11px] font-medium mr-1.5 mb-1">' + k + ': <strong class="font-mono ml-1">' + qVal.toFixed(1) + ' KG</strong></span>');
+                                }
+                            });
+                        }
+                        html += '<td class="p-3">' + (qtyPills.length > 0 ? qtyPills.join('') : '<span class="text-slate-400 italic">-</span>') + '</td>';
+                    }
+                    html += '<td class="p-3 font-mono font-semibold text-slate-700 whitespace-nowrap">' + (off.totalQty || 0).toFixed(1) + ' KG</td>';
+                    if (!hideFinancials) {
+                        html += '<td class="p-3 font-mono font-bold text-emerald-700 whitespace-nowrap">₹' + (off.totalAmt || 0).toFixed(2) + '</td>';
+                    }
                     html += '<td class="p-3 text-slate-500">' + (off.loggedBy || 'System') + '</td>';
 
-                    html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-3">';
-                    html += '<button onclick="downloadWasteReceiptPDF(\'' + off.id + '\')" class="text-emerald-700 hover:text-emerald-900 font-bold text-xs flex items-center space-x-1" title="Download PDF Receipt"><i class="fa-solid fa-file-pdf text-red-600"></i><span>PDF</span></button>';
+                    if (!hideFinancials) {
+                        html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-3">';
+                        html += '<button onclick="downloadWasteReceiptPDF(\'' + off.id + '\')" class="text-emerald-700 hover:text-emerald-900 font-bold text-xs flex items-center space-x-1" title="Download PDF Receipt"><i class="fa-solid fa-file-pdf text-red-600"></i><span>PDF</span></button>';
 
-                    if (isAdmin) {
-                        html += '<button onclick="openWasteOffloadModal(\'' + off.id + '\')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs"><i class="fa-solid fa-pen-to-square"></i> Edit</button>';
-                        html += '<button onclick="deleteWasteOffloadRecord(\'' + off.id + '\')" class="text-red-600 hover:text-red-800 font-bold text-xs"><i class="fa-solid fa-trash-can"></i></button>';
+                        if (isAdmin) {
+                            html += '<button onclick="openWasteOffloadModal(\'' + off.id + '\')" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs"><i class="fa-solid fa-pen-to-square"></i> Edit</button>';
+                            html += '<button onclick="deleteWasteOffloadRecord(\'' + off.id + '\')" class="text-red-600 hover:text-red-800 font-bold text-xs"><i class="fa-solid fa-trash-can"></i></button>';
+                        }
+                        html += '</div></td>';
                     }
-                    html += '</div></td>';
                     html += '</tr>';
                 });
 
@@ -6723,6 +6791,25 @@
                 document.getElementById('offloadQtyMetalTin').value = 0;
                 document.getElementById('offloadQtyGlass').value = 0;
                 document.getElementById('offloadModalTitle').innerText = 'Add Dry Waste Offloading Entry';
+            }
+
+            var hideFinancials = isWasteFinancialRestrictedUser();
+            var finCols = document.querySelectorAll('#wasteOffloadModal .offload-financial-col');
+            finCols.forEach(function(el) {
+                if (hideFinancials) el.classList.add('hidden');
+                else el.classList.remove('hidden');
+            });
+            var secHeading = document.getElementById('offloadModalSectionHeading');
+            if (secHeading) {
+                secHeading.innerText = hideFinancials
+                    ? 'Enter Item Quantities (KG)'
+                    : 'Item Quantities (KG), Auto Rates & Calculated Amounts';
+            }
+            var totGrid = document.getElementById('offloadTotalsSummaryGrid');
+            if (totGrid) {
+                totGrid.className = hideFinancials
+                    ? 'pt-2.5 border-t border-slate-300 grid grid-cols-1 gap-2 text-xs font-bold'
+                    : 'pt-2.5 border-t border-slate-300 grid grid-cols-2 gap-2 text-xs font-bold';
             }
 
             calculateOffloadLiveTotals();
@@ -11424,8 +11511,8 @@
 
             var html = '';
             userRegistry.forEach(function(u, idx) {
-                var areaStr = u.role === 'Administrator' ? 'All Areas' : (u.areas ? u.areas.join(', ') : 'None');
-                var modulesCount = u.role === 'Administrator' ? 'All (9)' : ((u.allowedModules ? u.allowedModules.length : 0) + ' Modules');
+                var areaStr = (u.role === 'Administrator' || u.role === 'Waste Management Supervisor') ? 'All Areas' : (u.areas ? u.areas.join(', ') : 'None');
+                var modulesCount = u.role === 'Administrator' ? 'All (9)' : (u.role === 'Waste Management Supervisor' ? 'Compost & Dry Waste Only (2)' : ((u.allowedModules ? u.allowedModules.length : 0) + ' Modules'));
 
                 html += '<div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2.5 overflow-hidden">';
                 html += '<div class="flex flex-wrap items-center justify-between gap-1.5">';
@@ -11447,6 +11534,7 @@
         function updateAccessAreaDropdown() {
             var role = document.getElementById('accessRole').value;
             var areaSelect = document.getElementById('accessArea');
+            var allModIds = ['mod_pest', 'mod_waste', 'mod_compost', 'mod_water', 'mod_procurement', 'mod_machinery'];
 
             if (role === 'Administrator') {
                 areaSelect.innerHTML = '<option value="All">All 9 Areas</option>';
@@ -11454,8 +11542,26 @@
                 areaSelect.innerHTML = '<option value="AdminGroup">Executive Admin Group (' + ADMIN_EXECUTIVE_AREAS.join(', ') + ')</option>';
             } else if (role === 'Executive – Hostels') {
                 areaSelect.innerHTML = '<option value="HostelGroup">Executive Hostels Group (' + HOSTEL_EXECUTIVE_AREAS.join(', ') + ')</option>';
+            } else if (role === 'Waste Management Supervisor') {
+                areaSelect.innerHTML = '<option value="All">All Campus Areas (Compost &amp; Dry Waste Only)</option>';
             } else if (role === 'Supervisor') {
                 areaSelect.innerHTML = SUPERVISOR_ASSIGNED_AREAS.map(function(a) { return '<option value="' + a + '">' + a + '</option>'; }).join('');
+            }
+
+            if (role === 'Waste Management Supervisor') {
+                allModIds.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) {
+                        var isWasteOrCompost = (id === 'mod_waste' || id === 'mod_compost');
+                        el.checked = isWasteOrCompost;
+                        el.disabled = true;
+                    }
+                });
+            } else {
+                allModIds.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) el.disabled = false;
+                });
             }
         }
 
@@ -11467,7 +11573,10 @@
 
             ['mod_pest', 'mod_waste', 'mod_compost', 'mod_water', 'mod_procurement', 'mod_machinery'].forEach(function(id) {
                 var el = document.getElementById(id);
-                if (el) el.checked = true;
+                if (el) {
+                    el.disabled = false;
+                    el.checked = true;
+                }
             });
             updateAccessAreaDropdown();
         }
@@ -11490,13 +11599,22 @@
                 document.getElementById('accessArea').value = u.areas[0] || SUPERVISOR_ASSIGNED_AREAS[0];
             }
 
-            var allowed = u.allowedModules || [];
-            document.getElementById('mod_pest').checked = allowed.indexOf('pest') !== -1;
-            document.getElementById('mod_waste').checked = allowed.indexOf('waste') !== -1;
-            document.getElementById('mod_compost').checked = allowed.indexOf('compost') !== -1;
-            document.getElementById('mod_water').checked = allowed.indexOf('water') !== -1;
-            document.getElementById('mod_procurement').checked = allowed.indexOf('procurement') !== -1;
-            document.getElementById('mod_machinery').checked = allowed.indexOf('machinery') !== -1;
+            if (u.role === 'Waste Management Supervisor') {
+                document.getElementById('mod_pest').checked = false;
+                document.getElementById('mod_waste').checked = true;
+                document.getElementById('mod_compost').checked = true;
+                document.getElementById('mod_water').checked = false;
+                document.getElementById('mod_procurement').checked = false;
+                document.getElementById('mod_machinery').checked = false;
+            } else {
+                var allowed = u.allowedModules || [];
+                document.getElementById('mod_pest').checked = allowed.indexOf('pest') !== -1;
+                document.getElementById('mod_waste').checked = allowed.indexOf('waste') !== -1;
+                document.getElementById('mod_compost').checked = allowed.indexOf('compost') !== -1;
+                document.getElementById('mod_water').checked = allowed.indexOf('water') !== -1;
+                document.getElementById('mod_procurement').checked = allowed.indexOf('procurement') !== -1;
+                document.getElementById('mod_machinery').checked = allowed.indexOf('machinery') !== -1;
+            }
         }
 
         function saveUserAccess(e) {
@@ -11507,18 +11625,23 @@
             var areaVal = document.getElementById('accessArea').value;
 
             var assignedAreas = [];
-            if (role === 'Administrator') assignedAreas = ALL_AREAS;
+            if (role === 'Administrator' || role === 'Waste Management Supervisor') assignedAreas = ALL_AREAS;
             else if (role === 'Executive – Admin') assignedAreas = ADMIN_EXECUTIVE_AREAS;
             else if (role === 'Executive – Hostels') assignedAreas = HOSTEL_EXECUTIVE_AREAS;
             else assignedAreas = [areaVal];
 
-            var allowedModules = ['inventory', 'hr', 'cleaning'];
-            if (document.getElementById('mod_pest').checked) allowedModules.push('pest');
-            if (document.getElementById('mod_waste').checked) allowedModules.push('waste');
-            if (document.getElementById('mod_compost').checked) allowedModules.push('compost');
-            if (document.getElementById('mod_water').checked) allowedModules.push('water');
-            if (document.getElementById('mod_procurement').checked) allowedModules.push('procurement');
-            if (document.getElementById('mod_machinery').checked) allowedModules.push('machinery');
+            var allowedModules = [];
+            if (role === 'Waste Management Supervisor') {
+                allowedModules = ['waste', 'compost'];
+            } else {
+                allowedModules = ['inventory', 'hr', 'cleaning'];
+                if (document.getElementById('mod_pest').checked) allowedModules.push('pest');
+                if (document.getElementById('mod_waste').checked) allowedModules.push('waste');
+                if (document.getElementById('mod_compost').checked) allowedModules.push('compost');
+                if (document.getElementById('mod_water').checked) allowedModules.push('water');
+                if (document.getElementById('mod_procurement').checked) allowedModules.push('procurement');
+                if (document.getElementById('mod_machinery').checked) allowedModules.push('machinery');
+            }
 
             var newUserObj = { email: email, role: role, areas: assignedAreas, allowedModules: allowedModules };
 
