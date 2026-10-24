@@ -1082,11 +1082,17 @@
     <!-- MEDIA (PHOTO / VIDEO / DOCUMENT) ENLARGE PREVIEW MODAL -->
     <div id="photoPreviewModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-4 border border-slate-100 flex flex-col items-center">
-            <div class="w-full flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
-                <span id="photoPreviewCaption" class="text-xs font-bold text-slate-800">Media Preview</span>
-                <button type="button" onclick="closeMediaPreviewModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="w-full flex justify-between items-center mb-3 pb-2 border-b border-slate-100 gap-2">
+                <span id="photoPreviewCaption" class="text-xs font-bold text-slate-800 truncate">Media Preview</span>
+                <div class="flex items-center space-x-3 flex-shrink-0">
+                    <a id="photoPreviewDriveLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition">
+                        <i class="fa-brands fa-google-drive"></i>
+                        <span>Open in Drive</span>
+                    </a>
+                    <button type="button" onclick="closeMediaPreviewModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
             </div>
-            <img id="photoPreviewImage" src="" class="max-h-[75vh] max-w-full w-auto rounded-lg object-contain border border-slate-200 shadow-md">
+            <img id="photoPreviewImage" src="" onerror="handlePreviewModalImgError(this)" class="max-h-[75vh] max-w-full w-auto rounded-lg object-contain border border-slate-200 shadow-md">
             <video id="videoPreviewPlayer" src="" controls class="hidden max-h-[75vh] max-w-full w-auto rounded-lg border border-slate-200 shadow-md bg-black"></video>
             <iframe id="docPreviewFrame" src="about:blank" class="hidden w-full h-[72vh] rounded-lg border border-slate-200 shadow-md bg-slate-50"></iframe>
         </div>
@@ -2196,11 +2202,37 @@
             return result;
         }
 
+        function extractGoogleDriveFileId(url) {
+            if (!url || typeof url !== 'string') return '';
+            var cleanUrl = url.split('#')[0];
+            var m1 = cleanUrl.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
+            if (m1 && m1[1]) return m1[1];
+            var m2 = cleanUrl.match(/\/file\/d\/([a-zA-Z0-9_-]{15,})/);
+            if (m2 && m2[1]) return m2[1];
+            var m3 = cleanUrl.match(/\/d\/([a-zA-Z0-9_-]{15,})/);
+            if (m3 && m3[1]) return m3[1];
+            return '';
+        }
+
         function resolveMediaUrl(src) {
             if (!src) return '';
-            if (typeof src === 'string' && src.indexOf('media-ref://') === 0) {
-                var mediaId = src.replace('media-ref://', '');
-                if (dbMediaCache[mediaId]) return dbMediaCache[mediaId];
+            if (typeof src === 'string') {
+                if (dbMediaCache[src]) return dbMediaCache[src];
+                if (src.indexOf('media-ref://') === 0) {
+                    var mediaId = src.replace('media-ref://', '');
+                    if (dbMediaCache[mediaId]) return dbMediaCache[mediaId];
+                }
+                var driveFileId = extractGoogleDriveFileId(src);
+                if (driveFileId) {
+                    if (dbMediaCache['drive_' + driveFileId]) {
+                        return dbMediaCache['drive_' + driveFileId];
+                    }
+                    var lower = src.toLowerCase();
+                    var isVidOrDoc = lower.indexOf('mime=video') !== -1 || lower.indexOf('mime=application') !== -1 || lower.match(/\.(mp4|webm|ogg|mov|pdf|doc|docx)(\?|#|$)/);
+                    if (!isVidOrDoc) {
+                        return 'https://drive.google.com/thumbnail?id=' + driveFileId + '&sz=w1600';
+                    }
+                }
             }
             return src;
         }
@@ -2286,6 +2318,8 @@
             switchModule(activeModule);
         }
 
+        var pendingMediaTargetRecordMap = {};
+
         function renderMachineryMediaPreview(src) {
             var box = document.getElementById('machineryPhotoPreviewBox');
             var holder = document.getElementById('machineryMediaPreviewHolder');
@@ -2299,6 +2333,27 @@
             box.classList.remove('hidden');
         }
 
+        function applyMediaPreviewToTargetUI(targetHiddenId, mediaSrc) {
+            var hiddenEl = document.getElementById(targetHiddenId);
+            if (hiddenEl) hiddenEl.value = mediaSrc;
+
+            if (targetHiddenId === 'machineryPhotoData') {
+                renderMachineryMediaPreview(mediaSrc);
+            } else if (targetHiddenId === 'breakdownPhotoData') {
+                var brkBox = document.getElementById('breakdownPhotoPreviewBox');
+                if (brkBox) {
+                    brkBox.innerHTML = renderInlineMediaThumbnail(mediaSrc, 'Fault Media Preview', 'h-14 w-20');
+                    brkBox.classList.remove('hidden');
+                }
+            } else if (targetHiddenId === 'repairAfterPhotoData') {
+                var repBox = document.getElementById('repairAfterPhotoPreviewBox');
+                if (repBox) {
+                    repBox.innerHTML = renderInlineMediaThumbnail(mediaSrc, 'After Repair Media Preview', 'h-14 w-20');
+                    repBox.classList.remove('hidden');
+                }
+            }
+        }
+
         async function previewFileToBase64(inputEl, targetHiddenId) {
             var file = inputEl.files[0];
             if (!file) return;
@@ -2307,25 +2362,40 @@
                 'breakdownPhotoData': 'Machinery_Breakdown',
                 'repairAfterPhotoData': 'Machinery_Repair'
             };
-            var uploadedUrl = await processAndUploadImageFile(file, labelMap[targetHiddenId] || 'Uploaded_Media');
-            if (!uploadedUrl) return;
-            var hiddenEl = document.getElementById(targetHiddenId);
-            if (hiddenEl) hiddenEl.value = uploadedUrl;
+            delete pendingMediaTargetRecordMap[targetHiddenId];
 
-            if (targetHiddenId === 'machineryPhotoData') {
-                renderMachineryMediaPreview(uploadedUrl);
-            } else if (targetHiddenId === 'breakdownPhotoData') {
-                var brkBox = document.getElementById('breakdownPhotoPreviewBox');
-                if (brkBox) {
-                    brkBox.innerHTML = renderInlineMediaThumbnail(uploadedUrl, 'Fault Media Preview', 'h-14 w-20');
-                    brkBox.classList.remove('hidden');
+            var uploadedUrl = await processAndUploadImageFile(file, labelMap[targetHiddenId] || 'Uploaded_Media', function(localPreviewDataUrl) {
+                if (localPreviewDataUrl) {
+                    applyMediaPreviewToTargetUI(targetHiddenId, localPreviewDataUrl);
                 }
-            } else if (targetHiddenId === 'repairAfterPhotoData') {
-                var repBox = document.getElementById('repairAfterPhotoPreviewBox');
-                if (repBox) {
-                    repBox.innerHTML = renderInlineMediaThumbnail(uploadedUrl, 'After Repair Media Preview', 'h-14 w-20');
-                    repBox.classList.remove('hidden');
+            });
+            if (!uploadedUrl) return;
+
+            applyMediaPreviewToTargetUI(targetHiddenId, uploadedUrl);
+
+            // If user already clicked Save before the Drive upload finished, update the saved record too
+            var boundRecord = pendingMediaTargetRecordMap[targetHiddenId];
+            if (boundRecord) {
+                if (boundRecord.type === 'machinery' && boundRecord.record) {
+                    boundRecord.record.photo = uploadedUrl;
+                    boundRecord.record.updatedAt = new Date().toISOString();
+                    saveStateToLocalBackup();
+                    if (window.saveMachineryToFirestore) window.saveMachineryToFirestore(boundRecord.record);
+                    if (activeModule === 'machinery') switchModule('machinery');
+                } else if (boundRecord.type === 'breakdown' && boundRecord.record) {
+                    boundRecord.record.photo = uploadedUrl;
+                    boundRecord.record.updatedAt = new Date().toISOString();
+                    saveStateToLocalBackup();
+                    if (window.saveBreakdownToFirestore) window.saveBreakdownToFirestore(boundRecord.record);
+                    if (boundRecord.machineId) renderBreakdownList(boundRecord.machineId);
+                } else if (boundRecord.type === 'repair' && boundRecord.record && boundRecord.parentBrk) {
+                    boundRecord.record.afterPhoto = uploadedUrl;
+                    boundRecord.parentBrk.updatedAt = new Date().toISOString();
+                    saveStateToLocalBackup();
+                    if (window.saveBreakdownToFirestore) window.saveBreakdownToFirestore(boundRecord.parentBrk);
+                    if (boundRecord.parentBrk.machineId) renderBreakdownList(boundRecord.parentBrk.machineId);
                 }
+                delete pendingMediaTargetRecordMap[targetHiddenId];
             }
         }
 
@@ -2334,29 +2404,72 @@
             var fileEl = document.getElementById('machineryPhotoFileInput');
             if (dataEl) dataEl.value = '';
             if (fileEl) fileEl.value = '';
+            delete pendingMediaTargetRecordMap['machineryPhotoData'];
             renderMachineryMediaPreview('');
         }
 
         function detectMediaType(src) {
-            var resolved = resolveMediaUrl(src);
-            if (!resolved) return 'image';
-            var lower = resolved.toLowerCase();
-            if (lower.indexOf('data:video/') === 0 || lower.indexOf('mime=video') !== -1 || lower.match(/\.(mp4|webm|ogg|mov)(\?|#|$)/)) {
+            var raw = String(src || '').toLowerCase();
+            var resolved = String(resolveMediaUrl(src) || '').toLowerCase();
+            if (raw.indexOf('data:video/') === 0 || raw.indexOf('mime=video') !== -1 || raw.match(/\.(mp4|webm|ogg|mov)(\?|#|$)/) ||
+                resolved.indexOf('data:video/') === 0 || resolved.indexOf('mime=video') !== -1 || resolved.match(/\.(mp4|webm|ogg|mov)(\?|#|$)/)) {
                 return 'video';
             }
-            if (lower.indexOf('data:application/pdf') === 0 || lower.indexOf('data:application/msword') === 0 || lower.indexOf('data:application/vnd') === 0 || lower.indexOf('mime=application') !== -1 || lower.match(/\.(pdf|doc|docx)(\?|#|$)/)) {
+            if (raw.indexOf('data:application/pdf') === 0 || raw.indexOf('data:application/msword') === 0 || raw.indexOf('data:application/vnd') === 0 || raw.indexOf('mime=application') !== -1 || raw.match(/\.(pdf|doc|docx)(\?|#|$)/) ||
+                resolved.indexOf('data:application/pdf') === 0 || resolved.indexOf('data:application/msword') === 0 || resolved.indexOf('data:application/vnd') === 0 || resolved.indexOf('mime=application') !== -1 || resolved.match(/\.(pdf|doc|docx)(\?|#|$)/)) {
                 return 'document';
             }
             return 'image';
         }
 
+        function handleInlineThumbnailImgError(imgEl, rawSrc) {
+            if (!imgEl) return;
+            var dId = extractGoogleDriveFileId(rawSrc || imgEl.src || '');
+            var attempt = parseInt(imgEl.getAttribute('data-fallback-step') || '0', 10);
+            if (dId && attempt === 0) {
+                imgEl.setAttribute('data-fallback-step', '1');
+                imgEl.src = 'https://lh3.googleusercontent.com/d/' + dId + '=w800';
+                return;
+            }
+            if (dId && attempt === 1) {
+                imgEl.setAttribute('data-fallback-step', '2');
+                imgEl.src = 'https://drive.google.com/uc?export=view&id=' + dId;
+                return;
+            }
+            // Final visual badge fallback (still clickable to expand in modal)
+            imgEl.onerror = null;
+            imgEl.src = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="90" viewBox="0 0 120 90"><rect width="120" height="90" rx="10" fill="#eef2ff"/><path d="M42 58l12-15 10 12 8-10 12 13H42z" fill="#6366f1"/><circle cx="48" cy="34" r="5" fill="#818cf8"/><text x="60" y="76" font-family="sans-serif" font-size="9" font-weight="bold" fill="#4338ca" text-anchor="middle">Click to View</text></svg>');
+        }
+
+        function handlePreviewModalImgError(imgEl) {
+            if (!imgEl) return;
+            var rawSrc = imgEl.getAttribute('data-raw-src') || imgEl.src || '';
+            var dId = extractGoogleDriveFileId(rawSrc);
+            var attempt = parseInt(imgEl.getAttribute('data-fallback-step') || '0', 10);
+            if (dId && attempt === 0) {
+                imgEl.setAttribute('data-fallback-step', '1');
+                imgEl.src = 'https://lh3.googleusercontent.com/d/' + dId + '=w1600';
+                return;
+            }
+            if (dId && attempt === 1) {
+                // Fallback to Google Drive embedded preview iframe which works even when <img> ORB/cookies are restricted
+                imgEl.setAttribute('data-fallback-step', '2');
+                imgEl.classList.add('hidden');
+                var docEl = document.getElementById('docPreviewFrame');
+                if (docEl) {
+                    docEl.src = 'https://drive.google.com/file/d/' + dId + '/preview';
+                    docEl.classList.remove('hidden');
+                }
+            }
+        }
+
         function renderInlineMediaThumbnail(src, caption, sizeClasses) {
             var resolved = resolveMediaUrl(src);
             if (!resolved) return '';
-            var mType = detectMediaType(resolved);
+            var mType = detectMediaType(src);
             var cls = sizeClasses || 'h-16 w-20';
             var safeCaption = (caption || 'Media Preview').replace(/'/g, "\\'");
-            var safeSrcArg = src.replace(/'/g, "\\'");
+            var safeSrcArg = String(src || '').replace(/'/g, "\\'");
             if (mType === 'video') {
                 return '<div onclick="expandPhotoModal(\'' + safeSrcArg + '\', \'' + safeCaption + '\')" class="' + cls + ' rounded-lg border border-slate-300 bg-slate-900 text-white flex flex-col items-center justify-center cursor-pointer hover:opacity-85 transition shadow-2xs relative overflow-hidden">' +
                     '<video src="' + resolved + '" class="absolute inset-0 w-full h-full object-cover opacity-60" muted></video>' +
@@ -2370,7 +2483,7 @@
                     '<span class="text-[9px] font-bold uppercase tracking-wider mt-0.5">Document</span>' +
                 '</div>';
             }
-            return '<img src="' + resolved + '" onclick="expandPhotoModal(\'' + safeSrcArg + '\', \'' + safeCaption + '\')" class="' + cls + ' object-cover rounded-lg border border-slate-300 cursor-pointer hover:opacity-85 transition shadow-2xs">';
+            return '<img src="' + resolved + '" data-fallback-step="0" onerror="handleInlineThumbnailImgError(this, \'' + safeSrcArg + '\')" onclick="expandPhotoModal(\'' + safeSrcArg + '\', \'' + safeCaption + '\')" title="Click to expand preview" class="' + cls + ' object-cover rounded-lg border border-slate-300 cursor-pointer hover:opacity-85 transition shadow-2xs">';
         }
 
         function expandPhotoModal(src, caption) {
@@ -2380,18 +2493,42 @@
             var vidEl = document.getElementById('videoPreviewPlayer');
             var docEl = document.getElementById('docPreviewFrame');
             var capEl = document.getElementById('photoPreviewCaption');
+            var driveLinkEl = document.getElementById('photoPreviewDriveLink');
 
             if (capEl) capEl.innerText = caption || 'Media View';
-            if (imgEl) { imgEl.classList.add('hidden'); imgEl.src = ''; }
+            if (imgEl) {
+                imgEl.classList.add('hidden');
+                imgEl.setAttribute('data-fallback-step', '0');
+                imgEl.setAttribute('data-raw-src', src || '');
+                imgEl.src = '';
+            }
             if (vidEl) { vidEl.pause(); vidEl.classList.add('hidden'); vidEl.src = ''; }
             if (docEl) { docEl.classList.add('hidden'); docEl.src = 'about:blank'; }
 
-            var mType = detectMediaType(resolved);
+            var dId = extractGoogleDriveFileId(src);
+            if (driveLinkEl) {
+                if (dId) {
+                    driveLinkEl.href = 'https://drive.google.com/file/d/' + dId + '/view';
+                    driveLinkEl.classList.remove('hidden');
+                } else if (typeof src === 'string' && src.indexOf('http') === 0) {
+                    driveLinkEl.href = src.split('#')[0];
+                    driveLinkEl.classList.remove('hidden');
+                } else {
+                    driveLinkEl.classList.add('hidden');
+                }
+            }
+
+            var mType = detectMediaType(src);
             if (mType === 'video' && vidEl) {
-                vidEl.src = resolved;
-                vidEl.classList.remove('hidden');
+                if (dId && resolved.indexOf('data:') !== 0) {
+                    docEl.src = 'https://drive.google.com/file/d/' + dId + '/preview';
+                    docEl.classList.remove('hidden');
+                } else {
+                    vidEl.src = resolved;
+                    vidEl.classList.remove('hidden');
+                }
             } else if (mType === 'document' && docEl) {
-                docEl.src = resolved;
+                docEl.src = dId ? ('https://drive.google.com/file/d/' + dId + '/preview') : resolved;
                 docEl.classList.remove('hidden');
             } else if (imgEl) {
                 imgEl.src = resolved;
@@ -2501,9 +2638,23 @@
                     });
                     var json = await resp.json();
                     if (json && (json.url || json.viewUrl || json.fileId)) {
-                        var remoteUrl = json.viewUrl || json.url || ('https://drive.google.com/uc?export=view&id=' + json.fileId);
+                        var rawDriveUrl = json.viewUrl || json.url || ('https://drive.google.com/uc?export=view&id=' + json.fileId);
+                        var extractedId = json.fileId || extractGoogleDriveFileId(rawDriveUrl);
+                        var remoteUrl = extractedId && (!mimeType || mimeType.indexOf('image/') === 0)
+                            ? ('https://drive.google.com/thumbnail?id=' + extractedId + '&sz=w1600')
+                            : rawDriveUrl;
                         if (mimeType && remoteUrl.indexOf('#mime=') === -1) {
                             remoteUrl += '#mime=' + encodeURIComponent(mimeType);
+                        }
+                        if (dataUrl && dataUrl.indexOf('data:image/') === 0) {
+                            dbMediaCache[remoteUrl] = dataUrl;
+                            if (extractedId) {
+                                dbMediaCache['drive_' + extractedId] = dataUrl;
+                                if (window.saveChunkedMediaToFirestore && dataUrl.length < 400000) {
+                                    window.saveChunkedMediaToFirestore('drive_' + extractedId, dataUrl, cleanFileName, mimeType, subFolderLabel);
+                                }
+                            }
+                            saveStateToLocalBackup();
                         }
                         showAppNotification('Uploaded to fm.marol Google Drive (' + (subFolderLabel || 'Drive') + ')', 'success');
                         return remoteUrl;
@@ -2537,7 +2688,7 @@
             return dataUrl;
         }
 
-        function processAndUploadImageFile(file, subFolderLabel) {
+        function processAndUploadImageFile(file, subFolderLabel, onLocalPreviewReady) {
             return new Promise(function(resolve) {
                 if (!file) { resolve(''); return; }
                 var mime = file.type || '';
@@ -2545,6 +2696,9 @@
                 reader.onload = async function(evt) {
                     var rawDataUrl = evt.target.result;
                     if (mime.indexOf('image/') !== 0) {
+                        if (typeof onLocalPreviewReady === 'function') {
+                            try { onLocalPreviewReady(rawDataUrl); } catch (e) {}
+                        }
                         var uploadedMediaUrl = await uploadToFmMarolDriveBackend(rawDataUrl, file.name, mime, subFolderLabel);
                         resolve(uploadedMediaUrl);
                         return;
@@ -2569,12 +2723,18 @@
                         var ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, w, h);
                         var compressedDataUrl = canvas.toDataURL('image/jpeg', 0.78);
+                        if (typeof onLocalPreviewReady === 'function') {
+                            try { onLocalPreviewReady(compressedDataUrl); } catch (e) {}
+                        }
                         var finalUrl = await uploadToFmMarolDriveBackend(compressedDataUrl, file.name, 'image/jpeg', subFolderLabel);
-                        resolve(finalUrl);
+                        resolve(finalUrl || compressedDataUrl);
                     };
                     img.onerror = async function() {
+                        if (typeof onLocalPreviewReady === 'function') {
+                            try { onLocalPreviewReady(rawDataUrl); } catch (e) {}
+                        }
                         var fallbackUrl = await uploadToFmMarolDriveBackend(rawDataUrl, file.name, mime, subFolderLabel);
-                        resolve(fallbackUrl);
+                        resolve(fallbackUrl || rawDataUrl);
                     };
                     img.src = rawDataUrl;
                 };
@@ -11195,6 +11355,11 @@
                 dbData.machinery.push(savedMac);
             }
 
+            var fileElCheck = document.getElementById('machineryPhotoFileInput');
+            if (savedMac && fileElCheck && fileElCheck.files && fileElCheck.files.length > 0) {
+                pendingMediaTargetRecordMap['machineryPhotoData'] = { type: 'machinery', record: savedMac };
+            }
+
             saveStateToLocalBackup();
             if (savedMac && window.saveMachineryToFirestore) {
                 window.saveMachineryToFirestore(savedMac);
@@ -11358,6 +11523,11 @@
                     updatedAt: new Date().toISOString()
                 };
                 dbData.breakdowns.unshift(savedBrk);
+            }
+
+            var brkFileCheck = document.getElementById('breakdownPhotoInput');
+            if (savedBrk && brkFileCheck && brkFileCheck.files && brkFileCheck.files.length > 0) {
+                pendingMediaTargetRecordMap['breakdownPhotoData'] = { type: 'breakdown', record: savedBrk, machineId: machineId };
             }
 
             saveStateToLocalBackup();
