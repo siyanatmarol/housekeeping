@@ -13,6 +13,9 @@
     <!-- jsPDF & AutoTable for PDF export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <!-- JSZip & html2canvas for Multi-Vendor PO PDF & ZIP Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script>
         tailwind.config = {
@@ -785,44 +788,59 @@
         </div>
     </div>
 
-    <!-- INVENTORY TRANSACTION MODAL -->
+    <!-- INVENTORY TRANSACTION MODAL (MULTI-ITEM SUPPORT) -->
     <div id="invTransactionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
-                    <i class="fa-solid fa-arrow-right-arrow-left text-blue-600"></i>
-                    <span>Log Inventory Transaction</span>
-                </h3>
-                <button onclick="closeModal('invTransactionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="fa-solid fa-arrow-right-arrow-left text-blue-600"></i>
+                        <span>Log Inventory Transaction</span>
+                    </h3>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Add one or multiple items below to record Purchase, Issue, or OUT in a single submission.</p>
+                </div>
+                <button type="button" onclick="closeModal('invTransactionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <form onsubmit="handleInventoryTransactionSubmit(event)" class="space-y-3.5">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Transaction Type</label>
-                    <select id="invTxType" onchange="toggleInvModalFields()" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800"></select>
+            <form onsubmit="handleInventoryTransactionSubmit(event)" class="flex-1 flex flex-col min-h-0 space-y-3.5">
+                <!-- Legacy hidden fields preserved for compatibility -->
+                <select id="invTxItem" class="hidden"></select>
+                <input type="number" id="invTxQty" class="hidden">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Transaction Type</label>
+                        <select id="invTxType" onchange="toggleInvModalFields()" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                    </div>
+
+                    <div id="invTxAreaGroup">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Target Area / Store</label>
+                        <select id="invTxArea" onchange="refreshInvTransactionStockBadges()" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Select Item</label>
-                    <select id="invTxItem" required class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
+                <!-- Dynamic Multi-Item Rows Section -->
+                <div class="flex-1 flex flex-col min-h-0 bg-blue-50/40 p-3.5 rounded-xl border border-blue-200/80 space-y-3">
+                    <div class="flex items-center justify-between gap-2 border-b border-blue-200/70 pb-2.5">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-boxes-stacked text-blue-600 mr-1"></i>Select Item &amp; Quantity List</span>
+                            <span id="invTxRowsCountBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">1 Item</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="hidden" id="invTxFilterSearch" value="">
+                            <button type="button" onclick="addInvTransactionItemRow()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-2xs transition flex items-center space-x-1 whitespace-nowrap">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Add Item</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="invTxItemsRowsContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pr-1 max-h-72 min-h-[140px]"></div>
                 </div>
 
-                <div id="invTxAreaGroup">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Target Area / Store</label>
-                    <select id="invTxArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
-                </div>
+                <input type="hidden" id="invTxRemarks" value="">
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Quantity</label>
-                    <input type="number" id="invTxQty" min="1" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Remarks / Reference</label>
-                    <input type="text" id="invTxRemarks" placeholder="Optional notes" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300">
-                </div>
-
-                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
+                <div class="pt-3 flex items-center justify-end space-x-2 border-t border-slate-100">
                     <button type="button" onclick="closeModal('invTransactionModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow transition">Save Transaction</button>
                 </div>
@@ -1722,7 +1740,7 @@
         var userRegistry = [
             { email: 'murtaza.kheraluwala@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
             { email: 'fm.marol@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
-            { email: 'kheralu52@gmail.com', role: 'Executive – Hostels', areas: HOSTEL_EXECUTIVE_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'water', 'machinery'] },
+            { email: 'kheralu52@gmail.com', role: 'Executive – Hostels', areas: HOSTEL_EXECUTIVE_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'water', 'procurement', 'machinery'] },
         ];
 
         var MODULES = [
@@ -1970,6 +1988,8 @@
                 dbProcurementVendors: dbProcurementVendors || [],
                 dbVendorRates: dbVendorRates || {},
                 dbProcurements: dbProcurements || [],
+                dbVendors: dbVendors || [],
+                dbProcurementRequests: dbProcurementRequests || [],
                 dbCleaningLogs: dbCleaningLogs || [],
                 dbDailyWorkReports: dbDailyWorkReports || [],
                 dbScopeOfWork: dbScopeOfWork || {},
@@ -2042,6 +2062,18 @@
             }
             if (Array.isArray(snap.dbProcurements)) {
                 dbProcurements = snap.dbProcurements.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.dbVendors) && snap.dbVendors.length > 0) {
+                dbVendors = snap.dbVendors.filter(function(x) {
+                    var vId = x.vendorId || x.id;
+                    return !isRecordDeleted(vId);
+                });
+            }
+            if (Array.isArray(snap.dbProcurementRequests)) {
+                dbProcurementRequests = snap.dbProcurementRequests.filter(function(x) {
+                    var rId = x.requestId || x.id;
+                    return !isRecordDeleted(rId);
+                });
             }
             if (Array.isArray(snap.dbCleaningLogs)) {
                 dbCleaningLogs = snap.dbCleaningLogs.filter(function(x) { return !isRecordDeleted(x.id); });
@@ -2142,8 +2174,15 @@
                 if (!mergedMap[itemKey]) {
                     mergedMap[itemKey] = lItem;
                 } else {
-                    var cTime = mergedMap[itemKey].updatedAt ? new Date(mergedMap[itemKey].updatedAt).getTime() : 0;
-                    var lTime = lItem.updatedAt ? new Date(lItem.updatedAt).getTime() : 0;
+                    var parseTs = function(ts) {
+                        if (!ts) return 0;
+                        if (typeof ts.toMillis === 'function') return ts.toMillis();
+                        if (typeof ts.seconds === 'number') return ts.seconds * 1000;
+                        var parsed = new Date(ts).getTime();
+                        return isNaN(parsed) ? 0 : parsed;
+                    };
+                    var cTime = parseTs(mergedMap[itemKey].updatedAt);
+                    var lTime = parseTs(lItem.updatedAt);
                     if (lTime > cTime) {
                         mergedMap[itemKey] = Object.assign({}, mergedMap[itemKey], lItem);
                     }
@@ -2205,7 +2244,7 @@
                         email: normalizedEmail,
                         role: 'Supervisor',
                         areas: ['Admin Phase 1'],
-                        allowedModules: ['inventory', 'hr', 'cleaning']
+                        allowedModules: ['inventory', 'hr', 'cleaning', 'procurement']
                     };
                 }
             }
@@ -3151,13 +3190,54 @@
             }
         }
 
+        var invTxFilterTerm = '';
+
+        function getFilteredInvTxItems(queryTerm) {
+            var q = (queryTerm !== undefined ? queryTerm : invTxFilterTerm || '').toLowerCase().trim();
+            return dbData.inventory.filter(function(i) {
+                if (!q) return true;
+                return (i.name && i.name.toLowerCase().indexOf(q) !== -1) ||
+                       (i.code && i.code.toLowerCase().indexOf(q) !== -1) ||
+                       (i.category && i.category.toLowerCase().indexOf(q) !== -1);
+            });
+        }
+
+        function buildInvTxItemOptionsHtml(selectedItemId, queryTerm) {
+            var list = getFilteredInvTxItems(queryTerm);
+            if (list.length === 0) {
+                return '<option value="" disabled selected>No matching items found</option>';
+            }
+            return list.map(function(i, idx) {
+                var isSel = selectedItemId ? (i.id === selectedItemId) : (idx === 0);
+                return '<option value="' + i.id + '" ' + (isSel ? 'selected' : '') + '>' + i.code + ' - ' + i.name + ' (' + (i.unit || 'Nos') + ')</option>';
+            }).join('');
+        }
+
+        function getInvTxRelevantStoreForStock() {
+            var typeEl = document.getElementById('invTxType');
+            var areaEl = document.getElementById('invTxArea');
+            var type = typeEl ? typeEl.value : 'PURCHASE';
+            if (type === 'PURCHASE' || type === 'ISSUE') {
+                return 'Main Store';
+            }
+            return (areaEl && areaEl.value) ? areaEl.value : 'Main Store';
+        }
+
         function openInventoryTransactionModal(defaultType) {
             var selectItem = document.getElementById('invTxItem');
             var typeSelect = document.getElementById('invTxType');
+            var filterInput = document.getElementById('invTxFilterSearch');
+            var remarksInput = document.getElementById('invTxRemarks');
             var isAdmin = currentUser.role === 'Administrator';
             var isExec = currentUser.role.indexOf('Executive') === 0;
 
-            selectItem.innerHTML = dbData.inventory.map(function(i) { return '<option value="' + i.id + '">' + i.code + ' - ' + i.name + '</option>'; }).join('');
+            invTxFilterTerm = '';
+            if (filterInput) filterInput.value = '';
+            if (remarksInput) remarksInput.value = '';
+
+            if (selectItem) {
+                selectItem.innerHTML = dbData.inventory.map(function(i) { return '<option value="' + i.id + '">' + i.code + ' - ' + i.name + '</option>'; }).join('');
+            }
 
             if (isAdmin || isExec) {
                 typeSelect.innerHTML = '<option value="PURCHASE">Purchase (Add to Main Store)</option><option value="ISSUE">Issue (Main Store -> Area Sub Store)</option><option value="OUT">OUT (Material Consumed / Used)</option>';
@@ -3167,7 +3247,224 @@
 
             typeSelect.value = defaultType;
             toggleInvModalFields();
+
+            var rowsContainer = document.getElementById('invTxItemsRowsContainer');
+            if (rowsContainer) {
+                rowsContainer.innerHTML = '';
+                addInvTransactionItemRow();
+            }
+
             openModal('invTransactionModal');
+        }
+
+        function addInvTransactionItemRow(preselectedItemId, defaultQty) {
+            var rowsContainer = document.getElementById('invTxItemsRowsContainer');
+            if (!rowsContainer) return;
+
+            // Pick a sensible default item not yet selected in existing rows if possible
+            var usedIds = [];
+            rowsContainer.querySelectorAll('.inv-tx-item-select').forEach(function(sel) {
+                if (sel.value) usedIds.push(sel.value);
+            });
+            var chosenId = preselectedItemId || '';
+            if (!chosenId && dbData.inventory.length > 0) {
+                var unusedItem = dbData.inventory.find(function(i) { return usedIds.indexOf(i.id) === -1; });
+                chosenId = unusedItem ? unusedItem.id : dbData.inventory[0].id;
+            }
+
+            var rowDiv = document.createElement('div');
+            rowDiv.className = 'inv-tx-item-row grid grid-cols-12 gap-2.5 items-end bg-white p-3 rounded-xl border border-slate-200 shadow-2xs';
+            rowDiv.innerHTML =
+                '<div class="col-span-12 sm:col-span-8 space-y-1.5 relative">' +
+                    '<div class="flex items-center justify-between">' +
+                        '<label class="text-[10px] font-bold text-slate-500 uppercase">Select Item</label>' +
+                        '<span class="inv-tx-stock-badge text-[10px] font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">Stock: 0</span>' +
+                    '</div>' +
+                    '<div class="relative">' +
+                        '<i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-[11px]"></i>' +
+                        '<input type="text" placeholder="Search item by name, code or category..." oninput="filterSingleInvTxRow(this)" onfocus="filterSingleInvTxRow(this)" class="inv-tx-row-search w-full pl-7 pr-7 py-1.5 text-xs rounded-lg border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">' +
+                        '<button type="button" onclick="clearSingleInvTxRowSearch(this)" class="inv-tx-row-clear hidden absolute right-2 top-2 text-slate-400 hover:text-slate-600" title="Clear search">' +
+                            '<i class="fa-solid fa-circle-xmark text-xs"></i>' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="inv-tx-row-suggestions hidden max-h-40 overflow-y-auto custom-scrollbar rounded-lg border border-blue-300 bg-white shadow-lg divide-y divide-slate-100"></div>' +
+                    '<select onchange="onInvTxRowSelectChange(this)" required class="inv-tx-item-select w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">' +
+                        buildInvTxItemOptionsHtml(chosenId, '') +
+                    '</select>' +
+                '</div>' +
+                '<div class="col-span-10 sm:col-span-3">' +
+                    '<label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quantity</label>' +
+                    '<input type="number" min="1" step="any" required value="' + (defaultQty !== undefined ? defaultQty : '') + '" placeholder="Enter Qty" class="inv-tx-qty-input w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500">' +
+                '</div>' +
+                '<div class="col-span-2 sm:col-span-1 flex justify-center pb-1">' +
+                    '<button type="button" onclick="removeInvTransactionItemRow(this)" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition" title="Remove Item Row">' +
+                        '<i class="fa-solid fa-trash-can text-xs"></i>' +
+                    '</button>' +
+                '</div>';
+
+            rowsContainer.appendChild(rowDiv);
+            var selEl = rowDiv.querySelector('.inv-tx-item-select');
+            if (selEl) updateInvTransactionRowStock(selEl);
+            updateInvTxRowsCountBadge();
+        }
+
+        function filterSingleInvTxRow(searchInputEl) {
+            if (!searchInputEl) return;
+            var row = searchInputEl.closest('.inv-tx-item-row');
+            if (!row) return;
+            var selEl = row.querySelector('.inv-tx-item-select');
+            var clearBtn = row.querySelector('.inv-tx-row-clear');
+            var suggBox = row.querySelector('.inv-tx-row-suggestions');
+            var term = (searchInputEl.value || '').trim();
+
+            if (clearBtn) {
+                if (term.length > 0) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
+
+            var matches = getFilteredInvTxItems(term);
+            if (selEl) {
+                var currentVal = selEl.value;
+                var stillValid = matches.some(function(m) { return m.id === currentVal; });
+                var targetId = stillValid ? currentVal : (matches.length > 0 ? matches[0].id : '');
+                selEl.innerHTML = buildInvTxItemOptionsHtml(targetId, term);
+                if (targetId) selEl.value = targetId;
+                updateInvTransactionRowStock(selEl);
+            }
+
+            if (suggBox) {
+                if (term.length > 0) {
+                    var storeName = getInvTxRelevantStoreForStock();
+                    if (matches.length === 0) {
+                        suggBox.innerHTML = '<div class="px-3 py-2 text-[11px] text-slate-400 italic">No items match "' + term.replace(/</g, '&lt;') + '"</div>';
+                    } else {
+                        suggBox.innerHTML = matches.slice(0, 12).map(function(item) {
+                            var stk = calculateCurrentStock(item, storeName);
+                            return '<button type="button" onclick="selectInvTxRowSuggestion(this, \'' + item.id + '\')" class="w-full text-left px-3 py-1.5 hover:bg-blue-50 transition flex items-center justify-between text-xs">' +
+                                '<span class="font-semibold text-slate-800 truncate"><span class="font-mono text-blue-700 mr-1">' + item.code + '</span>' + item.name + '</span>' +
+                                '<span class="text-[10px] font-mono text-slate-500 ml-2 whitespace-nowrap">' + stk + ' ' + (item.unit || 'Nos') + '</span>' +
+                            '</button>';
+                        }).join('');
+                    }
+                    suggBox.classList.remove('hidden');
+                } else {
+                    suggBox.innerHTML = '';
+                    suggBox.classList.add('hidden');
+                }
+            }
+        }
+
+        function selectInvTxRowSuggestion(btnEl, itemId) {
+            var row = btnEl.closest('.inv-tx-item-row');
+            if (!row) return;
+            var selEl = row.querySelector('.inv-tx-item-select');
+            var searchInputEl = row.querySelector('.inv-tx-row-search');
+            var clearBtn = row.querySelector('.inv-tx-row-clear');
+            var suggBox = row.querySelector('.inv-tx-row-suggestions');
+            var qtyInputEl = row.querySelector('.inv-tx-qty-input');
+
+            if (searchInputEl) searchInputEl.value = '';
+            if (clearBtn) clearBtn.classList.add('hidden');
+            if (suggBox) {
+                suggBox.innerHTML = '';
+                suggBox.classList.add('hidden');
+            }
+            if (selEl) {
+                selEl.innerHTML = buildInvTxItemOptionsHtml(itemId, '');
+                selEl.value = itemId;
+                updateInvTransactionRowStock(selEl);
+            }
+            if (qtyInputEl) qtyInputEl.focus();
+        }
+
+        function clearSingleInvTxRowSearch(btnEl) {
+            var row = btnEl.closest('.inv-tx-item-row');
+            if (!row) return;
+            var searchInputEl = row.querySelector('.inv-tx-row-search');
+            var selEl = row.querySelector('.inv-tx-item-select');
+            var suggBox = row.querySelector('.inv-tx-row-suggestions');
+            var currentId = selEl ? selEl.value : '';
+            if (searchInputEl) searchInputEl.value = '';
+            btnEl.classList.add('hidden');
+            if (suggBox) {
+                suggBox.innerHTML = '';
+                suggBox.classList.add('hidden');
+            }
+            if (selEl) {
+                selEl.innerHTML = buildInvTxItemOptionsHtml(currentId, '');
+                if (currentId) selEl.value = currentId;
+                updateInvTransactionRowStock(selEl);
+            }
+        }
+
+        function onInvTxRowSelectChange(selectEl) {
+            var row = selectEl ? selectEl.closest('.inv-tx-item-row') : null;
+            if (row) {
+                var suggBox = row.querySelector('.inv-tx-row-suggestions');
+                if (suggBox) suggBox.classList.add('hidden');
+            }
+            updateInvTransactionRowStock(selectEl);
+        }
+
+        function removeInvTransactionItemRow(btnEl) {
+            var rowsContainer = document.getElementById('invTxItemsRowsContainer');
+            if (!rowsContainer) return;
+            var allRows = rowsContainer.querySelectorAll('.inv-tx-item-row');
+            if (allRows.length <= 1) {
+                var qtyInp = allRows[0].querySelector('.inv-tx-qty-input');
+                if (qtyInp) qtyInp.value = '';
+                showAppNotification('At least one item row is required.', 'info');
+                return;
+            }
+            var row = btnEl.closest('.inv-tx-item-row');
+            if (row && row.parentNode) {
+                row.parentNode.removeChild(row);
+            }
+            updateInvTxRowsCountBadge();
+        }
+
+        function updateInvTxRowsCountBadge() {
+            var rowsContainer = document.getElementById('invTxItemsRowsContainer');
+            var badge = document.getElementById('invTxRowsCountBadge');
+            if (!rowsContainer || !badge) return;
+            var count = rowsContainer.querySelectorAll('.inv-tx-item-row').length;
+            badge.innerText = count + (count === 1 ? ' Item' : ' Items');
+        }
+
+        function updateInvTransactionRowStock(selectEl) {
+            if (!selectEl) return;
+            var row = selectEl.closest('.inv-tx-item-row');
+            if (!row) return;
+            var badge = row.querySelector('.inv-tx-stock-badge');
+            if (!badge) return;
+            var itemId = selectEl.value;
+            var item = dbData.inventory.find(function(i) { return i.id === itemId; });
+            var storeName = getInvTxRelevantStoreForStock();
+            if (item) {
+                var stock = calculateCurrentStock(item, storeName);
+                badge.innerText = storeName + ': ' + stock + ' ' + (item.unit || '');
+            } else {
+                badge.innerText = 'Stock: -';
+            }
+        }
+
+        function refreshInvTransactionStockBadges() {
+            var rowsContainer = document.getElementById('invTxItemsRowsContainer');
+            if (!rowsContainer) return;
+            rowsContainer.querySelectorAll('.inv-tx-item-select').forEach(function(sel) {
+                updateInvTransactionRowStock(sel);
+            });
+        }
+
+        function filterInvTransactionDropdowns(term) {
+            invTxFilterTerm = term || '';
+            var rowsContainer = document.getElementById('invTxItemsRowsContainer');
+            if (!rowsContainer) return;
+            rowsContainer.querySelectorAll('.inv-tx-item-select').forEach(function(sel) {
+                var currentVal = sel.value;
+                sel.innerHTML = buildInvTxItemOptionsHtml(currentVal);
+                updateInvTransactionRowStock(sel);
+            });
         }
 
         function toggleInvModalFields() {
@@ -3188,46 +3485,79 @@
                     areaSelect.innerHTML = currentUser.areas.map(function(a) { return '<option value="' + a + '">' + a + '</option>'; }).join('');
                 }
             }
+            refreshInvTransactionStockBadges();
         }
 
         function handleInventoryTransactionSubmit(e) {
             e.preventDefault();
             var type = document.getElementById('invTxType').value;
-            var itemId = document.getElementById('invTxItem').value;
-            var qty = parseInt(document.getElementById('invTxQty').value) || 0;
             var area = type === 'PURCHASE' ? 'Main Store' : document.getElementById('invTxArea').value;
             var remarks = document.getElementById('invTxRemarks').value;
 
-            var item = null;
-            for (var i = 0; i < dbData.inventory.length; i++) {
-                if (dbData.inventory[i].id === itemId) { item = dbData.inventory[i]; break; }
+            var rowsContainer = document.getElementById('invTxItemsRowsContainer');
+            var rowEls = rowsContainer ? rowsContainer.querySelectorAll('.inv-tx-item-row') : [];
+            var entriesToLog = [];
+
+            if (rowEls.length > 0) {
+                rowEls.forEach(function(row) {
+                    var sel = row.querySelector('.inv-tx-item-select');
+                    var qtyInp = row.querySelector('.inv-tx-qty-input');
+                    var itemId = sel ? sel.value : '';
+                    var qty = qtyInp ? (parseFloat(qtyInp.value) || 0) : 0;
+                    if (itemId && qty > 0) {
+                        var itemObj = dbData.inventory.find(function(i) { return i.id === itemId; });
+                        if (itemObj) {
+                            entriesToLog.push({ item: itemObj, qty: qty });
+                        }
+                    }
+                });
+            } else {
+                // Fallback if single item fields used
+                var singleItemId = document.getElementById('invTxItem').value;
+                var singleQty = parseFloat(document.getElementById('invTxQty').value) || 0;
+                var singleItem = dbData.inventory.find(function(i) { return i.id === singleItemId; });
+                if (singleItem && singleQty > 0) {
+                    entriesToLog.push({ item: singleItem, qty: singleQty });
+                }
             }
-            if (!item) return;
+
+            if (entriesToLog.length === 0) {
+                showAppNotification('Please select at least one item and enter a valid quantity.', 'error');
+                return;
+            }
 
             var now = new Date();
             var timestamp = now.toISOString().replace('T', ' ').substring(0, 16);
+            var baseTime = Date.now();
 
-            var newArc = {
-                id: 'ARC-' + Date.now(),
-                date: timestamp,
-                itemCode: item.code,
-                itemName: item.name,
-                area: area,
-                type: type,
-                qty: qty,
-                user: currentUser.email,
-                remarks: remarks
-            };
-            newArc.updatedAt = new Date().toISOString();
-            dbData.inventoryArchive.unshift(newArc);
+            entriesToLog.forEach(function(entry, idx) {
+                var newArc = {
+                    id: 'ARC-' + baseTime + (entriesToLog.length > 1 ? '-' + (idx + 1) : ''),
+                    date: timestamp,
+                    itemCode: entry.item.code,
+                    itemName: entry.item.name,
+                    area: area,
+                    type: type,
+                    qty: entry.qty,
+                    user: currentUser.email,
+                    remarks: remarks,
+                    updatedAt: new Date().toISOString()
+                };
+                dbData.inventoryArchive.unshift(newArc);
+                if (window.saveInventoryArchiveToFirestore) {
+                    window.saveInventoryArchiveToFirestore(newArc);
+                }
+            });
+
             saveStateToLocalBackup();
-            if (window.saveInventoryArchiveToFirestore) {
-                window.saveInventoryArchiveToFirestore(newArc);
-            }
-
             closeModal('invTransactionModal');
             switchModule('inventory');
-            showAppNotification('Transaction logged and stock updated!', 'success');
+            showAppNotification(
+                entriesToLog.length === 1
+                    ? 'Transaction logged and stock updated!'
+                    : ('Logged ' + entriesToLog.length + ' items (' + type + ') in one go and updated stock!'),
+                'success'
+            );
         }
 
         function openEditArchiveModal(arcId, currentQty) {
@@ -7818,19 +8148,180 @@
        // ================= MODULE 8: PROCUREMENT & VENDOR RATES =================
         var DEFAULT_PROCUREMENT_VENDORS = ['Diversey', 'Raj Traders', 'Anjum Sutterwala'];
         var dbProcurementVendors = DEFAULT_PROCUREMENT_VENDORS.slice();
-        var dbVendorRates = {}; // { [itemId]: { [vendorName]: number } }
-        var dbProcurements = []; // Array of saved procurement order documents from Firestore
+
+        // Pre-seeded Vendor Directory records synced with collection('vendors')
+        var DEFAULT_VENDOR_DIRECTORY = [
+            {
+                id: 'VND-01',
+                vendorId: 'VND-01',
+                name: 'Diversey',
+                address: '501, Ackruti Centre Point, MIDC Central Road, Andheri East, Mumbai - 400093',
+                contactPerson: 'Rajesh Sharma',
+                contactNumber: '+91 9820112233',
+                gstNo: '27AAACD1234F1Z5',
+                updatedAt: '2026-10-01T09:00:00.000Z'
+            },
+            {
+                id: 'VND-02',
+                vendorId: 'VND-02',
+                name: 'Raj Traders',
+                address: 'Shop 14, Marol Maroshi Road, Near Fire Brigade, Andheri East, Mumbai - 400059',
+                contactPerson: 'Pravin Jain',
+                contactNumber: '+91 9820445566',
+                gstNo: '27AAACR5678H1Z2',
+                updatedAt: '2026-10-01T09:00:00.000Z'
+            },
+            {
+                id: 'VND-03',
+                vendorId: 'VND-03',
+                name: 'Anjum Sutterwala',
+                address: '72, Abdul Rehman Street, Crawford Market, Mumbai - 400003',
+                contactPerson: 'Anjum Sutterwala',
+                contactNumber: '+91 9820778899',
+                gstNo: '27AAACA9012K1Z8',
+                updatedAt: '2026-10-01T09:00:00.000Z'
+            }
+        ];
+
+        var dbVendors = DEFAULT_VENDOR_DIRECTORY.map(function(v) { return Object.assign({}, v); });
+
+        var dbVendorRates = {
+            'INV-01': { 'Diversey': 245, 'Raj Traders': 230, 'Anjum Sutterwala': 238 },
+            'INV-02': { 'Diversey': 260, 'Raj Traders': 250, 'Anjum Sutterwala': 255 }
+        }; // { [itemId]: { [vendorName]: number } }
+
+        var dbProcurements = []; // Legacy/direct procurement orders from collection('procurements')
+        var dbProcurementRequests = []; // Material requests synced with collection('procurement_requests')
+
+        // Active sub-view inside Module 8 for Admins ('dashboard' | 'material_requests')
+        var procurementSubView = 'dashboard';
 
         // Form state for "New Procurement" modal (preserved across live searches)
         var procFormState = {
             editId: '',
+            requestMode: 'request', // 'request' (Material Request) | 'order' (Direct Vendor Order for Admin)
             date: new Date().toISOString().split('T')[0],
+            areaDept: 'Admin Phase 1',
             vendorName: 'Diversey',
             searchTerm: '',
             selectedItems: {} // { [itemId]: { checked: boolean, qty: number } }
         };
 
-        // Dynamically injects the Vendor Rate & New Procurement pop-up modals into the DOM once
+        // State for Admin Approval Popup Modal
+        var approvalModalState = {
+            requestId: '',
+            isEditMode: false,
+            searchTerm: '',
+            filterMode: 'all', // 'all' | 'checked'
+            itemSelections: {} // { [itemId]: { isSelected: boolean, qty: number, vendorId: string, vendorName: string, rate: number } }
+        };
+
+        // State for Vendor Management Modal ("Add / Manage Vendors")
+        var vendorMgmtState = {
+            editVendorId: '',
+            activeTab: 'directory', // 'directory' | 'rates'
+            rateVendorId: ''
+        };
+
+        function isCurrentUserAdmin() {
+            return !!(currentUser && (
+                currentUser.role === 'Administrator' ||
+                (currentUser.email && (
+                    currentUser.email.toLowerCase().indexOf('fm.marol') !== -1 ||
+                    currentUser.email.toLowerCase().indexOf('murtaza') !== -1
+                ))
+            ));
+        }
+
+        function syncVendorNamesFromDirectory() {
+            if (!Array.isArray(dbVendors)) dbVendors = [];
+            if (!Array.isArray(dbProcurementVendors)) dbProcurementVendors = [];
+
+            // Ensure every vendor in dbVendors is listed in dbProcurementVendors
+            dbVendors.forEach(function(v) {
+                if (v && v.name && dbProcurementVendors.indexOf(v.name) === -1) {
+                    dbProcurementVendors.push(v.name);
+                }
+            });
+
+            // Ensure every vendor name in dbProcurementVendors has a corresponding record in dbVendors
+            dbProcurementVendors.forEach(function(vName, idx) {
+                if (!vName) return;
+                var existing = dbVendors.find(function(v) {
+                    return v && v.name && v.name.toLowerCase() === vName.toLowerCase();
+                });
+                if (!existing) {
+                    var newVId = 'VND-' + (idx + 10) + '-' + vName.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().substring(0, 6);
+                    dbVendors.push({
+                        id: newVId,
+                        vendorId: newVId,
+                        name: vName,
+                        address: 'Mumbai, Maharashtra',
+                        contactPerson: vName + ' Representative',
+                        contactNumber: '+91 9820000000',
+                        gstNo: '27AAAAA0000A1Z5',
+                        updatedAt: new Date().toISOString()
+                    });
+                }
+            });
+        }
+
+        function getVendorByIdOrName(vendorId, vendorName) {
+            syncVendorNamesFromDirectory();
+            var found = null;
+            if (vendorId) {
+                found = dbVendors.find(function(v) { return (v.vendorId || v.id) === vendorId; });
+            }
+            if (!found && vendorName) {
+                found = dbVendors.find(function(v) {
+                    return v.name && v.name.toLowerCase() === String(vendorName).toLowerCase();
+                });
+            }
+            if (found) return found;
+            return {
+                id: vendorId || ('VND-' + Date.now()),
+                vendorId: vendorId || ('VND-' + Date.now()),
+                name: vendorName || 'Assigned Vendor',
+                address: 'Mumbai, Maharashtra',
+                contactPerson: '-',
+                contactNumber: '-',
+                gstNo: 'N/A'
+            };
+        }
+
+        function getAvailableVendorsForItem(itemId) {
+            syncVendorNamesFromDirectory();
+            var mappedList = [];
+            var unmappedList = [];
+
+            dbVendors.forEach(function(v) {
+                var rate = getVendorItemRate(itemId, v.name);
+                if (v.itemRates && v.itemRates[itemId] !== undefined && rate === 0) {
+                    rate = parseFloat(v.itemRates[itemId]) || 0;
+                }
+                var entry = {
+                    vendorId: v.vendorId || v.id,
+                    name: v.name,
+                    address: v.address || '',
+                    contactPerson: v.contactPerson || '',
+                    contactNumber: v.contactNumber || '',
+                    gstNo: v.gstNo || '',
+                    rate: rate,
+                    isMapped: rate > 0
+                };
+                if (rate > 0) {
+                    mappedList.push(entry);
+                } else {
+                    unmappedList.push(entry);
+                }
+            });
+
+            // Sort mapped vendors by lowest rate first, followed by unmapped vendors
+            mappedList.sort(function(a, b) { return a.rate - b.rate; });
+            return mappedList.concat(unmappedList);
+        }
+
+        // Dynamically injects the Vendor Rate, New Procurement, Material Request Approval, and Vendor Management modals into the DOM once
         function ensureProcurementModalsExist() {
             if (!document.getElementById('vendorRateModal')) {
                 var vrModal = document.createElement('div');
@@ -7844,9 +8335,12 @@
                                     '<i class="fa-solid fa-tags text-purple-600"></i>' +
                                     '<span>Vendor Rate Master Configuration</span>' +
                                 '</h3>' +
-                                '<p class="text-xs text-slate-500 mt-0.5">Edit vendor rates directly to save to Firestore, or add/remove vendor columns.</p>' +
+                                '<p class="text-xs text-slate-500 mt-0.5">Edit vendor rates directly to save to Firestore, or add/manage vendor details.</p>' +
                             '</div>' +
-                            '<div class="flex items-center space-x-2">' +
+                            '<div class="flex items-center space-x-2 flex-wrap gap-y-1.5">' +
+                                '<button type="button" onclick="openManageVendorsModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                                    '<i class="fa-solid fa-building-user"></i><span>Add / Manage Vendors</span>' +
+                                '</button>' +
                                 '<button type="button" onclick="openAddVendorPrompt()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
                                     '<i class="fa-solid fa-user-plus"></i><span>Add Vendor</span>' +
                                 '</button>' +
@@ -7872,47 +8366,56 @@
                 npModal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4';
                 npModal.innerHTML =
                     '<div class="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">' +
-                        '<div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">' +
+                        '<div class="flex justify-between items-start mb-4 pb-3 border-b border-slate-100 gap-3">' +
                             '<div>' +
                                 '<h3 id="newProcurementModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">' +
                                     '<i class="fa-solid fa-cart-plus text-purple-600"></i>' +
-                                    '<span>New Procurement Order</span>' +
+                                    '<span>New Procurement Request</span>' +
                                 '</h3>' +
-                                '<p class="text-xs text-slate-500 mt-0.5">Select items via checkbox to unlock Procurement Qty. Totals calculate automatically from the selected vendor\'s rate.</p>' +
+                                '<p id="newProcurementModalSubtitle" class="text-xs text-slate-500 mt-0.5">Enter required quantities next to each item below and submit your requisition directly to Firestore.</p>' +
                             '</div>' +
-                            '<button type="button" onclick="closeModal(\'newProcurementModal\')" class="text-slate-400 hover:text-slate-600">' +
-                                '<i class="fa-solid fa-xmark text-lg"></i>' +
-                            '</button>' +
+                            '<div class="flex items-center space-x-2">' +
+                                '<div id="procAdminModeSwitchContainer" class="hidden bg-slate-100 p-1 rounded-lg border border-slate-200 flex items-center space-x-1">' +
+                                    '<button type="button" id="procModeBtnRequest" onclick="setProcModalMode(\'request\')" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition bg-purple-600 text-white">Material Request</button>' +
+                                    '<button type="button" id="procModeBtnOrder" onclick="setProcModalMode(\'order\')" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition text-slate-600 hover:text-slate-900">Direct Vendor PO</button>' +
+                                '</div>' +
+                                '<button type="button" onclick="closeModal(\'newProcurementModal\')" class="text-slate-400 hover:text-slate-600">' +
+                                    '<i class="fa-solid fa-xmark text-lg"></i>' +
+                                '</button>' +
+                            '</div>' +
                         '</div>' +
                         '<form onsubmit="handleSaveProcurementOrder(event)" class="flex-1 flex flex-col min-h-0 space-y-4">' +
-                            '<div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">' +
+                            '<div id="procTopFieldsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">' +
                                 '<div>' +
                                     '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-regular fa-calendar text-purple-600 mr-1"></i>Date</label>' +
                                     '<input type="date" id="procOrderDateInput" required onchange="handleProcDateChange(this.value)" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500">' +
                                 '</div>' +
-                                '<div>' +
+                                '<div id="procAreaDeptFieldContainer" class="hidden">' +
+                                    '<select id="procAreaDeptInput" onchange="handleProcAreaDeptChange(this.value)" class="hidden"></select>' +
+                                '</div>' +
+                                '<div id="procVendorFieldContainer" class="hidden">' +
                                     '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-solid fa-truck-field text-purple-600 mr-1"></i>Vendor</label>' +
-                                    '<select id="procVendorSelectInput" required onchange="handleProcVendorChange(this.value)" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"></select>' +
+                                    '<select id="procVendorSelectInput" onchange="handleProcVendorChange(this.value)" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"></select>' +
                                 '</div>' +
                                 '<div>' +
-                                    '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-solid fa-magnifying-glass text-purple-600 mr-1"></i>Search Item</label>' +
+                                    '<label class="block text-xs font-bold text-slate-700 uppercase mb-1"><i class="fa-solid fa-magnifying-glass text-purple-600 mr-1"></i>Search Catalog Item</label>' +
                                     '<div class="relative">' +
                                         '<i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>' +
-                                        '<input type="text" id="procLiveSearchInput" placeholder="Filter by Name or Category..." oninput="handleProcLiveSearch(this.value)" class="w-full pl-8 pr-8 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">' +
+                                        '<input type="text" id="procLiveSearchInput" placeholder="Filter by Name, Code or Category..." oninput="handleProcLiveSearch(this.value)" class="w-full pl-8 pr-8 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">' +
                                         '<button type="button" id="procClearSearchBtn" onclick="handleProcLiveSearch(\'\')" class="hidden absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-circle-xmark text-xs"></i></button>' +
                                     '</div>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 rounded-xl min-h-[240px]">' +
+                            '<div class="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 rounded-xl min-h-[260px]">' +
                                 '<table class="w-full text-left text-xs whitespace-nowrap">' +
                                     '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0 z-10">' +
                                         '<tr>' +
-                                            '<th class="p-3 w-16 text-center">Select</th>' +
+                                            '<th id="procThSelect" class="p-3 w-16 text-center">Select</th>' +
                                             '<th class="p-3">Item Name</th>' +
-                                            '<th class="p-3 text-center bg-blue-50 text-blue-900">Main Store Qty</th>' +
-                                            '<th class="p-3 w-36">Procurement Qty</th>' +
-                                            '<th class="p-3 w-28 text-right">Rate (₹)</th>' +
-                                            '<th class="p-3 w-32 text-right">Total (₹)</th>' +
+                                            '<th id="procThMainStoreQty" class="p-3 text-center bg-blue-50 text-blue-900">Main Store Qty</th>' +
+                                            '<th class="p-3 w-40">Quantity</th>' +
+                                            '<th id="procThRate" class="p-3 w-28 text-right hidden">Rate (₹)</th>' +
+                                            '<th id="procThTotal" class="p-3 w-32 text-right hidden">Total (₹)</th>' +
                                         '</tr>' +
                                     '</thead>' +
                                     '<tbody id="procItemSelectionTbody" class="divide-y divide-slate-100 text-slate-700"></tbody>' +
@@ -7921,11 +8424,11 @@
                             '<div class="px-4 py-3 bg-slate-900 text-white rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
                                 '<div class="flex items-center space-x-4 text-xs">' +
                                     '<span>Selected Items: <strong id="procSelectedCountDisp" class="font-mono text-purple-300 text-sm">0</strong></span>' +
-                                    '<span class="text-slate-500">|</span>' +
-                                    '<span>Vendor: <strong id="procFooterVendorDisp" class="text-emerald-300">-</strong></span>' +
+                                    '<span id="procFooterVendorPipe" class="text-slate-500 hidden">|</span>' +
+                                    '<span id="procFooterVendorWrapper" class="hidden">Vendor: <strong id="procFooterVendorDisp" class="text-emerald-300">-</strong></span>' +
                                 '</div>' +
                                 '<div class="flex items-center space-x-3 self-end sm:self-auto">' +
-                                    '<div class="text-right mr-2">' +
+                                    '<div id="procGrandTotalWrapper" class="text-right mr-2 hidden">' +
                                         '<span class="text-[10px] uppercase tracking-wider text-slate-400 block">Grand Total</span>' +
                                         '<span id="procGrandTotalDisp" class="text-base font-extrabold font-mono text-emerald-400">₹0.00</span>' +
                                     '</div>' +
@@ -7939,12 +8442,175 @@
                     '</div>';
                 document.body.appendChild(npModal);
             }
+
+            // 3. ADMIN APPROVAL POPUP & VENDOR/RATE ASSIGNMENT MODAL
+            if (!document.getElementById('approveRequestModal')) {
+                var apModal = document.createElement('div');
+                apModal.id = 'approveRequestModal';
+                apModal.className = 'fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4';
+                apModal.innerHTML =
+                    '<div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full p-6 border border-slate-100 max-h-[92vh] flex flex-col">' +
+                        '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200">' +
+                            '<div>' +
+                                '<div class="flex items-center space-x-2">' +
+                                    '<span id="approveModalBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-100 text-amber-800 border border-amber-300">Pending Approval</span>' +
+                                    '<h3 id="approveRequestModalTitle" class="text-base sm:text-lg font-extrabold text-slate-900">Approve Material Request &amp; Assign Vendors</h3>' +
+                                '</div>' +
+                                '<p id="approveRequestModalSubtitle" class="text-xs text-slate-500 mt-1"></p>' +
+                            '</div>' +
+                            '<button type="button" onclick="closeModal(\'approveRequestModal\')" class="text-slate-400 hover:text-slate-600 self-end sm:self-auto">' +
+                                '<i class="fa-solid fa-xmark text-xl"></i>' +
+                            '</button>' +
+                        '</div>' +
+
+                        '<div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 mb-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">' +
+                            '<div class="flex items-center space-x-2 flex-1">' +
+                                '<div class="relative flex-1 max-w-sm">' +
+                                    '<i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>' +
+                                    '<input type="text" id="approveCatalogSearchInput" placeholder="Search full item catalog by name, code or category..." oninput="handleApproveCatalogSearch(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500">' +
+                                '</div>' +
+                                '<div class="flex items-center bg-white rounded-lg border border-slate-300 p-0.5">' +
+                                    '<button type="button" id="approveFilterBtnAll" onclick="setApproveCatalogFilter(\'all\')" class="px-2.5 py-1 rounded-md text-[11px] font-bold bg-purple-600 text-white transition">Full Catalog</button>' +
+                                    '<button type="button" id="approveFilterBtnChecked" onclick="setApproveCatalogFilter(\'checked\')" class="px-2.5 py-1 rounded-md text-[11px] font-bold text-slate-600 hover:text-slate-900 transition">Selected Items</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="flex items-center space-x-2 flex-wrap gap-y-1.5">' +
+                                '<span class="text-[11px] font-bold text-slate-600">Quick Assign Vendor to All Checked:</span>' +
+                                '<select id="approveBulkVendorSelect" onchange="applyBulkVendorToCheckedItems(this.value)" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800">' +
+                                    '<option value="">-- Choose Vendor --</option>' +
+                                '</select>' +
+                            '</div>' +
+                        '</div>' +
+
+                        '<div id="approveRequestCatalogContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1 min-h-[280px]"></div>' +
+
+                        '<div class="mt-4 pt-3 border-t border-slate-200 bg-slate-900 text-white p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">' +
+                            '<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">' +
+                                '<span>Approved Items: <strong id="approveSummaryItemCount" class="font-mono text-emerald-400 text-sm">0</strong></span>' +
+                                '<span class="text-slate-600">|</span>' +
+                                '<span>Selected Vendors: <strong id="approveSummaryVendorCount" class="font-mono text-purple-300 text-sm">0</strong></span>' +
+                                '<span class="text-slate-600">|</span>' +
+                                '<span>Subtotal: <strong id="approveSummarySubtotal" class="font-mono text-slate-200">₹0.00</strong></span>' +
+                                '<span>+ 18% GST: <strong id="approveSummaryGst" class="font-mono text-amber-300">₹0.00</strong></span>' +
+                                '<span>= Grand Total: <strong id="approveSummaryGrandTotal" class="font-mono text-emerald-400 text-sm">₹0.00</strong></span>' +
+                            '</div>' +
+                            '<div class="flex items-center space-x-2.5 self-end sm:self-auto">' +
+                                '<button type="button" onclick="closeModal(\'approveRequestModal\')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-4 py-2 rounded-lg transition">Cancel</button>' +
+                                '<button type="button" id="confirmApprovalSubmitBtn" onclick="handleConfirmMaterialRequestApproval()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold px-5 py-2.5 rounded-lg shadow-md transition flex items-center space-x-2">' +
+                                    '<i class="fa-solid fa-circle-check"></i><span>Confirm Approval</span>' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                document.body.appendChild(apModal);
+            }
+
+            // 4. VENDOR MANAGEMENT SYSTEM MODAL ("Add / Manage Vendors")
+            if (!document.getElementById('manageVendorsModal')) {
+                var vmModal = document.createElement('div');
+                vmModal.id = 'manageVendorsModal';
+                vmModal.className = 'fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4';
+                vmModal.innerHTML =
+                    '<div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full p-6 border border-slate-100 max-h-[92vh] flex flex-col">' +
+                        '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200">' +
+                            '<div>' +
+                                '<h3 class="text-base sm:text-lg font-extrabold text-slate-900 flex items-center space-x-2">' +
+                                    '<i class="fa-solid fa-building-user text-indigo-600"></i>' +
+                                    '<span>Vendor Management System &amp; Item Rate Mapping</span>' +
+                                '</h3>' +
+                                '<p class="text-xs text-slate-500 mt-0.5">Save vendor profiles to Firestore <code class="font-mono text-indigo-700">collection(\'vendors\')</code> and map item rates per vendor.</p>' +
+                            '</div>' +
+                            '<div class="flex items-center space-x-2">' +
+                                '<button type="button" onclick="openVendorRateModal()" class="bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5">' +
+                                    '<i class="fa-solid fa-table-cells"></i><span>Full Rate Matrix</span>' +
+                                '</button>' +
+                                '<button type="button" onclick="closeModal(\'manageVendorsModal\')" class="text-slate-400 hover:text-slate-600 pl-2">' +
+                                    '<i class="fa-solid fa-xmark text-xl"></i>' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+
+                        '<div class="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-1 lg:grid-cols-12 gap-6 pr-1">' +
+                            '<!-- Left Column: Add / Edit Vendor Form -->' +
+                            '<form onsubmit="handleSaveVendorRecord(event)" class="lg:col-span-5 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3.5 self-start">' +
+                                '<div class="flex items-center justify-between border-b border-slate-200 pb-2">' +
+                                    '<h4 id="vendorMgmtFormHeading" class="font-extrabold text-xs text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">' +
+                                        '<i class="fa-solid fa-plus-circle text-indigo-600"></i><span>Add New Vendor</span>' +
+                                    '</h4>' +
+                                    '<button type="button" onclick="resetVendorMgmtForm()" class="text-[11px] font-bold text-slate-500 hover:text-slate-800">Reset</button>' +
+                                '</div>' +
+                                '<input type="hidden" id="vendorMgmtEditId">' +
+
+                                '<div>' +
+                                    '<label class="block text-xs font-semibold text-slate-700 mb-1">Vendor Name <span class="text-red-500">*</span></label>' +
+                                    '<input type="text" id="vendorMgmtName" required placeholder="e.g. Diversey India Pvt. Ltd." class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">' +
+                                '</div>' +
+
+                                '<div>' +
+                                    '<label class="block text-xs font-semibold text-slate-700 mb-1">Address <span class="text-red-500">*</span></label>' +
+                                    '<textarea id="vendorMgmtAddress" rows="2" required placeholder="Full office/warehouse billing address..." class="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>' +
+                                '</div>' +
+
+                                '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
+                                    '<div>' +
+                                        '<label class="block text-xs font-semibold text-slate-700 mb-1">Contact Person Name <span class="text-red-500">*</span></label>' +
+                                        '<input type="text" id="vendorMgmtContactPerson" required placeholder="e.g. Rajesh Sharma" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">' +
+                                    '</div>' +
+                                    '<div>' +
+                                        '<label class="block text-xs font-semibold text-slate-700 mb-1">Contact Person Number <span class="text-red-500">*</span></label>' +
+                                        '<input type="tel" id="vendorMgmtContactNumber" required placeholder="+91 9820112233" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">' +
+                                    '</div>' +
+                                '</div>' +
+
+                                '<div>' +
+                                    '<label class="block text-xs font-semibold text-slate-700 mb-1">GST Number <span class="text-red-500">*</span></label>' +
+                                    '<input type="text" id="vendorMgmtGstNo" required placeholder="e.g. 27AAACD1234F1Z5" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500">' +
+                                '</div>' +
+
+                                '<div class="pt-2 border-t border-slate-200">' +
+                                    '<label class="block text-xs font-bold text-slate-700 uppercase mb-1.5 flex items-center justify-between">' +
+                                        '<span>Map Item Rates for this Vendor (₹)</span>' +
+                                        '<span class="text-[10px] font-normal text-slate-500">Optional quick rate assignment</span>' +
+                                    '</label>' +
+                                    '<div id="vendorMgmtItemRatesList" class="max-h-44 overflow-y-auto custom-scrollbar bg-white rounded-lg border border-slate-200 divide-y divide-slate-100 p-2 space-y-1.5"></div>' +
+                                '</div>' +
+
+                                '<div class="pt-2 flex justify-end space-x-2">' +
+                                    '<button type="button" onclick="resetVendorMgmtForm()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold px-4 py-2 rounded-lg transition">Reset</button>' +
+                                    '<button type="submit" id="vendorMgmtSubmitBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                                        '<i class="fa-solid fa-floppy-disk"></i><span>Save Vendor</span>' +
+                                    '</button>' +
+                                '</div>' +
+                            '</form>' +
+
+                            '<!-- Right Column: Registered Vendors Directory -->' +
+                            '<div class="lg:col-span-7 flex flex-col space-y-3">' +
+                                '<div class="flex items-center justify-between">' +
+                                    '<h4 class="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Registered Vendor Directory (<span id="vendorDirectoryCountBadge">0</span>)</h4>' +
+                                    '<span class="text-[11px] text-emerald-700 font-semibold"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Synced with Firestore <code>vendors</code></span>' +
+                                '</div>' +
+                                '<div id="vendorDirectoryListContainer" class="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1 max-h-[520px]"></div>' +
+                            '</div>' +
+                        '</div>' +
+
+                        '<div class="pt-3 mt-4 border-t border-slate-100 flex justify-end">' +
+                            '<button type="button" onclick="closeModal(\'manageVendorsModal\')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Close</button>' +
+                        '</div>' +
+                    '</div>';
+                document.body.appendChild(vmModal);
+            }
         }
 
         function getVendorItemRate(itemId, vendorName) {
             if (!itemId || !vendorName) return 0;
             if (dbVendorRates[itemId] && dbVendorRates[itemId][vendorName] !== undefined) {
                 return parseFloat(dbVendorRates[itemId][vendorName]) || 0;
+            }
+            var vObj = dbVendors.find(function(v) {
+                return v && v.name && v.name.toLowerCase() === String(vendorName).toLowerCase();
+            });
+            if (vObj && vObj.itemRates && vObj.itemRates[itemId] !== undefined) {
+                return parseFloat(vObj.itemRates[itemId]) || 0;
             }
             return 0;
         }
@@ -7957,31 +8623,84 @@
             });
         }
 
-        // Main Module 8 View: Renders ONLY the Dashboard (Procurement Orders List) and puts [Vendor Rate] & [New Procurement] buttons in header
+        function getSortedMaterialRequests() {
+            return (dbProcurementRequests || []).slice().sort(function(a, b) {
+                var dateDiff = new Date(b.date || 0) - new Date(a.date || 0);
+                if (dateDiff !== 0) return dateDiff;
+                var parseT = function(t) {
+                    if (!t) return 0;
+                    if (typeof t.toMillis === 'function') return t.toMillis();
+                    if (typeof t.seconds === 'number') return t.seconds * 1000;
+                    return new Date(t).getTime() || 0;
+                };
+                return parseT(b.updatedAt) - parseT(a.updatedAt);
+            });
+        }
+
+        function switchProcurementSubView(viewName) {
+            procurementSubView = viewName || 'dashboard';
+            switchModule('procurement');
+        }
+
+        function openMaterialRequestsPage() {
+            if (!isCurrentUserAdmin()) {
+                showAppNotification('Access Denied: Material Requests Management is restricted to Administrators.', 'error');
+                return;
+            }
+            procurementSubView = 'material_requests';
+            switchModule('procurement');
+        }
+
+        // Main Module 8 View: Role-aware rendering for Admin vs Non-Admin users
         function renderProcurementModule(container, actions) {
             ensureProcurementModalsExist();
+            syncVendorNamesFromDirectory();
 
-            if (!dbProcurementVendors || dbProcurementVendors.length === 0) {
-                dbProcurementVendors = DEFAULT_PROCUREMENT_VENDORS.slice();
+            var isAdmin = isCurrentUserAdmin();
+            var allRequests = getSortedMaterialRequests();
+            var pendingCount = allRequests.filter(function(r) { return r.status !== 'Approved'; }).length;
+
+            if (isAdmin) {
+                var mrBtnClass = procurementSubView === 'material_requests'
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white ring-2 ring-offset-1 ring-amber-500'
+                    : 'bg-amber-500 hover:bg-amber-600 text-white';
+                actions.innerHTML =
+                    '<div class="flex items-center space-x-2 flex-wrap gap-y-2">' +
+                        '<button type="button" onclick="openMaterialRequestsPage()" class="' + mrBtnClass + ' px-3.5 py-2 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">' +
+                            '<i class="fa-solid fa-clipboard-check"></i>' +
+                            '<span>Material Requests</span>' +
+                            '<span class="px-1.5 py-0.2 rounded-full text-[10px] bg-white/25 text-white font-mono">' + pendingCount + ' Pending</span>' +
+                        '</button>' +
+                        '<button type="button" onclick="openManageVendorsModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">' +
+                            '<i class="fa-solid fa-building-user"></i><span>Add / Manage Vendors</span>' +
+                        '</button>' +
+                        '<button type="button" onclick="openVendorRateModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">' +
+                            '<i class="fa-solid fa-tags"></i><span>Vendor Rate</span>' +
+                        '</button>' +
+                        '<button type="button" onclick="openNewProcurementModal()" class="bg-[#004d3d] hover:bg-[#00382c] text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">' +
+                            '<i class="fa-solid fa-cart-plus text-emerald-300"></i><span>New Procurement</span>' +
+                        '</button>' +
+                    '</div>';
+            } else {
+                // Non-Admin users ONLY see "New Procurement" button (no Vendor Rate, no Add/Manage Vendors, no Admin Material Requests management button)
+                actions.innerHTML =
+                    '<div class="flex items-center space-x-2 flex-wrap gap-y-2">' +
+                        '<button type="button" onclick="openNewProcurementModal()" class="bg-[#004d3d] hover:bg-[#00382c] text-white px-4 py-2 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">' +
+                            '<i class="fa-solid fa-cart-plus text-emerald-300"></i><span>New Procurement</span>' +
+                        '</button>' +
+                    '</div>';
             }
 
-            // 1. Header Navigation Buttons: [Vendor Rate] and [New Procurement] (Both open Pop-Up Modals)
-            actions.innerHTML =
-                '<div class="flex items-center space-x-2 flex-wrap gap-y-2">' +
-                    '<button type="button" onclick="openVendorRateModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">' +
-                        '<i class="fa-solid fa-tags"></i><span>Vendor Rate</span>' +
-                    '</button>' +
-                    '<button type="button" onclick="openNewProcurementModal()" class="bg-[#004d3d] hover:bg-[#00382c] text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow transition flex items-center space-x-1.5">' +
-                        '<i class="fa-solid fa-cart-plus text-emerald-300"></i><span>New Procurement</span>' +
-                    '</button>' +
-                '</div>';
+            if (!isAdmin) {
+                container.innerHTML = renderNonAdminProcurementRequestsViewHtml(allRequests);
+            } else if (procurementSubView === 'material_requests') {
+                container.innerHTML = renderAdminMaterialRequestsPageHtml(allRequests);
+            } else {
+                var sortedOrders = getSortedProcurements();
+                container.innerHTML = renderAdminProcurementDashboardHtml(sortedOrders, allRequests);
+            }
 
-            var sortedOrders = getSortedProcurements();
-
-            // 2. Main Module View: Dashboard showing ONLY Procurement Orders List
-            container.innerHTML = renderProcurementOrdersListHtml(sortedOrders);
-
-            // If either modal is currently open while a Firestore snapshot arrives, refresh its contents live
+            // Refresh any open modals live when Firestore snapshots arrive
             var vrModal = document.getElementById('vendorRateModal');
             if (vrModal && !vrModal.classList.contains('hidden')) {
                 renderVendorRateModalTable();
@@ -7991,11 +8710,1290 @@
                 populateVendorDropdownInModal();
                 renderNewProcurementModalRows();
             }
+            var vmModal = document.getElementById('manageVendorsModal');
+            if (vmModal && !vmModal.classList.contains('hidden')) {
+                renderVendorDirectoryList();
+            }
+        }
+
+        // ----------------- NON-ADMIN VIEW: SUBMIT & TRACK MATERIAL REQUESTS (NO VENDOR/RATE/COST) -----------------
+        function renderNonAdminProcurementRequestsViewHtml(allRequests) {
+            var myEmail = currentUser && currentUser.email ? currentUser.email.toLowerCase().trim() : '';
+            var myRequests = allRequests.filter(function(r) {
+                if (!myEmail) return true;
+                return (r.requestedBy || '').toLowerCase().trim() === myEmail ||
+                       (currentUser.areas && currentUser.areas.indexOf(r.area) !== -1);
+            });
+
+            var html = '<div class="space-y-5">';
+            html += '<div class="bg-gradient-to-r from-[#004d3d] to-teal-900 text-white p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
+            html += '<div>';
+            html += '<span class="text-[10px] font-extrabold uppercase tracking-wider bg-white/15 px-2.5 py-0.5 rounded-full text-emerald-200">' + (currentUser ? currentUser.role : 'Staff') + ' Requisition Portal</span>';
+            html += '<h3 class="text-base sm:text-lg font-extrabold mt-1">Material Requisitions &amp; Procurement Requests</h3>';
+            html += '<p class="text-xs text-emerald-100/90 mt-0.5">Click <strong>"New Procurement"</strong> to select required housekeeping items from the full catalog and enter quantities.</p>';
+            html += '</div>';
+            html += '<button type="button" onclick="openNewProcurementModal()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center space-x-2 self-start sm:self-auto">';
+            html += '<i class="fa-solid fa-plus-circle"></i><span>New Procurement Request</span>';
+            html += '</button></div>';
+
+            html += '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
+            html += '<div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">';
+            html += '<h4 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center space-x-2"><i class="fa-solid fa-list-check text-purple-600"></i><span>Submitted Material Requests (' + myRequests.length + ')</span></h4>';
+            html += '<span class="text-[11px] text-slate-500">Synced with Firestore <code>procurement_requests</code></span>';
+            html += '</div>';
+
+            if (myRequests.length === 0) {
+                html += '<div class="p-10 text-center space-y-3">';
+                html += '<div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-boxes-packing"></i></div>';
+                html += '<p class="text-xs text-slate-500 italic">No material requests submitted yet. Click "New Procurement" above to request items.</p>';
+                html += '</div>';
+            } else {
+                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs whitespace-nowrap">';
+                html += '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+                html += '<th class="p-3.5">Request ID</th>';
+                html += '<th class="p-3.5">Date</th>';
+                html += '<th class="p-3.5">Requested By</th>';
+                html += '<th class="p-3.5">Area / Department</th>';
+                html += '<th class="p-3.5">Requested Items &amp; Quantities</th>';
+                html += '<th class="p-3.5 text-center">Status</th>';
+                html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
+
+                myRequests.forEach(function(req) {
+                    var reqId = req.requestId || req.id;
+                    var isApproved = req.status === 'Approved';
+                    var statusBadge = isApproved
+                        ? '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300"><i class="fa-solid fa-circle-check mr-1"></i>Approved</span>'
+                        : '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300"><i class="fa-solid fa-clock mr-1"></i>Pending</span>';
+
+                    var activeItems = (Array.isArray(req.items) ? req.items : []).filter(function(it) {
+                        return it && it.isSelected !== false && (parseFloat(it.qty) || 0) > 0;
+                    });
+                    var summaryPills = activeItems.map(function(it) {
+                        return '<span class="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[11px] font-medium text-slate-800 mr-1.5 mb-1">' +
+                            (it.itemName || it.name || '-') + ': <strong class="font-mono ml-1 text-purple-700">' + it.qty + '</strong></span>';
+                    }).join('');
+
+                    html += '<tr class="hover:bg-slate-50 transition">';
+                    html += '<td class="p-3.5 font-mono font-bold text-purple-700">' + reqId + '</td>';
+                    html += '<td class="p-3.5 font-mono text-slate-800">' + (req.date || '-') + '</td>';
+                    html += '<td class="p-3.5"><div class="font-bold text-slate-900">' + (req.requestedBy || '-') + '</div><div class="text-[10px] text-slate-500">' + (req.requestedRole || '') + '</div></td>';
+                    html += '<td class="p-3.5 font-semibold text-slate-700">' + (req.area || req.department || req.requestedRole || '-') + '</td>';
+                    html += '<td class="p-3.5 whitespace-normal max-w-md">' + (summaryPills || '<span class="text-slate-400 italic">No items listed</span>') + '</td>';
+                    html += '<td class="p-3.5 text-center">' + statusBadge + '</td>';
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table></div>';
+            }
+            html += '</div></div>';
+            return html;
+        }
+
+        // ----------------- ADMIN VIEW: "MATERIAL REQUESTS" MANAGEMENT PAGE -----------------
+        function renderAdminMaterialRequestsPageHtml(allRequests) {
+            var pendingCount = allRequests.filter(function(r) { return r.status !== 'Approved'; }).length;
+            var approvedCount = allRequests.filter(function(r) { return r.status === 'Approved'; }).length;
+
+            var html = '<div class="space-y-5">';
+
+            // Top Banner & Navigation Strip
+            html += '<div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
+            html += '<div class="flex items-center space-x-3">';
+            html += '<button type="button" onclick="switchProcurementSubView(\'dashboard\')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5">';
+            html += '<i class="fa-solid fa-arrow-left"></i><span>Back to Dashboard</span>';
+            html += '</button>';
+            html += '<div>';
+            html += '<div class="flex items-center space-x-2">';
+            html += '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-purple-100 text-purple-800 border border-purple-200">Admin Management</span>';
+            html += '<h3 class="text-base font-extrabold text-slate-900">Material Requests Management</h3>';
+            html += '</div>';
+            html += '<p class="text-xs text-slate-500 mt-0.5">All submitted material requests in reverse chronological order. Approve requests to assign vendors/rates and export single or multi-vendor ZIP Purchase Orders.</p>';
+            html += '</div></div>';
+
+            html += '<div class="flex items-center space-x-2 self-start sm:self-auto">';
+            html += '<span class="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">Pending: ' + pendingCount + '</span>';
+            html += '<span class="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">Approved: ' + approvedCount + '</span>';
+            html += '</div></div>';
+
+            // Material Requests Table
+            html += renderMaterialRequestsTableCardHtml(allRequests);
+            html += '</div>';
+            return html;
+        }
+
+        function renderMaterialRequestsTableCardHtml(allRequests) {
+            var html = '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
+            html += '<div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
+            html += '<div>';
+            html += '<h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-Layer-group text-purple-600"></i><span>Submitted Material Requests (Reverse Chronological Order)</span></h3>';
+            html += '<p class="text-xs text-slate-500 mt-0.5">Synced live with Firestore <code class="font-mono text-purple-700">collection(\'procurement_requests\')</code></p>';
+            html += '</div>';
+            html += '<div class="flex items-center space-x-2">';
+            html += '<button type="button" onclick="openNewProcurementModal(\'request\')" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-2xs transition flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>New Material Request</span></button>';
+            html += '</div></div>';
+
+            if (allRequests.length === 0) {
+                html += '<div class="p-10 text-center space-y-3">';
+                html += '<div class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-clipboard-question"></i></div>';
+                html += '<p class="text-xs text-slate-500 italic">No material requests submitted yet. Non-admin users or Admins can submit a request via "New Procurement".</p>';
+                html += '</div>';
+            } else {
+                html += '<div class="overflow-x-auto custom-scrollbar">';
+                html += '<table class="w-full text-left text-xs whitespace-nowrap">';
+                html += '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200">';
+                html += '<tr>';
+                html += '<th class="p-3.5">Request ID</th>';
+                html += '<th class="p-3.5">Date</th>';
+                html += '<th class="p-3.5">Requested By</th>';
+                html += '<th class="p-3.5">Area/Department</th>';
+                html += '<th class="p-3.5 text-center">Status</th>';
+                html += '<th class="p-3.5 text-center">Actions</th>';
+                html += '</tr></thead>';
+                html += '<tbody class="divide-y divide-slate-100 text-slate-700">';
+
+                allRequests.forEach(function(req) {
+                    var reqId = req.requestId || req.id;
+                    var safeReqId = String(reqId).replace(/'/g, "\\'");
+                    var isApproved = req.status === 'Approved';
+
+                    var activeItems = (Array.isArray(req.items) ? req.items : []).filter(function(it) {
+                        return it && it.isSelected !== false && (parseFloat(it.qty) || 0) > 0;
+                    });
+                    var approvedDetails = Array.isArray(req.approvedDetails) ? req.approvedDetails : [];
+                    var uniqueVendors = [];
+                    var subtotalSum = 0;
+                    approvedDetails.forEach(function(ad) {
+                        if (ad && ad.vendorName && uniqueVendors.indexOf(ad.vendorName) === -1) {
+                            uniqueVendors.push(ad.vendorName);
+                        }
+                        subtotalSum += (parseFloat(ad.total) || 0);
+                    });
+                    var grandWithGst = subtotalSum * 1.18;
+
+                    var statusBadgeHtml = isApproved
+                        ? '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300"><i class="fa-solid fa-circle-check mr-1 text-emerald-600"></i>Approved</span>'
+                        : '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300"><i class="fa-solid fa-clock mr-1 text-amber-600"></i>Pending</span>';
+
+                    var areaDeptLabel = req.area || req.department || req.requestedRole || 'Housekeeping';
+
+                    html += '<tr class="hover:bg-slate-50 transition">';
+                    html += '<td class="p-3.5"><div class="font-mono font-extrabold text-purple-700">' + reqId + '</div>';
+                    html += '<div class="text-[10px] text-slate-400">' + activeItems.length + ' item(s) requested</div></td>';
+                    html += '<td class="p-3.5 font-mono font-bold text-slate-800">' + (req.date || '-') + '</td>';
+                    html += '<td class="p-3.5"><div class="font-bold text-slate-900">' + (req.requestedBy || '-') + '</div><div class="text-[10px] text-slate-500 font-medium">' + (req.requestedRole || '') + '</div></td>';
+                    html += '<td class="p-3.5"><span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 font-semibold">' + areaDeptLabel + '</span>';
+                    if (isApproved && uniqueVendors.length > 0) {
+                        html += '<div class="text-[10px] text-emerald-700 font-bold mt-1"><i class="fa-solid fa-truck-field mr-1"></i>' + uniqueVendors.join(', ') + ' (₹' + grandWithGst.toFixed(2) + ' incl. GST)</div>';
+                    }
+                    html += '</td>';
+                    html += '<td class="p-3.5 text-center">' + statusBadgeHtml + '</td>';
+                    html += '<td class="p-3.5 text-center">';
+
+                    if (!isApproved) {
+                        // Pending Request Action: "Approve" button
+                        html += '<div class="flex items-center justify-center space-x-2">';
+                        html += '<button type="button" onclick="openApproveRequestModal(\'' + safeReqId + '\', false)" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold px-4 py-1.5 rounded-lg shadow transition inline-flex items-center space-x-1.5">' +
+                            '<i class="fa-solid fa-check-double"></i><span>Approve</span>' +
+                        '</button>';
+                        html += '<button type="button" onclick="deleteMaterialRequestRecord(\'' + safeReqId + '\')" class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg transition" title="Delete Request"><i class="fa-solid fa-trash-can"></i></button>';
+                        html += '</div>';
+                    } else {
+                        // Post-Approval UI State: 3 action icons -> "Edit" (pencil icon), "Delete" (trash icon), and "Download PDF" (file/download icon)
+                        var dlTooltip = uniqueVendors.length > 1
+                            ? 'Download Multi-Vendor Purchase Orders (.zip - ' + uniqueVendors.length + ' Vendors)'
+                            : 'Download Purchase Order PDF';
+                        html += '<div class="flex items-center justify-center space-x-2">';
+                        html += '<button type="button" onclick="openApproveRequestModal(\'' + safeReqId + '\', true)" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1" title="Edit Approved Request">' +
+                            '<i class="fa-solid fa-pencil"></i><span>Edit</span>' +
+                        '</button>';
+                        html += '<button type="button" onclick="deleteMaterialRequestRecord(\'' + safeReqId + '\')" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1" title="Delete Request">' +
+                            '<i class="fa-solid fa-trash"></i><span>Delete</span>' +
+                        '</button>';
+                        html += '<button type="button" onclick="downloadApprovedRequestPO(\'' + safeReqId + '\')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-2xs transition inline-flex items-center space-x-1.5" title="' + dlTooltip + '">' +
+                            '<i class="fa-solid fa-file-arrow-down"></i><span>Download PDF</span>' +
+                        '</button>';
+                        html += '</div>';
+                    }
+
+                    html += '</td></tr>';
+                });
+
+                html += '</tbody></table></div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function renderAdminProcurementDashboardHtml(sortedOrders, allRequests) {
+            var pendingCount = allRequests.filter(function(r) { return r.status !== 'Approved'; }).length;
+            var approvedCount = allRequests.filter(function(r) { return r.status === 'Approved'; }).length;
+
+            var html = '<div class="space-y-6">';
+
+            // Quick Summary Cards on Main Procurement Dashboard
+            html += '<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">';
+            html += '<div onclick="openMaterialRequestsPage()" class="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-4 rounded-2xl shadow-sm border border-amber-400 flex items-center justify-between cursor-pointer hover:opacity-95 transition">';
+            html += '<div><span class="text-[11px] font-bold uppercase tracking-wider text-amber-100 block">Pending Material Requests</span>';
+            html += '<div class="text-2xl font-extrabold font-mono mt-1">' + pendingCount + '</div>';
+            html += '<span class="text-[11px] text-amber-100 underline">Click to review &amp; approve &rarr;</span></div>';
+            html += '<div class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center text-xl"><i class="fa-solid fa-clipboard-check"></i></div></div>';
+
+            html += '<div onclick="openMaterialRequestsPage()" class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-4 rounded-2xl shadow-sm border border-emerald-500 flex items-center justify-between cursor-pointer hover:opacity-95 transition">';
+            html += '<div><span class="text-[11px] font-bold uppercase tracking-wider text-emerald-100 block">Approved Material Requests</span>';
+            html += '<div class="text-2xl font-extrabold font-mono mt-1">' + approvedCount + '</div>';
+            html += '<span class="text-[11px] text-emerald-100">Ready for PO PDF / ZIP export</span></div>';
+            html += '<div class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center text-xl"><i class="fa-solid fa-file-invoice"></i></div></div>';
+
+            html += '<div onclick="openManageVendorsModal()" class="bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-4 rounded-2xl shadow-sm border border-indigo-500 flex items-center justify-between cursor-pointer hover:opacity-95 transition">';
+            html += '<div><span class="text-[11px] font-bold uppercase tracking-wider text-indigo-100 block">Registered Vendors</span>';
+            html += '<div class="text-2xl font-extrabold font-mono mt-1">' + dbVendors.length + '</div>';
+            html += '<span class="text-[11px] text-indigo-100 underline">Manage Vendors &amp; GST Info &rarr;</span></div>';
+            html += '<div class="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center text-xl"><i class="fa-solid fa-building-user"></i></div></div>';
+            html += '</div>';
+
+            // Material Requests Section right on Dashboard + Direct Orders List below
+            html += renderMaterialRequestsTableCardHtml(allRequests);
+            html += renderProcurementOrdersListHtml(sortedOrders);
+
+            html += '</div>';
+            return html;
+        }
+
+        // ----------------- APPROVAL POPUP & VENDOR/RATE ASSIGNMENT WORKFLOW -----------------
+        function openApproveRequestModal(requestId, isEditMode) {
+            ensureProcurementModalsExist();
+            syncVendorNamesFromDirectory();
+
+            var req = (dbProcurementRequests || []).find(function(r) {
+                return (r.requestId || r.id) === requestId;
+            });
+            if (!req) {
+                showAppNotification('Material request not found.', 'error');
+                return;
+            }
+
+            approvalModalState = {
+                requestId: req.requestId || req.id,
+                isEditMode: !!isEditMode,
+                searchTerm: '',
+                filterMode: 'all',
+                itemSelections: {}
+            };
+
+            // Build lookup of requested items & previously approved vendor assignments
+            var reqItemMap = {};
+            (Array.isArray(req.items) ? req.items : []).forEach(function(it) {
+                if (!it) return;
+                var key = it.itemId || it.id;
+                if (key) reqItemMap[key] = it;
+            });
+
+            var approvedMap = {};
+            (Array.isArray(req.approvedDetails) ? req.approvedDetails : []).forEach(function(ad) {
+                if (!ad) return;
+                var key = ad.itemId || ad.id;
+                if (key) approvedMap[key] = ad;
+            });
+
+            // Initialize complete item catalog state
+            dbData.inventory.forEach(function(item) {
+                var rItem = reqItemMap[item.id] || (req.items || []).find(function(x) {
+                    return x && (x.itemName === item.name || x.name === item.name);
+                });
+                var aDetail = approvedMap[item.id] || (req.approvedDetails || []).find(function(x) {
+                    return x && (x.itemName === item.name || x.name === item.name);
+                });
+
+                var availVendors = getAvailableVendorsForItem(item.id);
+                var defaultVendor = availVendors[0] || { vendorId: 'VND-01', name: dbProcurementVendors[0] || 'Diversey', rate: 0 };
+
+                var isPreChecked = false;
+                var qtyVal = 1;
+                var chosenVendorId = defaultVendor.vendorId;
+                var chosenVendorName = defaultVendor.name;
+                var chosenRate = defaultVendor.rate;
+
+                if (req.status === 'Approved' && Array.isArray(req.approvedDetails) && req.approvedDetails.length > 0) {
+                    if (aDetail) {
+                        isPreChecked = true;
+                        qtyVal = parseFloat(aDetail.qty) || 1;
+                        chosenVendorId = aDetail.vendorId || defaultVendor.vendorId;
+                        chosenVendorName = aDetail.vendorName || defaultVendor.name;
+                        chosenRate = aDetail.rate !== undefined ? (parseFloat(aDetail.rate) || 0) : getVendorItemRate(item.id, chosenVendorName);
+                    } else {
+                        isPreChecked = false;
+                        qtyVal = rItem && (parseFloat(rItem.qty) || 0) > 0 ? parseFloat(rItem.qty) : 1;
+                    }
+                } else if (rItem && rItem.isSelected !== false && (parseFloat(rItem.qty) || 0) > 0) {
+                    isPreChecked = true;
+                    qtyVal = parseFloat(rItem.qty) || 1;
+                }
+
+                approvalModalState.itemSelections[item.id] = {
+                    isSelected: isPreChecked,
+                    wasInitiallyRequested: !!(rItem && rItem.isSelected !== false && (parseFloat(rItem.qty) || 0) > 0),
+                    initialRequestedQty: rItem ? (parseFloat(rItem.qty) || 0) : 0,
+                    qty: qtyVal,
+                    vendorId: chosenVendorId,
+                    vendorName: chosenVendorName,
+                    rate: chosenRate
+                };
+            });
+
+            // Populate Modal Header & Bulk Vendor Select
+            var badgeEl = document.getElementById('approveModalBadge');
+            var titleEl = document.getElementById('approveRequestModalTitle');
+            var subEl = document.getElementById('approveRequestModalSubtitle');
+            if (badgeEl) {
+                badgeEl.className = req.status === 'Approved'
+                    ? 'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-100 text-amber-800 border border-amber-300';
+                badgeEl.innerText = req.status === 'Approved' ? 'Approved (Edit Mode)' : 'Pending Approval';
+            }
+            if (titleEl) {
+                titleEl.innerText = (isEditMode ? 'Edit Approved Request — ' : 'Approve Material Request — ') + (req.requestId || req.id);
+            }
+            if (subEl) {
+                subEl.innerText = 'Date: ' + (req.date || '-') + ' | Requested By: ' + (req.requestedBy || '-') + ' (' + (req.requestedRole || '-') + ') | Area/Dept: ' + (req.area || req.department || req.requestedRole || '-');
+            }
+
+            var searchInp = document.getElementById('approveCatalogSearchInput');
+            if (searchInp) searchInp.value = '';
+
+            var bulkSelect = document.getElementById('approveBulkVendorSelect');
+            if (bulkSelect) {
+                bulkSelect.innerHTML = '<option value="">-- Select Vendor for All Checked --</option>' +
+                    dbVendors.map(function(v) {
+                        return '<option value="' + (v.vendorId || v.id) + '">' + v.name + ' (GST: ' + (v.gstNo || 'N/A') + ')</option>';
+                    }).join('');
+            }
+
+            updateApproveFilterButtonsUI();
+            renderApproveRequestCatalogList();
+            openModal('approveRequestModal');
+        }
+
+        function handleApproveCatalogSearch(val) {
+            approvalModalState.searchTerm = val || '';
+            renderApproveRequestCatalogList();
+        }
+
+        function setApproveCatalogFilter(mode) {
+            approvalModalState.filterMode = mode || 'all';
+            updateApproveFilterButtonsUI();
+            renderApproveRequestCatalogList();
+        }
+
+        function updateApproveFilterButtonsUI() {
+            var btnAll = document.getElementById('approveFilterBtnAll');
+            var btnChk = document.getElementById('approveFilterBtnChecked');
+            if (btnAll && btnChk) {
+                if (approvalModalState.filterMode === 'checked') {
+                    btnChk.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold bg-purple-600 text-white transition';
+                    btnAll.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold text-slate-600 hover:text-slate-900 transition';
+                } else {
+                    btnAll.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold bg-purple-600 text-white transition';
+                    btnChk.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold text-slate-600 hover:text-slate-900 transition';
+                }
+            }
+        }
+
+        function applyBulkVendorToCheckedItems(vendorId) {
+            if (!vendorId) return;
+            var vObj = getVendorByIdOrName(vendorId, '');
+            if (!vObj) return;
+
+            Object.keys(approvalModalState.itemSelections).forEach(function(itemId) {
+                var sel = approvalModalState.itemSelections[itemId];
+                if (sel && sel.isSelected) {
+                    sel.vendorId = vObj.vendorId || vObj.id;
+                    sel.vendorName = vObj.name;
+                    sel.rate = getVendorItemRate(itemId, vObj.name);
+                }
+            });
+            renderApproveRequestCatalogList();
+            showAppNotification('Assigned vendor "' + vObj.name + '" to all checked items.', 'info');
+        }
+
+        function renderApproveRequestCatalogList() {
+            var container = document.getElementById('approveRequestCatalogContainer');
+            if (!container) return;
+
+            var q = (approvalModalState.searchTerm || '').toLowerCase().trim();
+
+            // Sort catalog so items requested by user or currently checked appear at top, followed by the rest of the catalog
+            var sortedCatalog = dbData.inventory.slice().sort(function(a, b) {
+                var selA = approvalModalState.itemSelections[a.id] || {};
+                var selB = approvalModalState.itemSelections[b.id] || {};
+                var reqA = selA.wasInitiallyRequested ? 1 : 0;
+                var reqB = selB.wasInitiallyRequested ? 1 : 0;
+                if (reqA !== reqB) return reqB - reqA;
+                var chkA = selA.isSelected ? 1 : 0;
+                var chkB = selB.isSelected ? 1 : 0;
+                if (chkA !== chkB) return chkB - chkA;
+                return (a.name || '').localeCompare(b.name || '');
+            });
+
+            var filteredCatalog = sortedCatalog.filter(function(item) {
+                var sel = approvalModalState.itemSelections[item.id] || {};
+                if (approvalModalState.filterMode === 'checked' && !sel.isSelected) return false;
+                if (!q) return true;
+                return (item.name && item.name.toLowerCase().indexOf(q) !== -1) ||
+                       (item.code && item.code.toLowerCase().indexOf(q) !== -1) ||
+                       (item.category && item.category.toLowerCase().indexOf(q) !== -1);
+            });
+
+            if (filteredCatalog.length === 0) {
+                container.innerHTML = '<div class="p-8 text-center text-xs text-slate-400 italic bg-slate-50 rounded-xl border border-slate-200">No catalog items match the current filter.</div>';
+                updateApprovalModalSummaryTotals();
+                return;
+            }
+
+            var html = '';
+            filteredCatalog.forEach(function(item) {
+                var sel = approvalModalState.itemSelections[item.id] || {
+                    isSelected: false,
+                    wasInitiallyRequested: false,
+                    qty: 1,
+                    vendorId: '',
+                    vendorName: '',
+                    rate: 0
+                };
+                var availVendors = getAvailableVendorsForItem(item.id);
+                var lineTotal = sel.isSelected ? ((parseFloat(sel.qty) || 0) * (parseFloat(sel.rate) || 0)) : 0;
+
+                var cardCls = sel.isSelected
+                    ? 'bg-emerald-50/40 border-emerald-400 ring-1 ring-emerald-300 shadow-2xs'
+                    : 'bg-white border-slate-200 hover:border-slate-300';
+
+                html += '<div id="approveItemCard_' + item.id + '" class="p-4 rounded-xl border transition space-y-3 ' + cardCls + '">';
+
+                // Row 1: Item Checkbox + Item Details + Editable Quantity Input + Line Total
+                html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
+                html += '<div class="flex items-start space-x-3">';
+                html += '<input type="checkbox" id="approveItemChk_' + item.id + '" ' + (sel.isSelected ? 'checked' : '') +
+                    ' onchange="toggleApproveModalItem(\'' + item.id + '\', this.checked)" ' +
+                    ' class="mt-1 w-4 h-4 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 cursor-pointer">';
+                html += '<div>';
+                html += '<div class="flex items-center space-x-2 flex-wrap gap-y-1">';
+                html += '<label for="approveItemChk_' + item.id + '" class="font-extrabold text-sm text-slate-900 cursor-pointer">' + item.name + '</label>';
+                html += '<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">' + item.code + ' &bull; ' + (item.unit || 'Nos') + '</span>';
+                if (sel.wasInitiallyRequested) {
+                    html += '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300"><i class="fa-solid fa-user-check mr-1"></i>Requested (' + sel.initialRequestedQty + ')</span>';
+                }
+                html += '</div>';
+                html += '<div class="text-[11px] text-slate-500 mt-0.5">Category: <strong>' + (item.category || 'General') + '</strong> &bull; Main Store Stock: <strong class="font-mono text-blue-700">' + calculateCurrentStock(item, 'Main Store') + '</strong></div>';
+                html += '</div></div>';
+
+                // Quantity Input & Calculated Item Total
+                html += '<div class="flex items-center space-x-4 self-end sm:self-center">';
+                html += '<div>';
+                html += '<label class="block text-[10px] font-bold uppercase text-slate-500 mb-0.5">Approved Qty</label>';
+                html += '<input type="number" step="any" min="0.01" id="approveItemQty_' + item.id + '" value="' + (sel.qty || 1) + '" ' +
+                    ' oninput="handleApproveModalQtyChange(\'' + item.id + '\', this.value)" ' +
+                    ' class="w-24 px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border ' + (sel.isSelected ? 'border-emerald-500 bg-white text-slate-900' : 'border-slate-200 bg-slate-100 text-slate-500') + '">';
+                html += '</div>';
+                html += '<div class="text-right min-w-[95px]">';
+                html += '<span class="block text-[10px] font-bold uppercase text-slate-400">Item Total</span>';
+                html += '<span id="approveItemTotalDisp_' + item.id + '" class="font-mono font-extrabold text-sm ' + (sel.isSelected ? 'text-emerald-700' : 'text-slate-400') + '">₹' + lineTotal.toFixed(2) + '</span>';
+                html += '</div>';
+                html += '</div></div>';
+
+                // Row 2: Under each item, display all available vendors mapped to that item along with their corresponding rates, with a selectable radio button/checkbox
+                html += '<div class="pt-2.5 border-t border-slate-200/80">';
+                html += '<div class="text-[11px] font-bold text-slate-600 mb-2 flex items-center justify-between">';
+                html += '<span><i class="fa-solid fa-Store text-purple-600 mr-1.5"></i>Available Vendors &amp; Mapped Rates (Select Vendor for Purchase Order):</span>';
+                if (sel.isSelected && sel.vendorName) {
+                    html += '<span class="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">Selected: ' + sel.vendorName + ' @ ₹' + (parseFloat(sel.rate) || 0).toFixed(2) + '</span>';
+                }
+                html += '</div>';
+
+                html += '<div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">';
+                availVendors.forEach(function(vInfo) {
+                    var isVendorChosen = (sel.vendorId && sel.vendorId === vInfo.vendorId) ||
+                                         (!sel.vendorId && sel.vendorName && sel.vendorName.toLowerCase() === vInfo.name.toLowerCase());
+                    var displayRate = isVendorChosen ? (parseFloat(sel.rate) || vInfo.rate || 0) : (vInfo.rate || 0);
+                    var safeVId = String(vInfo.vendorId).replace(/'/g, "\\'");
+                    var safeVName = String(vInfo.name).replace(/'/g, "\\'");
+
+                    var vCardCls = isVendorChosen
+                        ? 'bg-purple-50 border-purple-500 ring-1 ring-purple-400 text-purple-950'
+                        : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700';
+
+                    html += '<div onclick="selectVendorForApproveItem(\'' + item.id + '\', \'' + safeVId + '\', \'' + safeVName + '\', ' + displayRate + ')" class="p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 ' + vCardCls + '">';
+                    html += '<div class="flex items-center space-x-2 min-w-0">';
+                    html += '<input type="radio" name="approveVendor_' + item.id + '" ' + (isVendorChosen ? 'checked' : '') +
+                        ' onchange="selectVendorForApproveItem(\'' + item.id + '\', \'' + safeVId + '\', \'' + safeVName + '\', ' + displayRate + ')" ' +
+                        ' class="w-3.5 h-3.5 text-purple-600 focus:ring-purple-500 cursor-pointer flex-shrink-0">';
+                    html += '<div class="truncate">';
+                    html += '<div class="font-bold text-xs truncate">' + vInfo.name + '</div>';
+                    html += '<div class="text-[10px] text-slate-500 font-mono truncate">GST: ' + (vInfo.gstNo || 'N/A') + '</div>';
+                    html += '</div></div>';
+
+                    html += '<div class="flex items-center space-x-1 flex-shrink-0" onclick="event.stopPropagation()">';
+                    html += '<span class="text-[11px] font-mono text-slate-500">₹</span>';
+                    html += '<input type="number" step="0.01" min="0" value="' + displayRate + '" ' +
+                        ' onchange="updateApproveItemVendorRate(\'' + item.id + '\', \'' + safeVId + '\', \'' + safeVName + '\', this.value)" ' +
+                        ' title="Edit rate for ' + vInfo.name + '" ' +
+                        ' class="w-16 px-1.5 py-1 text-xs font-mono font-bold text-right rounded border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-1 focus:ring-purple-500">';
+                    html += '</div></div>';
+                });
+                html += '</div></div>';
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+            updateApprovalModalSummaryTotals();
+        }
+
+        function toggleApproveModalItem(itemId, isChecked) {
+            var sel = approvalModalState.itemSelections[itemId];
+            if (!sel) return;
+            sel.isSelected = !!isChecked;
+            if (sel.isSelected && (!sel.qty || sel.qty <= 0)) {
+                sel.qty = 1;
+            }
+            if (sel.isSelected && !sel.vendorName) {
+                var avail = getAvailableVendorsForItem(itemId);
+                if (avail.length > 0) {
+                    sel.vendorId = avail[0].vendorId;
+                    sel.vendorName = avail[0].name;
+                    sel.rate = avail[0].rate;
+                }
+            }
+            renderApproveRequestCatalogList();
+        }
+
+        function handleApproveModalQtyChange(itemId, rawQty) {
+            var sel = approvalModalState.itemSelections[itemId];
+            if (!sel) return;
+            var q = parseFloat(rawQty);
+            if (isNaN(q) || q < 0) q = 0;
+            sel.qty = q;
+            if (q > 0 && !sel.isSelected) {
+                sel.isSelected = true;
+            }
+            var totalDisp = document.getElementById('approveItemTotalDisp_' + itemId);
+            if (totalDisp) {
+                var lineTot = sel.isSelected ? (q * (parseFloat(sel.rate) || 0)) : 0;
+                totalDisp.innerText = '₹' + lineTot.toFixed(2);
+            }
+            updateApprovalModalSummaryTotals();
+        }
+
+        function selectVendorForApproveItem(itemId, vendorId, vendorName, rateVal) {
+            var sel = approvalModalState.itemSelections[itemId];
+            if (!sel) return;
+            sel.isSelected = true;
+            if (!sel.qty || sel.qty <= 0) sel.qty = 1;
+            sel.vendorId = vendorId;
+            sel.vendorName = vendorName;
+            sel.rate = parseFloat(rateVal) || getVendorItemRate(itemId, vendorName) || 0;
+            renderApproveRequestCatalogList();
+        }
+
+        async function updateApproveItemVendorRate(itemId, vendorId, vendorName, newRateRaw) {
+            var numRate = parseFloat(newRateRaw);
+            if (isNaN(numRate) || numRate < 0) numRate = 0;
+
+            if (!dbVendorRates[itemId]) dbVendorRates[itemId] = {};
+            dbVendorRates[itemId][vendorName] = numRate;
+
+            var vObj = getVendorByIdOrName(vendorId, vendorName);
+            if (vObj) {
+                if (!vObj.itemRates) vObj.itemRates = {};
+                vObj.itemRates[itemId] = numRate;
+            }
+
+            var sel = approvalModalState.itemSelections[itemId];
+            if (sel) {
+                sel.isSelected = true;
+                sel.vendorId = vendorId;
+                sel.vendorName = vendorName;
+                sel.rate = numRate;
+            }
+
+            var itemObj = dbData.inventory.find(function(i) { return i.id === itemId; });
+            if (window.saveSingleVendorRateToFirestore) {
+                await window.saveSingleVendorRateToFirestore(itemId, itemObj, dbVendorRates[itemId]);
+            }
+            renderApproveRequestCatalogList();
+        }
+
+        function updateApprovalModalSummaryTotals() {
+            var itemCount = 0;
+            var vendorSet = {};
+            var subtotal = 0;
+
+            Object.keys(approvalModalState.itemSelections).forEach(function(itemId) {
+                var sel = approvalModalState.itemSelections[itemId];
+                if (sel && sel.isSelected && (parseFloat(sel.qty) || 0) > 0) {
+                    itemCount++;
+                    if (sel.vendorName) vendorSet[sel.vendorName] = true;
+                    subtotal += ((parseFloat(sel.qty) || 0) * (parseFloat(sel.rate) || 0));
+                }
+            });
+
+            var gstAmt = subtotal * 0.18;
+            var grandTotal = subtotal + gstAmt;
+
+            var cEl = document.getElementById('approveSummaryItemCount');
+            var vEl = document.getElementById('approveSummaryVendorCount');
+            var sEl = document.getElementById('approveSummarySubtotal');
+            var gEl = document.getElementById('approveSummaryGst');
+            var totEl = document.getElementById('approveSummaryGrandTotal');
+
+            if (cEl) cEl.innerText = itemCount;
+            if (vEl) vEl.innerText = Object.keys(vendorSet).length;
+            if (sEl) sEl.innerText = '₹' + subtotal.toFixed(2);
+            if (gEl) gEl.innerText = '₹' + gstAmt.toFixed(2);
+            if (totEl) totEl.innerText = '₹' + grandTotal.toFixed(2);
+        }
+
+        async function handleConfirmMaterialRequestApproval() {
+            var reqId = approvalModalState.requestId;
+            var req = (dbProcurementRequests || []).find(function(r) {
+                return (r.requestId || r.id) === reqId;
+            });
+            if (!req) return;
+
+            var updatedItems = [];
+            var approvedDetails = [];
+
+            dbData.inventory.forEach(function(item) {
+                var sel = approvalModalState.itemSelections[item.id];
+                if (sel && sel.isSelected && (parseFloat(sel.qty) || 0) > 0) {
+                    var qty = parseFloat(sel.qty) || 0;
+                    var vObj = getVendorByIdOrName(sel.vendorId, sel.vendorName);
+                    var rate = parseFloat(sel.rate);
+                    if (isNaN(rate) || rate < 0) {
+                        rate = getVendorItemRate(item.id, vObj.name);
+                    }
+                    var lineTotal = qty * rate;
+
+                    updatedItems.push({
+                        itemId: item.id,
+                        itemCode: item.code,
+                        itemName: item.name,
+                        qty: qty,
+                        isSelected: true
+                    });
+
+                    approvedDetails.push({
+                        vendorId: vObj.vendorId || vObj.id,
+                        vendorName: vObj.name,
+                        vendorAddress: vObj.address || '',
+                        vendorGST: vObj.gstNo || '',
+                        vendorContactPerson: vObj.contactPerson || '',
+                        vendorContactNumber: vObj.contactNumber || '',
+                        itemId: item.id,
+                        itemCode: item.code,
+                        itemName: item.name,
+                        unit: item.unit || 'Nos',
+                        qty: qty,
+                        rate: rate,
+                        total: lineTotal
+                    });
+                }
+            });
+
+            if (approvedDetails.length === 0) {
+                showAppNotification('Please check at least one item with a quantity greater than 0 to approve.', 'error');
+                return;
+            }
+
+            var btn = document.getElementById('confirmApprovalSubmitBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Confirming...</span>';
+            }
+
+            req.status = 'Approved';
+            req.items = updatedItems;
+            req.approvedDetails = approvedDetails;
+            req.approvedBy = currentUser ? currentUser.email : 'Administrator';
+            req.updatedAt = new Date().toISOString();
+
+            saveStateToLocalBackup();
+            if (window.saveProcurementRequestToFirestore) {
+                await window.saveProcurementRequestToFirestore(req);
+            }
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i><span>Confirm Approval</span>';
+            }
+
+            closeModal('approveRequestModal');
+            switchModule('procurement');
+            showAppNotification('Request ' + reqId + ' approved and vendor rates assigned!', 'success');
+        }
+
+        function deleteMaterialRequestRecord(requestId) {
+            var req = (dbProcurementRequests || []).find(function(r) {
+                return (r.requestId || r.id) === requestId;
+            });
+            if (!req) return;
+
+            openConfirmDialog('Are you sure you want to permanently delete Material Request "' + requestId + '"?', async function() {
+                markRecordDeleted(requestId);
+                dbProcurementRequests = (dbProcurementRequests || []).filter(function(r) {
+                    return (r.requestId || r.id) !== requestId;
+                });
+                saveStateToLocalBackup();
+                if (window.deleteProcurementRequestFromFirestore) {
+                    await window.deleteProcurementRequestFromFirestore(requestId);
+                }
+                switchModule('procurement');
+                showAppNotification('Material request ' + requestId + ' deleted.', 'info');
+            });
+        }
+
+        // ----------------- SECTION 3: VENDOR MANAGEMENT SYSTEM ("Add / Manage Vendors") -----------------
+        function openManageVendorsModal(editVendorId) {
+            if (!isCurrentUserAdmin()) {
+                showAppNotification('Access Denied: Only Administrators can manage vendors.', 'error');
+                return;
+            }
+            ensureProcurementModalsExist();
+            syncVendorNamesFromDirectory();
+
+            if (editVendorId) {
+                editVendorRecord(editVendorId);
+            } else {
+                resetVendorMgmtForm();
+            }
+            renderVendorDirectoryList();
+            openModal('manageVendorsModal');
+        }
+
+        function resetVendorMgmtForm() {
+            vendorMgmtState.editVendorId = '';
+            var idEl = document.getElementById('vendorMgmtEditId');
+            var nameEl = document.getElementById('vendorMgmtName');
+            var addrEl = document.getElementById('vendorMgmtAddress');
+            var cpEl = document.getElementById('vendorMgmtContactPerson');
+            var cnEl = document.getElementById('vendorMgmtContactNumber');
+            var gstEl = document.getElementById('vendorMgmtGstNo');
+            var headingEl = document.getElementById('vendorMgmtFormHeading');
+            var submitBtn = document.getElementById('vendorMgmtSubmitBtn');
+
+            if (idEl) idEl.value = '';
+            if (nameEl) nameEl.value = '';
+            if (addrEl) addrEl.value = '';
+            if (cpEl) cpEl.value = '';
+            if (cnEl) cnEl.value = '';
+            if (gstEl) gstEl.value = '';
+            if (headingEl) headingEl.innerHTML = '<i class="fa-solid fa-plus-circle text-indigo-600"></i><span>Add New Vendor</span>';
+            if (submitBtn) submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span>Save Vendor</span>';
+
+            renderVendorMgmtItemRatesInputs('');
+        }
+
+        function renderVendorMgmtItemRatesInputs(vendorName) {
+            var listEl = document.getElementById('vendorMgmtItemRatesList');
+            if (!listEl) return;
+
+            if (!dbData.inventory || dbData.inventory.length === 0) {
+                listEl.innerHTML = '<div class="text-xs text-slate-400 italic p-2">No inventory items available.</div>';
+                return;
+            }
+
+            var html = '';
+            dbData.inventory.forEach(function(item) {
+                var existingRate = vendorName ? getVendorItemRate(item.id, vendorName) : 0;
+                html += '<div class="flex items-center justify-between py-1.5 px-1 text-xs gap-2">';
+                html += '<div class="truncate"><span class="font-semibold text-slate-800">' + item.name + '</span> <span class="text-[10px] font-mono text-slate-400">(' + item.code + ')</span></div>';
+                html += '<div class="flex items-center space-x-1 flex-shrink-0">';
+                html += '<span class="text-slate-400 font-mono text-[11px]">₹</span>';
+                html += '<input type="number" step="0.01" min="0" data-item-id="' + item.id + '" value="' + (existingRate > 0 ? existingRate : '') + '" placeholder="0.00" class="vendor-mgmt-rate-input w-20 px-2 py-1 text-xs font-mono text-right rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500">';
+                html += '</div></div>';
+            });
+            listEl.innerHTML = html;
+        }
+
+        function editVendorRecord(vendorId) {
+            var vObj = dbVendors.find(function(v) { return (v.vendorId || v.id) === vendorId; });
+            if (!vObj) return;
+
+            vendorMgmtState.editVendorId = vObj.vendorId || vObj.id;
+            document.getElementById('vendorMgmtEditId').value = vObj.vendorId || vObj.id;
+            document.getElementById('vendorMgmtName').value = vObj.name || '';
+            document.getElementById('vendorMgmtAddress').value = vObj.address || '';
+            document.getElementById('vendorMgmtContactPerson').value = vObj.contactPerson || '';
+            document.getElementById('vendorMgmtContactNumber').value = vObj.contactNumber || '';
+            document.getElementById('vendorMgmtGstNo').value = vObj.gstNo || '';
+
+            var headingEl = document.getElementById('vendorMgmtFormHeading');
+            if (headingEl) {
+                headingEl.innerHTML = '<i class="fa-solid fa-pen-to-square text-amber-600"></i><span>Edit Vendor: ' + vObj.name + '</span>';
+            }
+            var submitBtn = document.getElementById('vendorMgmtSubmitBtn');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span>Update Vendor</span>';
+            }
+
+            renderVendorMgmtItemRatesInputs(vObj.name);
+        }
+
+        async function handleSaveVendorRecord(e) {
+            e.preventDefault();
+            var editId = document.getElementById('vendorMgmtEditId').value.trim();
+            var name = document.getElementById('vendorMgmtName').value.trim();
+            var address = document.getElementById('vendorMgmtAddress').value.trim();
+            var contactPerson = document.getElementById('vendorMgmtContactPerson').value.trim();
+            var contactNumber = document.getElementById('vendorMgmtContactNumber').value.trim();
+            var gstNo = document.getElementById('vendorMgmtGstNo').value.trim().toUpperCase();
+
+            if (!name) {
+                showAppNotification('Vendor Name is required.', 'error');
+                return;
+            }
+
+            var duplicate = dbVendors.find(function(v) {
+                var vId = v.vendorId || v.id;
+                return vId !== editId && v.name && v.name.toLowerCase() === name.toLowerCase();
+            });
+            if (duplicate) {
+                showAppNotification('A vendor named "' + name + '" already exists in the directory.', 'error');
+                return;
+            }
+
+            var vendorId = editId || ('VND-' + Date.now());
+            var oldVendorObj = editId ? dbVendors.find(function(v) { return (v.vendorId || v.id) === editId; }) : null;
+            var oldVendorName = oldVendorObj ? oldVendorObj.name : '';
+
+            // Collect mapped item rates from the form
+            var rateInputs = document.querySelectorAll('#vendorMgmtItemRatesList .vendor-mgmt-rate-input');
+            var itemRatesMap = {};
+            rateInputs.forEach(function(inp) {
+                var itemId = inp.getAttribute('data-item-id');
+                var rVal = parseFloat(inp.value);
+                if (itemId && !isNaN(rVal) && rVal >= 0 && inp.value !== '') {
+                    itemRatesMap[itemId] = rVal;
+                    if (!dbVendorRates[itemId]) dbVendorRates[itemId] = {};
+                    if (oldVendorName && oldVendorName !== name && dbVendorRates[itemId][oldVendorName] !== undefined) {
+                        delete dbVendorRates[itemId][oldVendorName];
+                    }
+                    dbVendorRates[itemId][name] = rVal;
+                }
+            });
+
+            // If vendor was renamed, migrate existing rates under oldVendorName to new name
+            if (oldVendorName && oldVendorName !== name) {
+                Object.keys(dbVendorRates).forEach(function(itemId) {
+                    if (dbVendorRates[itemId] && dbVendorRates[itemId][oldVendorName] !== undefined) {
+                        if (dbVendorRates[itemId][name] === undefined) {
+                            dbVendorRates[itemId][name] = dbVendorRates[itemId][oldVendorName];
+                        }
+                        delete dbVendorRates[itemId][oldVendorName];
+                    }
+                });
+                var pIdx = dbProcurementVendors.indexOf(oldVendorName);
+                if (pIdx !== -1) dbProcurementVendors[pIdx] = name;
+            }
+
+            if (dbProcurementVendors.indexOf(name) === -1) {
+                dbProcurementVendors.push(name);
+            }
+
+            var vendorRecord = {
+                id: vendorId,
+                vendorId: vendorId,
+                name: name,
+                address: address,
+                contactPerson: contactPerson,
+                contactNumber: contactNumber,
+                gstNo: gstNo,
+                itemRates: itemRatesMap,
+                updatedAt: new Date().toISOString()
+            };
+
+            var existingIdx = dbVendors.findIndex(function(v) { return (v.vendorId || v.id) === vendorId; });
+            if (existingIdx >= 0) {
+                dbVendors[existingIdx] = vendorRecord;
+            } else {
+                dbVendors.push(vendorRecord);
+            }
+
+            saveStateToLocalBackup();
+            if (window.saveVendorToFirestore) {
+                await window.saveVendorToFirestore(vendorRecord);
+            }
+            if (window.saveProcurementVendorsToFirestore) {
+                await window.saveProcurementVendorsToFirestore(dbProcurementVendors);
+            }
+            if (Object.keys(itemRatesMap).length > 0 && window.saveAllVendorRatesToFirestore) {
+                await window.saveAllVendorRatesToFirestore(dbVendorRates);
+            }
+
+            resetVendorMgmtForm();
+            renderVendorDirectoryList();
+            if (activeModule === 'procurement') {
+                switchModule('procurement');
+            }
+            showAppNotification(editId ? 'Vendor "' + name + '" updated in Firestore!' : 'Vendor "' + name + '" added to Firestore!', 'success');
+        }
+
+        function renderVendorDirectoryList() {
+            var container = document.getElementById('vendorDirectoryListContainer');
+            var countBadge = document.getElementById('vendorDirectoryCountBadge');
+            if (!container) return;
+
+            syncVendorNamesFromDirectory();
+            if (countBadge) countBadge.innerText = dbVendors.length;
+
+            if (dbVendors.length === 0) {
+                container.innerHTML = '<div class="p-6 text-center text-xs text-slate-400 italic bg-slate-50 rounded-xl border border-slate-200">No vendors registered yet. Use the form on the left to add a vendor.</div>';
+                return;
+            }
+
+            var html = '';
+            dbVendors.forEach(function(v) {
+                var vId = v.vendorId || v.id;
+                var safeVId = String(vId).replace(/'/g, "\\'");
+                var mappedCount = 0;
+                (dbData.inventory || []).forEach(function(item) {
+                    if (getVendorItemRate(item.id, v.name) > 0) mappedCount++;
+                });
+
+                html += '<div class="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs hover:border-indigo-300 transition space-y-2.5">';
+                html += '<div class="flex flex-wrap items-start justify-between gap-2">';
+                html += '<div>';
+                html += '<div class="flex items-center space-x-2">';
+                html += '<h5 class="font-extrabold text-sm text-slate-900">' + v.name + '</h5>';
+                html += '<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">GST: ' + (v.gstNo || 'N/A') + '</span>';
+                html += '</div>';
+                html += '<p class="text-xs text-slate-600 mt-1"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>' + (v.address || 'No address specified') + '</p>';
+                html += '</div>';
+                html += '<div class="flex items-center space-x-1.5">';
+                html += '<button type="button" onclick="editVendorRecord(\'' + safeVId + '\')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-2.5 py-1 rounded-lg transition"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
+                html += '<button type="button" onclick="deleteVendorDirectoryRecord(\'' + safeVId + '\')" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold px-2.5 py-1 rounded-lg transition"><i class="fa-solid fa-trash-can"></i></button>';
+                html += '</div></div>';
+
+                html += '<div class="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">';
+                html += '<div><i class="fa-solid fa-user text-indigo-500 mr-1"></i>Contact: <strong class="text-slate-800">' + (v.contactPerson || '-') + '</strong> (' + (v.contactNumber || '-') + ')</div>';
+                html += '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">' + mappedCount + ' / ' + (dbData.inventory ? dbData.inventory.length : 0) + ' Items Mapped</span>';
+                html += '</div></div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        function deleteVendorDirectoryRecord(vendorId) {
+            var vObj = dbVendors.find(function(v) { return (v.vendorId || v.id) === vendorId; });
+            if (!vObj) return;
+
+            openConfirmDialog('Are you sure you want to delete vendor "' + vObj.name + '" from the directory and remove its rate column?', async function() {
+                markRecordDeleted(vendorId);
+                var vendorName = vObj.name;
+                dbVendors = dbVendors.filter(function(v) { return (v.vendorId || v.id) !== vendorId; });
+                dbProcurementVendors = dbProcurementVendors.filter(function(vn) { return vn !== vendorName; });
+                Object.keys(dbVendorRates).forEach(function(itemId) {
+                    if (dbVendorRates[itemId] && dbVendorRates[itemId][vendorName] !== undefined) {
+                        delete dbVendorRates[itemId][vendorName];
+                    }
+                });
+                saveStateToLocalBackup();
+                if (window.deleteVendorFromFirestore) {
+                    await window.deleteVendorFromFirestore(vendorId);
+                }
+                if (window.deleteVendorColumnFromFirestore) {
+                    await window.deleteVendorColumnFromFirestore(vendorName, dbProcurementVendors);
+                }
+                renderVendorDirectoryList();
+                if (activeModule === 'procurement') switchModule('procurement');
+                showAppNotification('Vendor "' + vendorName + '" deleted.', 'info');
+            });
+        }
+
+        // ----------------- SECTION 4: AUTOMATED PDF GENERATION & MULTI-VENDOR ZIP EXPORT -----------------
+        function buildSingleVendorPurchaseOrderJsPDF(req, vendorGroup, poSequenceIndex) {
+            var jsPDF = window.jspdf.jsPDF;
+            var doc = new jsPDF('p', 'pt', 'a4');
+            var pageWidth = doc.internal.pageSize.getWidth();
+
+            var reqIdClean = (req.requestId || req.id || 'REQ').replace(/^REQ-/, '');
+            var dateCompact = (req.date || new Date().toISOString().split('T')[0]).replace(/-/g, '');
+            var poNumber = 'PO-' + dateCompact + '-' + reqIdClean.substring(0, 6).toUpperCase() + (poSequenceIndex ? ('-V' + poSequenceIndex) : '');
+
+            // 1. Document Header (Centered, bold top banner)
+            doc.setFillColor(0, 77, 61);
+            doc.rect(36, 28, pageWidth - 72, 68, 'F');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.text('Aljamea-tus-Saifiyah (Mumbai Campus)', pageWidth / 2, 49, { align: 'center' });
+
+            doc.setFontSize(11);
+            doc.text('Facilities Management - Housekeeping Division', pageWidth / 2, 66, { align: 'center' });
+
+            doc.setFontSize(10.5);
+            doc.setTextColor(167, 243, 208);
+            doc.text('Purchase Order – ' + poNumber, pageWidth / 2, 83, { align: 'center' });
+
+            // Metadata Sub-bar (PO Date & Requisition Ref)
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(51, 65, 85);
+            doc.text('PO Date: ' + (req.date || new Date().toISOString().split('T')[0]), 40, 114);
+            doc.text('Material Request Ref: ' + (req.requestId || req.id || '-') + ' (' + (req.area || req.department || req.requestedRole || 'Housekeeping') + ')', pageWidth - 40, 114, { align: 'right' });
+
+            // 2. Top Info Section (Two-Column Layout)
+            var boxTopY = 124;
+            var boxHeight = 98;
+            var colWidth = (pageWidth - 84) / 2;
+            var leftColX = 36;
+            var rightColX = 36 + colWidth + 12;
+
+            // Left Box: Vendor Details
+            doc.setDrawColor(203, 213, 225);
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(leftColX, boxTopY, colWidth, boxHeight, 5, 5, 'FD');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9.5);
+            doc.setTextColor(0, 77, 61);
+            doc.text('VENDOR DETAILS (SUPPLIER):', leftColX + 10, boxTopY + 16);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.text(String(vendorGroup.vendorName || '-'), leftColX + 10, boxTopY + 31);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(51, 65, 85);
+            var wrappedAddr = doc.splitTextToSize('Address: ' + (vendorGroup.vendorAddress || 'Mumbai, Maharashtra'), colWidth - 20);
+            doc.text(wrappedAddr.slice(0, 2), leftColX + 10, boxTopY + 45);
+
+            var contactLine = 'Contact: ' + (vendorGroup.vendorContactPerson || '-') +
+                (vendorGroup.vendorContactNumber ? ' (' + vendorGroup.vendorContactNumber + ')' : '');
+            doc.text(contactLine, leftColX + 10, boxTopY + 72);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 41, 59);
+            doc.text('Vendor GST No.: ' + (vendorGroup.vendorGST || 'N/A'), leftColX + 10, boxTopY + 86);
+
+            // Right Box: Billing & Delivery Address (FIXED)
+            doc.setDrawColor(203, 213, 225);
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(rightColX, boxTopY, colWidth, boxHeight, 5, 5, 'FD');
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9.5);
+            doc.setTextColor(0, 77, 61);
+            doc.text('BILLING & DELIVERY ADDRESS:', rightColX + 10, boxTopY + 16);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(15, 23, 42);
+            doc.text('Dawat-e-Hadiyah,', rightColX + 10, boxTopY + 30);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(51, 65, 85);
+            doc.text('Aljamea-tus-Saifiyah,', rightColX + 10, boxTopY + 42);
+            doc.text('Gate 3, Opp Nafees Bldg,', rightColX + 10, boxTopY + 54);
+            doc.text('Marol Church Road, Andheri East,', rightColX + 10, boxTopY + 66);
+            doc.text('Mumbai - 400059', rightColX + 10, boxTopY + 78);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30, 41, 59);
+            doc.text('GST - 27AAATD1489N1ZA', rightColX + 10, boxTopY + 90);
+
+            // 3. Itemized Table Columns: Sr. No. | Item Name | Quantity | Rate (₹) | Item Total (₹)
+            var tableRows = [];
+            var subtotal = 0;
+            (vendorGroup.items || []).forEach(function(it, idx) {
+                var q = parseFloat(it.qty) || 0;
+                var r = parseFloat(it.rate) || 0;
+                var tot = parseFloat(it.total) || (q * r);
+                subtotal += tot;
+                tableRows.push([
+                    String(idx + 1),
+                    String(it.itemName || it.name || '-'),
+                    String(q) + (it.unit ? ' ' + it.unit : ''),
+                    'Rs. ' + r.toFixed(2),
+                    'Rs. ' + tot.toFixed(2)
+                ]);
+            });
+
+            doc.autoTable({
+                head: [['Sr. No.', 'Item Name', 'Quantity', 'Rate (₹)', 'Item Total (₹)']],
+                body: tableRows,
+                startY: boxTopY + boxHeight + 16,
+                margin: { left: 36, right: 36 },
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [0, 77, 61],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 9.5,
+                    halign: 'center'
+                },
+                bodyStyles: {
+                    fontSize: 9,
+                    textColor: [30, 41, 59]
+                },
+                columnStyles: {
+                    0: { halign: 'center', cellWidth: 48 },
+                    1: { halign: 'left', cellWidth: 'auto' },
+                    2: { halign: 'center', cellWidth: 75 },
+                    3: { halign: 'right', cellWidth: 95 },
+                    4: { halign: 'right', cellWidth: 105 }
+                }
+            });
+
+            // 4. Summary / Footer Section (Bottom Right): Subtotal, Add: GST @ 18%, Final Grand Total (Bold)
+            var gstAmount = subtotal * 0.18;
+            var finalGrandTotal = subtotal + gstAmount;
+
+            var finalY = (doc.lastAutoTable && doc.lastAutoTable.finalY) ? doc.lastAutoTable.finalY + 16 : 420;
+            if (finalY > 700) {
+                doc.addPage();
+                finalY = 50;
+            }
+
+            var summaryBoxWidth = 230;
+            var summaryBoxX = pageWidth - 36 - summaryBoxWidth;
+
+            doc.setDrawColor(203, 213, 225);
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(summaryBoxX, finalY, summaryBoxWidth, 74, 5, 5, 'FD');
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9.5);
+            doc.setTextColor(51, 65, 85);
+            doc.text('Subtotal:', summaryBoxX + 12, finalY + 18);
+            doc.text('Rs. ' + subtotal.toFixed(2), summaryBoxX + summaryBoxWidth - 12, finalY + 18, { align: 'right' });
+
+            doc.text('Add: GST @ 18%:', summaryBoxX + 12, finalY + 36);
+            doc.text('Rs. ' + gstAmount.toFixed(2), summaryBoxX + summaryBoxWidth - 12, finalY + 36, { align: 'right' });
+
+            doc.setDrawColor(148, 163, 184);
+            doc.line(summaryBoxX + 10, finalY + 45, summaryBoxX + summaryBoxWidth - 10, finalY + 45);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10.5);
+            doc.setTextColor(0, 77, 61);
+            doc.text('Final Grand Total:', summaryBoxX + 12, finalY + 62);
+            doc.text('Rs. ' + finalGrandTotal.toFixed(2), summaryBoxX + summaryBoxWidth - 12, finalY + 62, { align: 'right' });
+
+            // Authorized Signatory line on Bottom Left
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(100, 116, 139);
+            doc.text('For Aljamea-tus-Saifiyah (Mumbai Campus)', 40, finalY + 22);
+            doc.text('Authorized Signatory — Facilities Management', 40, finalY + 62);
+
+            return {
+                doc: doc,
+                poNumber: poNumber,
+                vendorName: vendorGroup.vendorName
+            };
+        }
+
+        async function downloadApprovedRequestPO(requestId) {
+            var req = (dbProcurementRequests || []).find(function(r) {
+                return (r.requestId || r.id) === requestId;
+            });
+            if (!req || req.status !== 'Approved') {
+                showAppNotification('Please approve this material request first before downloading Purchase Orders.', 'error');
+                return;
+            }
+
+            var approvedDetails = Array.isArray(req.approvedDetails) ? req.approvedDetails : [];
+            if (approvedDetails.length === 0) {
+                showAppNotification('No approved vendor item details found on this request.', 'error');
+                return;
+            }
+
+            // Group approved items by Vendor
+            var vendorGroupsMap = {};
+            approvedDetails.forEach(function(ad) {
+                if (!ad) return;
+                var vKey = ad.vendorId || ad.vendorName || 'DEFAULT_VENDOR';
+                if (!vendorGroupsMap[vKey]) {
+                    var fullVendor = getVendorByIdOrName(ad.vendorId, ad.vendorName);
+                    vendorGroupsMap[vKey] = {
+                        vendorId: ad.vendorId || fullVendor.vendorId,
+                        vendorName: ad.vendorName || fullVendor.name,
+                        vendorAddress: ad.vendorAddress || fullVendor.address || '',
+                        vendorGST: ad.vendorGST || fullVendor.gstNo || '',
+                        vendorContactPerson: ad.vendorContactPerson || fullVendor.contactPerson || '',
+                        vendorContactNumber: ad.vendorContactNumber || fullVendor.contactNumber || '',
+                        items: []
+                    };
+                }
+                vendorGroupsMap[vKey].items.push(ad);
+            });
+
+            var vendorKeys = Object.keys(vendorGroupsMap);
+            var safeDate = (req.date || new Date().toISOString().split('T')[0]).trim();
+            var safeReqId = (req.requestId || req.id || 'REQ').replace(/[^a-zA-Z0-9_-]/g, '_');
+
+            // Single Vendor: Directly trigger download of 1 PDF file
+            if (vendorKeys.length === 1) {
+                var singleGroup = vendorGroupsMap[vendorKeys[0]];
+                var poResult = buildSingleVendorPurchaseOrderJsPDF(req, singleGroup, 1);
+                var cleanVName = (singleGroup.vendorName || 'Vendor').replace(/[^a-zA-Z0-9_-]/g, '_');
+                var pdfFileName = 'PO_' + cleanVName + '_' + safeReqId + '_' + safeDate + '.pdf';
+                poResult.doc.save(pdfFileName);
+                showAppNotification('Downloaded Purchase Order PDF for ' + singleGroup.vendorName + '!', 'success');
+                return;
+            }
+
+            // Multiple Vendors: Generate individual PDFs for each vendor and bundle them into a single downloadable .zip file (using JSZip)
+            if (typeof window.JSZip === 'undefined') {
+                showAppNotification('JSZip library not loaded; downloading individual PDFs.', 'info');
+                vendorKeys.forEach(function(vk, idx) {
+                    var grp = vendorGroupsMap[vk];
+                    var res = buildSingleVendorPurchaseOrderJsPDF(req, grp, idx + 1);
+                    var cName = (grp.vendorName || 'Vendor').replace(/[^a-zA-Z0-9_-]/g, '_');
+                    res.doc.save('PO_' + cName + '_' + safeReqId + '.pdf');
+                });
+                return;
+            }
+
+            try {
+                showAppNotification('Generating ' + vendorKeys.length + ' vendor PDFs and bundling into .zip...', 'info');
+                var zip = new window.JSZip();
+                vendorKeys.forEach(function(vk, idx) {
+                    var grp = vendorGroupsMap[vk];
+                    var poRes = buildSingleVendorPurchaseOrderJsPDF(req, grp, idx + 1);
+                    var cleanVName = (grp.vendorName || ('Vendor_' + (idx + 1))).replace(/[^a-zA-Z0-9_-]/g, '_');
+                    var fileName = 'PO_' + cleanVName + '_' + safeReqId + '_' + safeDate + '.pdf';
+                    var pdfArrayBuffer = poRes.doc.output('arraybuffer');
+                    zip.file(fileName, pdfArrayBuffer);
+                });
+
+                var zipBlob = await zip.generateAsync({ type: 'blob' });
+                var zipUrl = URL.createObjectURL(zipBlob);
+                var a = document.createElement('a');
+                a.href = zipUrl;
+                a.download = 'Purchase_Orders_' + safeReqId + '_' + safeDate + '.zip';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(function() { URL.revokeObjectURL(zipUrl); }, 2000);
+                showAppNotification('Downloaded Multi-Vendor ZIP (' + vendorKeys.length + ' Purchase Order PDFs)!', 'success');
+            } catch (zipErr) {
+                showAppNotification('Error generating ZIP file: ' + zipErr.message, 'error');
+            }
         }
 
         // ----------------- POP-UP 1: "VENDOR RATE" MODAL -----------------
         function openVendorRateModal() {
+            if (!isCurrentUserAdmin()) {
+                showAppNotification('Access Denied: Vendor Rates are restricted to Administrators.', 'error');
+                return;
+            }
             ensureProcurementModalsExist();
+            syncVendorNamesFromDirectory();
             renderVendorRateModalTable();
             openModal('vendorRateModal');
         }
@@ -8003,6 +10001,8 @@
         function renderVendorRateModalTable() {
             var bodyEl = document.getElementById('vendorRateModalBody');
             if (!bodyEl) return;
+
+            syncVendorNamesFromDirectory();
 
             var html = '<table class="w-full text-left text-xs whitespace-nowrap">';
             html += '<thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0 z-10">';
@@ -8066,6 +10066,11 @@
                     return;
                 }
                 dbProcurementVendors.push(cleanName);
+                syncVendorNamesFromDirectory();
+                var newVObj = dbVendors.find(function(v) { return v.name.toLowerCase() === cleanName.toLowerCase(); });
+                if (newVObj && window.saveVendorToFirestore) {
+                    await window.saveVendorToFirestore(newVObj);
+                }
                 if (window.saveProcurementVendorsToFirestore) {
                     await window.saveProcurementVendorsToFirestore(dbProcurementVendors);
                 }
@@ -8077,6 +10082,15 @@
         function deleteProcurementVendorColumn(vendorName) {
             openConfirmDialog('Are you sure you want to delete vendor column "' + vendorName + '" and its associated rate column?', async function() {
                 dbProcurementVendors = dbProcurementVendors.filter(function(v) { return v !== vendorName; });
+                var matchedV = dbVendors.find(function(v) { return v.name === vendorName; });
+                if (matchedV) {
+                    var vId = matchedV.vendorId || matchedV.id;
+                    markRecordDeleted(vId);
+                    dbVendors = dbVendors.filter(function(v) { return (v.vendorId || v.id) !== vId; });
+                    if (window.deleteVendorFromFirestore) {
+                        await window.deleteVendorFromFirestore(vId);
+                    }
+                }
                 Object.keys(dbVendorRates).forEach(function(itemId) {
                     if (dbVendorRates[itemId] && dbVendorRates[itemId][vendorName] !== undefined) {
                         delete dbVendorRates[itemId][vendorName];
@@ -8100,6 +10114,15 @@
             if (!dbVendorRates[itemId]) dbVendorRates[itemId] = {};
             dbVendorRates[itemId][vendorName] = numericRate;
 
+            var vObj = dbVendors.find(function(v) { return v.name === vendorName; });
+            if (vObj) {
+                if (!vObj.itemRates) vObj.itemRates = {};
+                vObj.itemRates[itemId] = numericRate;
+                if (window.saveVendorToFirestore) {
+                    window.saveVendorToFirestore(vObj);
+                }
+            }
+
             var itemObj = dbData.inventory.find(function(i) { return i.id === itemId; });
             if (window.saveSingleVendorRateToFirestore) {
                 await window.saveSingleVendorRateToFirestore(itemId, itemObj, dbVendorRates[itemId]);
@@ -8114,12 +10137,26 @@
             showAppNotification('All vendor rates synced to Firestore!', 'success');
         }
 
-        // ----------------- POP-UP 2: "NEW PROCUREMENT" MODAL -----------------
-        function openNewProcurementModal() {
+        // ----------------- POP-UP 2: "NEW PROCUREMENT" MODAL (ROLE-AWARE) -----------------
+        function openNewProcurementModal(forcedMode) {
             ensureProcurementModalsExist();
+            var isAdmin = isCurrentUserAdmin();
+            var defaultAreas = (currentUser && Array.isArray(currentUser.areas) && currentUser.areas.length > 0)
+                ? currentUser.areas
+                : ALL_AREAS;
+
+            // Non-admin users ALWAYS use 'request' mode (hiding rates, vendors, and totals)
+            // Admin users default to 'request' mode when on Material Requests view or when forcedMode === 'request', and can toggle freely
+            var initialMode = 'request';
+            if (isAdmin && forcedMode === 'order') {
+                initialMode = 'order';
+            }
+
             procFormState = {
                 editId: '',
+                requestMode: initialMode,
                 date: new Date().toISOString().split('T')[0],
+                areaDept: defaultAreas[0] || 'Admin Phase 1',
                 vendorName: dbProcurementVendors[0] || 'Diversey',
                 searchTerm: '',
                 selectedItems: {}
@@ -8128,9 +10165,19 @@
             openModal('newProcurementModal');
         }
 
+        function setProcModalMode(mode) {
+            if (!isCurrentUserAdmin()) {
+                procFormState.requestMode = 'request';
+            } else {
+                procFormState.requestMode = mode === 'order' ? 'order' : 'request';
+            }
+            syncNewProcurementModalUI();
+        }
+
         function populateVendorDropdownInModal() {
             var vendorSelect = document.getElementById('procVendorSelectInput');
             if (!vendorSelect) return;
+            syncVendorNamesFromDirectory();
             if (!procFormState.vendorName || dbProcurementVendors.indexOf(procFormState.vendorName) === -1) {
                 procFormState.vendorName = dbProcurementVendors[0] || '';
             }
@@ -8142,13 +10189,101 @@
         }
 
         function syncNewProcurementModalUI() {
-            var isEditing = !!procFormState.editId;
-            var titleEl = document.getElementById('newProcurementModalTitle');
-            if (titleEl) {
-                titleEl.innerHTML = isEditing
-                    ? '<i class="fa-solid fa-pen-to-square text-amber-600"></i><span>Edit Procurement Order (' + procFormState.editId + ')</span>'
-                    : '<i class="fa-solid fa-cart-plus text-purple-600"></i><span>New Procurement Order</span>';
+            var isAdmin = isCurrentUserAdmin();
+            if (!isAdmin) {
+                procFormState.requestMode = 'request';
             }
+            var isOrderMode = isAdmin && procFormState.requestMode === 'order';
+            var isEditing = !!procFormState.editId;
+
+            var modeSwitchContainer = document.getElementById('procAdminModeSwitchContainer');
+            var btnReq = document.getElementById('procModeBtnRequest');
+            var btnOrd = document.getElementById('procModeBtnOrder');
+            if (modeSwitchContainer) {
+                if (isAdmin && !isEditing) {
+                    modeSwitchContainer.classList.remove('hidden');
+                    if (btnReq && btnOrd) {
+                        if (isOrderMode) {
+                            btnOrd.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold transition bg-purple-600 text-white';
+                            btnReq.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold transition text-slate-600 hover:text-slate-900';
+                        } else {
+                            btnReq.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold transition bg-purple-600 text-white';
+                            btnOrd.className = 'px-2.5 py-1 rounded-md text-[11px] font-bold transition text-slate-600 hover:text-slate-900';
+                        }
+                    }
+                } else {
+                    modeSwitchContainer.classList.add('hidden');
+                }
+            }
+
+            var titleEl = document.getElementById('newProcurementModalTitle');
+            var subEl = document.getElementById('newProcurementModalSubtitle');
+            if (titleEl) {
+                if (isEditing) {
+                    titleEl.innerHTML = '<i class="fa-solid fa-pen-to-square text-amber-600"></i><span>Edit Procurement Order (' + procFormState.editId + ')</span>';
+                } else if (isOrderMode) {
+                    titleEl.innerHTML = '<i class="fa-solid fa-cart-plus text-purple-600"></i><span>New Direct Vendor Procurement Order</span>';
+                } else {
+                    titleEl.innerHTML = '<i class="fa-solid fa-cart-plus text-purple-600"></i><span>New Procurement Material Request</span>';
+                }
+            }
+            if (subEl) {
+                subEl.innerText = isOrderMode
+                    ? 'Select items via checkbox to unlock Procurement Qty. Totals calculate automatically from the selected vendor\'s rate.'
+                    : 'Full item catalog: Enter the requested quantities next to your required items and submit directly to Firestore.';
+            }
+
+            // Populate Area / Department dropdown
+            var areaSelect = document.getElementById('procAreaDeptInput');
+            var areaContainer = document.getElementById('procAreaDeptFieldContainer');
+            if (areaSelect) {
+                var userAreas = (isAdmin || !currentUser || !Array.isArray(currentUser.areas) || currentUser.areas.length === 0)
+                    ? ALL_AREAS
+                    : currentUser.areas;
+                areaSelect.innerHTML = userAreas.map(function(a) {
+                    return '<option value="' + a + '" ' + (procFormState.areaDept === a ? 'selected' : '') + '>' + a + '</option>';
+                }).join('');
+            }
+
+            // Show/Hide Rate, Vendor, and Total Cost elements strictly based on role & mode
+            var vendorFieldContainer = document.getElementById('procVendorFieldContainer');
+            var thSelect = document.getElementById('procThSelect');
+            var thMainStore = document.getElementById('procThMainStoreQty');
+            var thRate = document.getElementById('procThRate');
+            var thTotal = document.getElementById('procThTotal');
+            var footerVendorPipe = document.getElementById('procFooterVendorPipe');
+            var footerVendorWrap = document.getElementById('procFooterVendorWrapper');
+            var grandTotalWrap = document.getElementById('procGrandTotalWrapper');
+
+            var topFieldsGrid = document.getElementById('procTopFieldsGrid');
+            if (isOrderMode) {
+                if (topFieldsGrid) topFieldsGrid.className = 'grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200';
+                if (vendorFieldContainer) vendorFieldContainer.classList.remove('hidden');
+                if (areaContainer) areaContainer.classList.add('hidden');
+                if (thSelect) thSelect.classList.remove('hidden');
+                if (thMainStore) thMainStore.classList.remove('hidden');
+                if (thRate) thRate.classList.remove('hidden');
+                if (thTotal) thTotal.classList.remove('hidden');
+                if (footerVendorPipe) footerVendorPipe.classList.remove('hidden');
+                if (footerVendorWrap) footerVendorWrap.classList.remove('hidden');
+                if (grandTotalWrap) grandTotalWrap.classList.remove('hidden');
+            } else {
+                // Non-Admin (and Admin Material Request mode): Hide all rate columns, vendor columns, vendor dropdowns, select area option, and total cost calculations
+                if (topFieldsGrid) topFieldsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200';
+                if (vendorFieldContainer) vendorFieldContainer.classList.add('hidden');
+                if (areaContainer) areaContainer.classList.add('hidden');
+                if (thRate) thRate.classList.add('hidden');
+                if (thTotal) thTotal.classList.add('hidden');
+                if (footerVendorPipe) footerVendorPipe.classList.add('hidden');
+                if (footerVendorWrap) footerVendorWrap.classList.add('hidden');
+                if (grandTotalWrap) grandTotalWrap.classList.add('hidden');
+                if (!isAdmin && thMainStore) {
+                    thMainStore.classList.add('hidden');
+                } else if (thMainStore) {
+                    thMainStore.classList.remove('hidden');
+                }
+            }
+
             var submitBtn = document.getElementById('saveProcurementSubmitBtn');
             if (submitBtn) {
                 submitBtn.disabled = false;
@@ -8170,12 +10305,14 @@
             renderNewProcurementModalRows();
         }
 
-      function renderNewProcurementModalRows() {
+        function renderNewProcurementModalRows() {
             var tbody = document.getElementById('procItemSelectionTbody');
             if (!tbody) return;
 
+            var isAdmin = isCurrentUserAdmin();
+            var isOrderMode = isAdmin && procFormState.requestMode === 'order';
             var currentVendor = procFormState.vendorName || (dbProcurementVendors[0] || '');
-            
+
             // Search by Item Name, Item Code, AND Category
             var filteredInventory = dbData.inventory.filter(function(item) {
                 if (!procFormState.searchTerm) return true;
@@ -8184,7 +10321,7 @@
                        (item.code && item.code.toLowerCase().indexOf(q) !== -1) ||
                        (item.category && item.category.toLowerCase().indexOf(q) !== -1);
             });
-          
+
             var html = '';
             if (filteredInventory.length === 0) {
                 html = '<tr><td colspan="6" class="p-6 text-center text-slate-400 italic">No inventory items match "' + procFormState.searchTerm + '".</td></tr>';
@@ -8192,41 +10329,76 @@
                 filteredInventory.forEach(function(item) {
                     var itemState = procFormState.selectedItems[item.id] || { checked: false, qty: '' };
                     var isChecked = !!itemState.checked;
-                    var qtyVal = isChecked ? (itemState.qty !== undefined ? itemState.qty : 1) : '';
+                    var qtyVal = isChecked && itemState.qty !== undefined && itemState.qty !== '' ? itemState.qty : '';
                     var mainStoreQty = calculateCurrentStock(item, 'Main Store');
-                    var vendorRate = getVendorItemRate(item.id, currentVendor);
-                    var rowTotal = isChecked ? ((parseFloat(qtyVal) || 0) * vendorRate) : 0;
 
-                    html += '<tr id="procRow_' + item.id + '" class="transition ' + (isChecked ? 'bg-purple-50/50' : 'hover:bg-slate-50') + '">';
-                    html += '<td class="p-3 text-center">';
-                    html += '<input type="checkbox" id="procCheck_' + item.id + '" ' + (isChecked ? 'checked' : '') +
-                        ' onchange="toggleProcItemSelection(\'' + item.id + '\', this.checked)" ' +
-                        ' class="w-4 h-4 rounded text-purple-600 border-slate-300 focus:ring-purple-500 cursor-pointer">';
-                    html += '</td>';
+                    if (!isOrderMode) {
+                        // MATERIAL REQUEST FLOW (Non-Admin & Request Mode):
+                        // Show full item catalog with item name and an always-editable "Quantity" input box next to each item.
+                        // Rate columns, vendor columns, and total cost calculations are strictly hidden.
+                        html += '<tr id="procRow_' + item.id + '" class="transition ' + (isChecked ? 'bg-purple-50/50' : 'hover:bg-slate-50') + '">';
+                        html += '<td class="p-3 text-center">';
+                        html += '<input type="checkbox" id="procCheck_' + item.id + '" ' + (isChecked ? 'checked' : '') +
+                            ' onchange="toggleProcItemSelection(\'' + item.id + '\', this.checked)" ' +
+                            ' class="w-4 h-4 rounded text-purple-600 border-slate-300 focus:ring-purple-500 cursor-pointer">';
+                        html += '</td>';
 
-                    html += '<td class="p-3">';
-                    html += '<label for="procCheck_' + item.id + '" class="font-bold text-slate-900 cursor-pointer block">' + item.name + '</label>';
-                    html += '<span class="text-[10px] font-mono text-slate-400">' + item.code + ' • ' + (item.category || 'General') + ' (' + (item.unit || 'Nos') + ')</span>';
-                    html += '</td>';
+                        html += '<td class="p-3">';
+                        html += '<label for="procQtyInput_' + item.id + '" class="font-bold text-slate-900 cursor-pointer block">' + item.name + '</label>';
+                        html += '<span class="text-[10px] font-mono text-slate-400">' + item.code + ' • ' + (item.category || 'General') + ' (' + (item.unit || 'Nos') + ')</span>';
+                        html += '</td>';
 
-                    html += '<td class="p-3 text-center bg-blue-50/30 font-mono font-bold text-blue-800">' + mainStoreQty + ' <span class="text-[10px] font-normal text-slate-500">' + (item.unit || '') + '</span></td>';
+                        if (isAdmin) {
+                            html += '<td class="p-3 text-center bg-blue-50/30 font-mono font-bold text-blue-800">' + mainStoreQty + ' <span class="text-[10px] font-normal text-slate-500">' + (item.unit || '') + '</span></td>';
+                        }
 
-                    html += '<td class="p-3">';
-                    html += '<input type="number" step="any" min="0.01" id="procQtyInput_' + item.id + '" ' +
-                        (isChecked ? '' : 'disabled') +
-                        ' value="' + qtyVal + '" ' +
-                        ' placeholder="' + (isChecked ? 'Enter Qty' : 'Select checkbox') + '" ' +
-                        ' oninput="handleProcQtyInput(\'' + item.id + '\', this.value)" ' +
-                        ' class="w-full px-2.5 py-1.5 text-xs font-mono rounded-lg border transition ' +
-                        (isChecked
-                            ? 'bg-white border-purple-400 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-purple-500'
-                            : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed') + '">';
-                    html += '</td>';
+                        html += '<td class="p-3">';
+                        html += '<input type="number" step="any" min="0" id="procQtyInput_' + item.id + '" ' +
+                            ' value="' + qtyVal + '" ' +
+                            ' placeholder="Enter Qty (' + (item.unit || 'Nos') + ')" ' +
+                            ' oninput="handleProcQtyInput(\'' + item.id + '\', this.value)" ' +
+                            ' class="w-full px-3 py-1.5 text-xs font-mono rounded-lg border transition ' +
+                            (isChecked
+                                ? 'bg-white border-purple-500 text-slate-900 font-bold ring-1 ring-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500'
+                                : 'bg-white border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500') + '">';
+                        html += '</td>';
+                        html += '</tr>';
+                    } else {
+                        // ADMIN DIRECT ORDER FLOW: Includes Rate & Total columns
+                        var vendorRate = getVendorItemRate(item.id, currentVendor);
+                        var rowTotal = isChecked ? ((parseFloat(qtyVal) || 0) * vendorRate) : 0;
 
-                    html += '<td class="p-3 text-right font-mono font-semibold text-slate-700" id="procRateCell_' + item.id + '">₹' + vendorRate.toFixed(2) + '</td>';
+                        html += '<tr id="procRow_' + item.id + '" class="transition ' + (isChecked ? 'bg-purple-50/50' : 'hover:bg-slate-50') + '">';
+                        html += '<td class="p-3 text-center">';
+                        html += '<input type="checkbox" id="procCheck_' + item.id + '" ' + (isChecked ? 'checked' : '') +
+                            ' onchange="toggleProcItemSelection(\'' + item.id + '\', this.checked)" ' +
+                            ' class="w-4 h-4 rounded text-purple-600 border-slate-300 focus:ring-purple-500 cursor-pointer">';
+                        html += '</td>';
 
-                    html += '<td class="p-3 text-right font-mono font-extrabold ' + (isChecked ? 'text-emerald-700' : 'text-slate-400') + '" id="procTotalCell_' + item.id + '">₹' + rowTotal.toFixed(2) + '</td>';
-                    html += '</tr>';
+                        html += '<td class="p-3">';
+                        html += '<label for="procCheck_' + item.id + '" class="font-bold text-slate-900 cursor-pointer block">' + item.name + '</label>';
+                        html += '<span class="text-[10px] font-mono text-slate-400">' + item.code + ' • ' + (item.category || 'General') + ' (' + (item.unit || 'Nos') + ')</span>';
+                        html += '</td>';
+
+                        html += '<td class="p-3 text-center bg-blue-50/30 font-mono font-bold text-blue-800">' + mainStoreQty + ' <span class="text-[10px] font-normal text-slate-500">' + (item.unit || '') + '</span></td>';
+
+                        html += '<td class="p-3">';
+                        html += '<input type="number" step="any" min="0.01" id="procQtyInput_' + item.id + '" ' +
+                            (isChecked ? '' : 'disabled') +
+                            ' value="' + qtyVal + '" ' +
+                            ' placeholder="' + (isChecked ? 'Enter Qty' : 'Select checkbox') + '" ' +
+                            ' oninput="handleProcQtyInput(\'' + item.id + '\', this.value)" ' +
+                            ' class="w-full px-2.5 py-1.5 text-xs font-mono rounded-lg border transition ' +
+                            (isChecked
+                                ? 'bg-white border-purple-400 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-purple-500'
+                                : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed') + '">';
+                        html += '</td>';
+
+                        html += '<td class="p-3 text-right font-mono font-semibold text-slate-700" id="procRateCell_' + item.id + '">₹' + vendorRate.toFixed(2) + '</td>';
+
+                        html += '<td class="p-3 text-right font-mono font-extrabold ' + (isChecked ? 'text-emerald-700' : 'text-slate-400') + '" id="procTotalCell_' + item.id + '">₹' + rowTotal.toFixed(2) + '</td>';
+                        html += '</tr>';
+                    }
                 });
             }
 
@@ -8236,6 +10408,10 @@
 
         function handleProcDateChange(val) {
             procFormState.date = val;
+        }
+
+        function handleProcAreaDeptChange(val) {
+            procFormState.areaDept = val;
         }
 
         function handleProcVendorChange(newVendor) {
@@ -8260,27 +10436,30 @@
         }
 
         function toggleProcItemSelection(itemId, isChecked) {
+            var isOrderMode = isCurrentUserAdmin() && procFormState.requestMode === 'order';
             if (!procFormState.selectedItems[itemId]) {
                 procFormState.selectedItems[itemId] = { checked: false, qty: 1 };
             }
             procFormState.selectedItems[itemId].checked = isChecked;
             if (isChecked && (!procFormState.selectedItems[itemId].qty || procFormState.selectedItems[itemId].qty <= 0)) {
                 procFormState.selectedItems[itemId].qty = 1;
+            } else if (!isChecked) {
+                procFormState.selectedItems[itemId].qty = '';
             }
 
             var qtyInput = document.getElementById('procQtyInput_' + itemId);
             var rowEl = document.getElementById('procRow_' + itemId);
             if (qtyInput) {
-                qtyInput.disabled = !isChecked;
+                if (isOrderMode) {
+                    qtyInput.disabled = !isChecked;
+                } else {
+                    qtyInput.disabled = false;
+                }
                 if (isChecked) {
                     qtyInput.value = procFormState.selectedItems[itemId].qty;
-                    qtyInput.placeholder = 'Enter Qty';
-                    qtyInput.className = 'w-full px-2.5 py-1.5 text-xs font-mono rounded-lg border transition bg-white border-purple-400 text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-purple-500';
                     qtyInput.focus();
                 } else {
                     qtyInput.value = '';
-                    qtyInput.placeholder = 'Select checkbox';
-                    qtyInput.className = 'w-full px-2.5 py-1.5 text-xs font-mono rounded-lg border transition bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed';
                 }
             }
             if (rowEl) {
@@ -8291,12 +10470,19 @@
 
         function handleProcQtyInput(itemId, rawVal) {
             var qty = parseFloat(rawVal);
-            if (isNaN(qty) || qty < 0) qty = 0;
+            var hasPositiveQty = !isNaN(qty) && qty > 0;
             if (!procFormState.selectedItems[itemId]) {
-                procFormState.selectedItems[itemId] = { checked: true, qty: qty };
+                procFormState.selectedItems[itemId] = { checked: hasPositiveQty, qty: hasPositiveQty ? qty : '' };
             } else {
-                procFormState.selectedItems[itemId].qty = qty;
+                procFormState.selectedItems[itemId].qty = hasPositiveQty ? qty : '';
+                procFormState.selectedItems[itemId].checked = hasPositiveQty;
             }
+
+            var chkEl = document.getElementById('procCheck_' + itemId);
+            var rowEl = document.getElementById('procRow_' + itemId);
+            if (chkEl) chkEl.checked = hasPositiveQty;
+            if (rowEl) rowEl.className = 'transition ' + (hasPositiveQty ? 'bg-purple-50/50' : 'hover:bg-slate-50');
+
             recalculateProcurementFormTotals(itemId);
         }
 
@@ -8304,7 +10490,7 @@
             var currentVendor = procFormState.vendorName || (dbProcurementVendors[0] || '');
             if (changedItemId) {
                 var st = procFormState.selectedItems[changedItemId];
-                var isChecked = st && st.checked;
+                var isChecked = st && st.checked && (parseFloat(st.qty) || 0) > 0;
                 var rate = getVendorItemRate(changedItemId, currentVendor);
                 var rowTot = isChecked ? ((parseFloat(st.qty) || 0) * rate) : 0;
                 var totalCell = document.getElementById('procTotalCell_' + changedItemId);
@@ -8318,7 +10504,7 @@
             var count = 0;
             dbData.inventory.forEach(function(item) {
                 var st = procFormState.selectedItems[item.id];
-                if (st && st.checked) {
+                if (st && st.checked && (parseFloat(st.qty) || 0) > 0) {
                     var q = parseFloat(st.qty) || 0;
                     var r = getVendorItemRate(item.id, currentVendor);
                     grandTotal += (q * r);
@@ -8334,9 +10520,72 @@
 
         async function handleSaveProcurementOrder(e) {
             e.preventDefault();
+            var isAdmin = isCurrentUserAdmin();
+            var isOrderMode = isAdmin && procFormState.requestMode === 'order';
             var dateVal = document.getElementById('procOrderDateInput') ? document.getElementById('procOrderDateInput').value : procFormState.date;
-            var vendorVal = document.getElementById('procVendorSelectInput') ? document.getElementById('procVendorSelectInput').value : procFormState.vendorName;
+            var areaVal = isAdmin
+                ? 'All Areas'
+                : ((currentUser && Array.isArray(currentUser.areas) && currentUser.areas.length > 0)
+                    ? currentUser.areas.join(', ')
+                    : (currentUser && currentUser.role ? currentUser.role : 'Housekeeping'));
 
+            // 1. MATERIAL REQUEST SUBMISSION FLOW (All Non-Admin users & Admin Material Request mode)
+            if (!isOrderMode && !procFormState.editId) {
+                var requestItems = [];
+                dbData.inventory.forEach(function(item) {
+                    var st = procFormState.selectedItems[item.id];
+                    var qty = st && st.checked ? (parseFloat(st.qty) || 0) : 0;
+                    if (qty > 0) {
+                        requestItems.push({
+                            itemId: item.id,
+                            itemCode: item.code,
+                            itemName: item.name,
+                            qty: qty,
+                            isSelected: true
+                        });
+                    }
+                });
+
+                if (requestItems.length === 0) {
+                    showAppNotification('Please enter a quantity greater than 0 for at least one item.', 'error');
+                    return;
+                }
+
+                var submitBtnReq = document.getElementById('saveProcurementSubmitBtn');
+                if (submitBtnReq) {
+                    submitBtnReq.disabled = true;
+                    submitBtnReq.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Submitting Request...</span>';
+                }
+
+                var reqId = 'REQ-' + Date.now();
+                var newRequestDoc = {
+                    id: reqId,
+                    requestId: reqId,
+                    requestedBy: currentUser ? currentUser.email : 'User',
+                    requestedRole: currentUser ? currentUser.role : 'Staff',
+                    area: areaVal,
+                    department: areaVal,
+                    date: dateVal || new Date().toISOString().split('T')[0],
+                    status: 'Pending',
+                    items: requestItems,
+                    approvedDetails: [],
+                    updatedAt: new Date().toISOString()
+                };
+
+                dbProcurementRequests.unshift(newRequestDoc);
+                saveStateToLocalBackup();
+                if (window.saveProcurementRequestToFirestore) {
+                    await window.saveProcurementRequestToFirestore(newRequestDoc);
+                }
+
+                closeModal('newProcurementModal');
+                switchModule('procurement');
+                showAppNotification('Material Request (' + reqId + ') submitted to Firestore!', 'success');
+                return;
+            }
+
+            // 2. ADMIN DIRECT VENDOR ORDER FLOW
+            var vendorVal = document.getElementById('procVendorSelectInput') ? document.getElementById('procVendorSelectInput').value : procFormState.vendorName;
             if (!dateVal || !vendorVal) {
                 showAppNotification('Please select both a Date and a Vendor.', 'error');
                 return;
@@ -8404,8 +10653,8 @@
             var html = '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
             html += '<div>';
-            html += '<h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-clipboard-list text-purple-600"></i><span>Procurement Orders List (Dashboard)</span></h3>';
-            html += '<p class="text-xs text-slate-500 mt-0.5">All past procurement orders stored in Firestore, sorted by date (latest first).</p>';
+            html += '<h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-clipboard-list text-purple-600"></i><span>Direct Procurement Orders List</span></h3>';
+            html += '<p class="text-xs text-slate-500 mt-0.5">All past direct vendor procurement orders stored in Firestore, sorted by date (latest first).</p>';
             html += '</div>';
             html += '<span class="text-xs font-bold px-3 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-200 self-start sm:self-auto">' + sortedOrders.length + ' Orders</span>';
             html += '</div>';
@@ -8413,7 +10662,7 @@
             if (sortedOrders.length === 0) {
                 html += '<div class="p-10 text-center space-y-3">';
                 html += '<div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-cart-shopping"></i></div>';
-                html += '<p class="text-xs text-slate-500 italic">No procurement orders saved in Firestore yet. Click "New Procurement" at the top right to create your first order.</p>';
+                html += '<p class="text-xs text-slate-500 italic">No direct procurement orders saved in Firestore yet.</p>';
                 html += '</div>';
             } else {
                 html += '<div class="overflow-x-auto custom-scrollbar">';
@@ -8441,7 +10690,7 @@
                     html += '<div class="flex items-center justify-center space-x-2">';
                     html += '<button type="button" onclick="editProcurementOrder(\'' + ord.id + '\')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1" title="Edit Order"><i class="fa-solid fa-pen-to-square"></i><span>Edit</span></button>';
                     html += '<button type="button" onclick="deleteProcurementOrder(\'' + ord.id + '\')" class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1" title="Delete Order"><i class="fa-solid fa-trash-can"></i><span>Delete</span></button>';
-                    html += '<button type="button" onclick="downloadProcurementOrderPDF(\'' + ord.id + '\')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-2xs transition inline-flex items-center space-x-1.5" title="Download HK Procurement PDF"><i class="fa-solid fa-file-pdf"></i><span>Download PDF</span></button>';
+                    html += '<button type="button" onclick="downloadProcurementOrderPDF(\'' + ord.id + '\')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-2xs transition inline-flex items-center space-x-1.5" title="Download Purchase Order PDF"><i class="fa-solid fa-file-pdf"></i><span>Download PDF</span></button>';
                     html += '</div></td>';
                     html += '</tr>';
                 });
@@ -8486,7 +10735,9 @@
 
             procFormState = {
                 editId: ord.id,
+                requestMode: 'order',
                 date: ord.date || new Date().toISOString().split('T')[0],
+                areaDept: 'Main Store',
                 vendorName: ord.vendorName || (dbProcurementVendors[0] || ''),
                 searchTerm: '',
                 selectedItems: selectedMap
@@ -8509,75 +10760,38 @@
             });
         }
 
-        // Auto-generates clean PDF excluding Main Store Qty, named "HK Procurement - [Date].pdf"
+        // Generates formatted Purchase Order PDF for direct orders using the official Aljamea PO layout
         function downloadProcurementOrderPDF(orderId) {
             var ord = dbProcurements.find(function(o) { return o.id === orderId; });
             if (!ord) return;
 
-            var jsPDF = window.jspdf.jsPDF;
-            var doc = new jsPDF('p', 'pt', 'a4');
-
-            // Document Header
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(18);
-            doc.setTextColor(0, 77, 61);
-            doc.text('HK Procurement', 40, 48);
-
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(11);
-            doc.setTextColor(51, 65, 85);
-            doc.text('Date: ' + (ord.date || '-'), 40, 72);
-            doc.text('Vendor Name: ' + (ord.vendorName || '-'), 40, 90);
-
-            // Item Table (Strictly: Item Name, Order Qty, Rate, Total Amount — NO Main Store Qty)
-            var tableRows = [];
-            var itemsList = Array.isArray(ord.items) ? ord.items : [];
-            itemsList.forEach(function(it) {
-                var qtyNum = parseFloat(it.qty) || 0;
-                var rateNum = parseFloat(it.rate) || 0;
-                var totalNum = parseFloat(it.total) || (qtyNum * rateNum);
-                tableRows.push([
-                    it.name || '-',
-                    qtyNum.toString(),
-                    'Rs. ' + rateNum.toFixed(2),
-                    'Rs. ' + totalNum.toFixed(2)
-                ]);
-            });
-
-            var grandTotalNum = parseFloat(ord.grandTotal) || 0;
-
-            doc.autoTable({
-                head: [['Item Name', 'Order Qty', 'Rate', 'Total Amount']],
-                body: tableRows,
-                foot: [['', '', 'Grand Total', 'Rs. ' + grandTotalNum.toFixed(2)]],
-                startY: 110,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [0, 77, 61],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                bodyStyles: {
-                    fontSize: 10,
-                    textColor: [30, 41, 59]
-                },
-                footStyles: {
-                    fillColor: [241, 245, 249],
-                    textColor: [15, 23, 42],
-                    fontStyle: 'bold',
-                    fontSize: 11
-                },
-                columnStyles: {
-                    0: { cellWidth: 'auto' },
-                    1: { halign: 'center', cellWidth: 85 },
-                    2: { halign: 'right', cellWidth: 100 },
-                    3: { halign: 'right', cellWidth: 115 }
-                }
-            });
-
+            var vObj = getVendorByIdOrName('', ord.vendorName);
+            var vendorGroup = {
+                vendorId: vObj.vendorId || vObj.id,
+                vendorName: ord.vendorName || vObj.name,
+                vendorAddress: vObj.address || '',
+                vendorGST: vObj.gstNo || '',
+                vendorContactPerson: vObj.contactPerson || '',
+                vendorContactNumber: vObj.contactNumber || '',
+                items: (Array.isArray(ord.items) ? ord.items : []).map(function(it) {
+                    return {
+                        itemName: it.name || it.itemName || '-',
+                        unit: it.unit || 'Nos',
+                        qty: it.qty,
+                        rate: it.rate,
+                        total: it.total
+                    };
+                })
+            };
+            var pseudoReq = {
+                requestId: ord.id,
+                date: ord.date,
+                area: 'Main Store'
+            };
+            var poRes = buildSingleVendorPurchaseOrderJsPDF(pseudoReq, vendorGroup, 1);
             var safeDate = (ord.date || new Date().toISOString().split('T')[0]).trim();
-            doc.save('HK Procurement - ' + safeDate + '.pdf');
+            var cleanVendor = (ord.vendorName || 'Vendor').replace(/[^a-zA-Z0-9_-]/g, '_');
+            poRes.doc.save('PO_' + cleanVendor + '_' + safeDate + '.pdf');
         }
 
         // ================= MODULE 9: MACHINERY =================
@@ -9622,6 +11836,23 @@
                     sheetName = "Vendor Rates";
                     fileName = "Siyanat_Vendor_Rates_Master";
                     reportTitle = "Siyanat Marol - Vendor Rates Master";
+                } else if (procurementSubView === 'material_requests' || (dbProcurementRequests && dbProcurementRequests.length > 0 && dbProcurements.length === 0)) {
+                    var sortedReqs = getSortedMaterialRequests();
+                    sortedReqs.forEach(function(r) {
+                        var itemCount = Array.isArray(r.items) ? r.items.length : 0;
+                        exportRows.push({
+                            'Request ID': r.requestId || r.id,
+                            'Date': r.date || '-',
+                            'Requested By': r.requestedBy || '-',
+                            'Role': r.requestedRole || '-',
+                            'Area / Department': r.area || r.department || r.requestedRole || '-',
+                            'Items Requested': itemCount,
+                            'Status': r.status || 'Pending'
+                        });
+                    });
+                    sheetName = "Material Requests";
+                    fileName = "Siyanat_Material_Requests";
+                    reportTitle = "Siyanat Marol - HK Material Requests Summary";
                 } else {
                     var sortedOrders = getSortedProcurements();
                     sortedOrders.forEach(function(ord) {
@@ -10279,6 +12510,62 @@
                         }
                     },
                     (err) => handleSnapshotError("procurements", err)
+                )
+            );
+
+            // 15B. Sync Vendor Directory Collection (vendors)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "vendors"),
+                    (snapshot) => {
+                        const cloudVendors = [];
+                        snapshot.forEach((docSnap) => {
+                            const d = docSnap.data();
+                            const vId = d.vendorId || d.id || docSnap.id;
+                            cloudVendors.push({ ...d, id: vId, vendorId: vId });
+                        });
+                        if (cloudVendors.length > 0) {
+                            window.dbVendors = mergeCollectionWithLocal(cloudVendors, window.dbVendors, 'vendorId');
+                            if (typeof window.syncVendorNamesFromDirectory === "function") {
+                                window.syncVendorNamesFromDirectory();
+                            }
+                            saveStateToLocalBackup();
+                        } else if (window.dbVendors && window.dbVendors.length > 0) {
+                            window.dbVendors.forEach((v) => {
+                                const vId = v.vendorId || v.id;
+                                if (vId) {
+                                    setDoc(doc(db, "vendors", vId), v, { merge: true }).catch(() => {});
+                                }
+                            });
+                        }
+                        if (window.activeModule === "procurement") {
+                            window.switchModule("procurement");
+                        }
+                    },
+                    (err) => handleSnapshotError("vendors", err)
+                )
+            );
+
+            // 15C. Sync Material Requests Collection (procurement_requests)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "procurement_requests"),
+                    (snapshot) => {
+                        const cloudReqs = [];
+                        snapshot.forEach((docSnap) => {
+                            const d = docSnap.data();
+                            const rId = d.requestId || d.id || docSnap.id;
+                            cloudReqs.push({ ...d, id: rId, requestId: rId });
+                        });
+                        const mergedReqs = mergeCollectionWithLocal(cloudReqs, window.dbProcurementRequests, 'requestId');
+                        mergedReqs.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+                        window.dbProcurementRequests = mergedReqs;
+                        saveStateToLocalBackup();
+                        if (window.activeModule === "procurement") {
+                            window.switchModule("procurement");
+                        }
+                    },
+                    (err) => handleSnapshotError("procurement_requests", err)
                 )
             );
 
@@ -10991,6 +13278,70 @@
             }
         };
 
+        window.saveVendorToFirestore = async function(vendorObj) {
+            if (!vendorObj) return;
+            const vId = vendorObj.vendorId || vendorObj.id || ("VND-" + Date.now());
+            vendorObj.vendorId = vId;
+            vendorObj.id = vId;
+            saveStateToLocalBackup();
+            try {
+                await setDoc(doc(db, "vendors", vId), {
+                    vendorId: vId,
+                    name: vendorObj.name || "",
+                    address: vendorObj.address || "",
+                    contactPerson: vendorObj.contactPerson || "",
+                    contactNumber: vendorObj.contactNumber || "",
+                    gstNo: vendorObj.gstNo || "",
+                    itemRates: vendorObj.itemRates || {},
+                    updatedAt: vendorObj.updatedAt || new Date().toISOString()
+                }, { merge: true });
+            } catch (err) {
+                handleWriteError("vendors", err);
+            }
+        };
+
+        window.deleteVendorFromFirestore = async function(vendorId) {
+            if (!vendorId) return;
+            markRecordDeleted(vendorId);
+            saveStateToLocalBackup();
+            try {
+                await deleteDoc(doc(db, "vendors", vendorId));
+            } catch (err) {
+                handleWriteError("vendors", err);
+            }
+        };
+
+        window.saveProcurementRequestToFirestore = async function(reqObj) {
+            if (!reqObj) return;
+            const rId = reqObj.requestId || reqObj.id || ("REQ-" + Date.now());
+            reqObj.requestId = rId;
+            reqObj.id = rId;
+            const existingIdx = (window.dbProcurementRequests || []).findIndex((r) => (r.requestId || r.id) === rId);
+            if (existingIdx >= 0) {
+                window.dbProcurementRequests[existingIdx] = reqObj;
+            } else {
+                window.dbProcurementRequests.unshift(reqObj);
+            }
+            saveStateToLocalBackup();
+            try {
+                await setDoc(doc(db, "procurement_requests", rId), reqObj, { merge: true });
+            } catch (err) {
+                handleWriteError("procurement_requests", err);
+            }
+        };
+
+        window.deleteProcurementRequestFromFirestore = async function(requestId) {
+            if (!requestId) return;
+            markRecordDeleted(requestId);
+            window.dbProcurementRequests = (window.dbProcurementRequests || []).filter((r) => (r.requestId || r.id) !== requestId);
+            saveStateToLocalBackup();
+            try {
+                await deleteDoc(doc(db, "procurement_requests", requestId));
+            } catch (err) {
+                handleWriteError("procurement_requests", err);
+            }
+        };
+
         // Module 9: Machinery & Breakdowns Firestore Operations
         window.saveMachineryToFirestore = async function(macObj) {
             saveStateToLocalBackup();
@@ -11114,6 +13465,18 @@
                 }
                 for (const prc of (window.dbProcurements || [])) {
                     await setDoc(doc(db, "procurements", prc.id), prc, { merge: true });
+                }
+                for (const vnd of (window.dbVendors || [])) {
+                    const vId = vnd.vendorId || vnd.id;
+                    if (vId) {
+                        await setDoc(doc(db, "vendors", vId), vnd, { merge: true });
+                    }
+                }
+                for (const preq of (window.dbProcurementRequests || [])) {
+                    const rId = preq.requestId || preq.id;
+                    if (rId) {
+                        await setDoc(doc(db, "procurement_requests", rId), preq, { merge: true });
+                    }
                 }
                 for (const mac of (window.dbData.machinery || [])) {
                     await setDoc(doc(db, "machinery", mac.id), mac, { merge: true });
