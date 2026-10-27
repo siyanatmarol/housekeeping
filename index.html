@@ -387,75 +387,7 @@
         </div>
     </div>
 
-    <!-- ADMIN USER ACCESS MANAGEMENT MODAL -->
-    <div id="adminModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
-                <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
-                    <i class="fa-solid fa-user-shield text-emerald-600"></i>
-                    <span>Admin User Access Control</span>
-                </h3>
-                <div class="flex items-center space-x-2">
-                    <button type="button" onclick="openDriveConfigModal()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5" title="Database Backup & fm.marol Drive Settings">
-                        <span id="cloudSyncStatusDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        <i class="fa-brands fa-google-drive text-emerald-600"></i>
-                        <span id="cloudSyncStatusText">Cloud &amp; Drive Settings</span>
-                    </button>
-                    <button onclick="closeModal('adminModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto custom-scrollbar p-1">
-                <form onsubmit="saveUserAccess(event)" class="space-y-3.5 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <h4 id="userAccessFormTitle" class="font-bold text-xs text-slate-800 uppercase tracking-wider">Grant / Edit User Access</h4>
-                    <input type="hidden" id="editingUserEmail">
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">User Email Address</label>
-                        <input type="email" id="accessEmail" required placeholder="user@domain.com" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Access Role Level</label>
-                        <select id="accessRole" onchange="updateAccessAreaDropdown()" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
-                            <option value="Administrator">Administrator (Full Rights)</option>
-                            <option value="Executive – Admin">Executive – Admin</option>
-                            <option value="Executive – Hostels">Executive – Hostels</option>
-                            <option value="Supervisor">Supervisor</option>
-                            <option value="Waste Management Supervisor">Waste Management Supervisor (Compost &amp; Dry Waste Only)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Assigned Areas</label>
-                        <select id="accessArea" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Module Permissions</label>
-                        <div class="space-y-1.5 text-xs text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200">
-                            <label class="flex items-center space-x-2"><input type="checkbox" id="mod_pest" checked class="rounded text-emerald-600"> <span>Pest Control</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" id="mod_waste" checked class="rounded text-emerald-600"> <span>Dry Waste</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" id="mod_compost" checked class="rounded text-emerald-600"> <span>Compost Operations</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" id="mod_water" checked class="rounded text-emerald-600"> <span>Water Tanks</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" id="mod_procurement" checked class="rounded text-emerald-600"> <span>Procurement</span></label>
-                            <label class="flex items-center space-x-2"><input type="checkbox" id="mod_machinery" checked class="rounded text-emerald-600"> <span>Machinery</span></label>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2.5 border-t border-slate-200/80">
-                        <button type="button" onclick="resetUserAccessForm()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold py-2 px-3.5 rounded-lg transition shadow-2xs text-center">Reset Form</button>
-                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2 px-4 rounded-lg shadow transition text-center">Save User Permissions</button>
-                    </div>
-                </form>
-
-                <div class="space-y-3 min-w-0">
-                    <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider">Authorized System Users</h4>
-                    <div id="userAccessList" class="space-y-2.5 max-h-[420px] overflow-y-auto custom-scrollbar pr-1"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- ADMIN USER ACCESS IS NOW RENDERED AS A FULL PAGE IN #moduleContainer (NO POPUP MODAL) -->
 
     <!-- MODULE 4: PEST CONTROL TREATMENT MODAL -->
     <div id="pestControlModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
@@ -1729,25 +1661,23 @@
 
         var executivesData = {
             'Executive – Admin': {
-                name: 'Murtaza Kheraluwala',
-                staffId: 'EXEC-01',
-                email: 'murtaza.kheraluwala@jameasaifiyah.edu',
-                contact: '+91 9820011111',
+                name: 'Sudhir Eknath Kate (1325)',
+                staffId: 'EXEC-ADMIN',
+                contact: '+91 9819777174',
                 role: 'Executive – Admin'
             },
             'Executive – Hostels': {
-                name: 'Kheraluwala Executive',
-                staffId: 'EXEC-02',
-                email: 'kheralu52@gmail.com',
+                name: 'Executive – Hostels',
+                staffId: 'EXEC-HOSTEL',
                 contact: '+91 9820022222',
                 role: 'Executive – Hostels'
             }
         };
 
         var userRegistry = [
-            { email: 'murtaza.kheraluwala@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
-            { email: 'fm.marol@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
-            { email: 'kheralu52@gmail.com', role: 'Executive – Hostels', areas: HOSTEL_EXECUTIVE_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'water', 'procurement', 'machinery'] },
+            { name: 'Murtaza Kheraluwala', email: 'murtaza.kheraluwala@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
+            { name: 'FM Marol Admin', email: 'fm.marol@jameasaifiyah.edu', role: 'Administrator', areas: ALL_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery'] },
+            { name: 'Kheraluwala Executive', email: 'kheralu52@gmail.com', role: 'Executive – Hostels', areas: HOSTEL_EXECUTIVE_AREAS, allowedModules: ['inventory', 'hr', 'cleaning', 'water', 'procurement', 'machinery'] }
         ];
 
         var MODULES = [
@@ -2032,10 +1962,18 @@
                 areaCapacities = Object.assign({}, areaCapacities, snap.areaCapacities);
             }
             if (snap.executivesData && typeof snap.executivesData === 'object') {
+                Object.keys(snap.executivesData).forEach(function(k) {
+                    if (snap.executivesData[k]) delete snap.executivesData[k].email;
+                });
                 executivesData = Object.assign({}, executivesData, snap.executivesData);
             }
             if (Array.isArray(snap.userRegistry) && snap.userRegistry.length > 0) {
-                userRegistry = snap.userRegistry;
+                userRegistry = snap.userRegistry.map(function(u) {
+                    if (!u.name && u.email) {
+                        u.name = u.email.split('@')[0].replace(/[._]/g, ' ');
+                    }
+                    return u;
+                });
             }
             if (Array.isArray(snap.dbPestControlRecords)) {
                 dbPestControlRecords = snap.dbPestControlRecords.filter(function(x) { return !isRecordDeleted(x.id); });
@@ -2266,6 +2204,7 @@
 
                 if (isSystemSuperAdmin) {
                     currentUser = {
+                        name: normalizedEmail.includes('murtaza') ? 'Murtaza Kheraluwala' : 'FM Marol Admin',
                         email: normalizedEmail,
                         role: 'Administrator',
                         areas: ALL_AREAS,
@@ -2274,6 +2213,7 @@
                 } else {
                     // Default fallback for any newly registered unrecognized email
                     currentUser = {
+                        name: normalizedEmail.split('@')[0].replace(/[._]/g, ' '),
                         email: normalizedEmail,
                         role: 'Supervisor',
                         areas: ['Admin Phase 1'],
@@ -2293,7 +2233,11 @@
 
             if (currentUser) {
                 closeModal('authModal');
-                switchModule(activeModule || (currentUser.role === 'Waste Management Supervisor' ? 'waste' : 'inventory'));
+                if (currentPrimaryTab === 'admin') {
+                    renderAdminAccessPage();
+                } else {
+                    switchModule(activeModule || (currentUser.role === 'Waste Management Supervisor' ? 'waste' : 'inventory'));
+                }
             }
         };
 
@@ -2308,14 +2252,55 @@
                     return;
                 }
 
-                renderUserAccessList();
-                updateAccessAreaDropdown();
-                openModal('adminModal');
+                currentPrimaryTab = 'admin';
+
+                var houseTab = document.getElementById('mainTabHousekeeping');
+                var adminTab = document.getElementById('mainTabAdmin');
+                if (houseTab) {
+                    houseTab.className = "px-4 py-2 font-medium text-xs sm:text-sm rounded-t-lg transition flex items-center space-x-2 text-emerald-100 hover:text-white hover:bg-emerald-800/40 border-b-2 border-transparent bg-transparent";
+                }
+                if (adminTab) {
+                    adminTab.className = "px-4 py-2 font-semibold text-xs sm:text-sm rounded-t-lg transition flex items-center space-x-2 bg-[#006e57] text-white border-b-2 border-emerald-300 shadow-sm";
+                }
+
+                var subNavbar = document.getElementById('subModuleNavbar');
+                if (subNavbar) subNavbar.classList.add('hidden');
+
+                var headerTitle = document.getElementById('moduleHeaderTitle');
+                var headerIcon = document.getElementById('moduleHeaderIcon');
+                var iconContainer = document.getElementById('moduleIconContainer');
+                var subText = document.getElementById('moduleSubText');
+                var importBox = document.getElementById('moduleImportContainer');
+                var exportBox = document.getElementById('moduleExportContainer');
+
+                if (headerTitle) headerTitle.innerText = "Admin Access & System Permissions";
+                if (headerIcon) headerIcon.className = "fa-solid fa-user-shield";
+                if (iconContainer) iconContainer.style.backgroundColor = "#0f766e";
+                if (subText) subText.innerText = "Manage authorized staff users, role levels, campus area allocations, and module privileges";
+                if (importBox) importBox.innerHTML = "";
+                if (exportBox) exportBox.classList.add('hidden');
+
+                renderAdminAccessPage();
                 return;
             }
 
-            currentPrimaryTab = tabName;
-            switchModule(activeModule);
+            currentPrimaryTab = 'housekeeping';
+            var houseTab = document.getElementById('mainTabHousekeeping');
+            var adminTab = document.getElementById('mainTabAdmin');
+            if (houseTab) {
+                houseTab.className = "px-4 py-2 font-semibold text-xs sm:text-sm rounded-t-lg transition flex items-center space-x-2 bg-[#006e57] text-white border-b-2 border-emerald-300 shadow-sm";
+            }
+            if (adminTab) {
+                adminTab.className = "px-4 py-2 font-medium text-xs sm:text-sm rounded-t-lg transition flex items-center space-x-2 text-emerald-100 hover:text-white hover:bg-emerald-800/40 border-b-2 border-transparent bg-transparent";
+            }
+
+            var subNavbar = document.getElementById('subModuleNavbar');
+            if (subNavbar) subNavbar.classList.remove('hidden');
+
+            var exportBox = document.getElementById('moduleExportContainer');
+            if (exportBox) exportBox.classList.remove('hidden');
+
+            switchModule(activeModule || 'inventory');
         }
 
         var pendingMediaTargetRecordMap = {};
@@ -3161,6 +3146,7 @@
                                 if (detectedExecutives[execKey].contact) {
                                     executivesData[execKey].contact = detectedExecutives[execKey].contact;
                                 }
+                                delete executivesData[execKey].email;
                             }
                         });
                         if (Object.keys(detectedExecutives).length > 0 && window.saveExecutivesDataToFirestore) {
@@ -3244,12 +3230,15 @@
             var adminTabBtn = document.getElementById('mainTabAdmin');
 
             if (currentUser) {
+                var isUserAdmin = currentUser.role === 'Administrator' || currentUser.email.toLowerCase().includes('fm.marol') || currentUser.email.toLowerCase().includes('murtaza');
                 var areaSummary = currentUser.role === 'Administrator'
                     ? 'All Areas'
                     : (currentUser.role === 'Waste Management Supervisor'
                         ? 'Dry Waste & Compost'
                         : (currentUser.areas ? currentUser.areas.join(', ') : 'Assigned Area'));
-                if (emailEl) emailEl.innerText = currentUser.email;
+                if (emailEl) {
+                    emailEl.innerText = currentUser.name ? (currentUser.name + ' (' + currentUser.email + ')') : currentUser.email;
+                }
 
                 if (roleEl) {
                     roleEl.innerText = currentUser.role + ' (' + areaSummary + ')';
@@ -3257,7 +3246,7 @@
                 }
 
                 if (adminTabBtn) {
-                    if (currentUser.role === 'Administrator') {
+                    if (isUserAdmin) {
                         adminTabBtn.classList.remove('hidden');
                     } else {
                         adminTabBtn.classList.add('hidden');
@@ -4276,7 +4265,7 @@
         }
 
         function renderExecutiveHierarchyBlock(execRoleKey, titleLabel, areasList, staffArray, totalCap) {
-            var execInfo = executivesData[execRoleKey] || { name: 'Executive Officer', staffId: 'EXEC-00', email: 'exec@domain.com', contact: 'N/A' };
+            var execInfo = executivesData[execRoleKey] || { name: 'Executive Officer', staffId: 'EXEC-00', contact: 'N/A' };
             var currentStaffCount = staffArray.length;
 
             var html = '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5">';
@@ -4480,12 +4469,11 @@
             var currentStaffCount = getFilteredStaffByAreas(assignedAreas).length;
             var capacity = calculateTotalCapacity(assignedAreas);
 
-            var content = '<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">';
+            var content = '<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">';
             content += '<div><span class="text-slate-400 text-[10px] font-bold uppercase">Executive Name</span><p class="font-bold text-slate-900 text-sm">' + exec.name + '</p></div>';
             content += '<div><span class="text-slate-400 text-[10px] font-bold uppercase">Staff ID Code</span><p class="font-mono font-bold text-emerald-700 text-xs">' + exec.staffId + '</p></div>';
             content += '<div><span class="text-slate-400 text-[10px] font-bold uppercase">Designation / Role</span><p class="font-semibold text-slate-800 text-xs">' + exec.role + '</p></div>';
-            content += '<div><span class="text-slate-400 text-[10px] font-bold uppercase">Email Address</span><p class="text-slate-700 text-xs">' + exec.email + '</p></div>';
-            content += '<div><span class="text-slate-400 text-[10px] font-bold uppercase">Contact Number</span><p class="text-slate-700 text-xs">' + exec.contact + '</p></div>';
+            content += '<div><span class="text-slate-400 text-[10px] font-bold uppercase">Contact Number</span><p class="text-slate-700 text-xs font-semibold">' + (exec.contact || 'N/A') + '</p></div>';
             content += '<div><span class="text-slate-400 text-[10px] font-bold uppercase">Total Managed Staff Count / Capacity</span><p class="font-bold text-slate-900 text-xs">' + currentStaffCount + ' / ' + capacity + '</p></div>';
             content += '<div><span class="text-slate-400 text-[10px] font-bold uppercase">Assigned Area Stores</span><p class="text-xs text-slate-700 font-medium">' + assignedAreas.join(', ') + '</p></div>';
             content += '</div>';
@@ -4656,6 +4644,7 @@
                     executivesData[key].name = name;
                     executivesData[key].staffId = staffCode;
                     executivesData[key].contact = contact;
+                    delete executivesData[key].email;
                     saveStateToLocalBackup();
                     if (window.saveExecutivesDataToFirestore) {
                         window.saveExecutivesDataToFirestore(executivesData);
@@ -11980,45 +11969,237 @@
             });
         }
 
-        // Admin Access Controls UI Helpers
+        // Admin Access Full Page View & User Controls
+        function renderAdminAccessPage() {
+            var container = document.getElementById('moduleContainer');
+            var actions = document.getElementById('modulePrimaryActions');
+            if (!container) return;
+
+            if (actions) {
+                actions.innerHTML = '<button type="button" onclick="openDriveConfigModal()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-2xs" title="Database Backup & fm.marol Drive Settings"><span id="cloudSyncStatusDot" class="w-2 h-2 rounded-full bg-emerald-500"></span><i class="fa-brands fa-google-drive text-emerald-600"></i><span id="cloudSyncStatusText">Cloud &amp; Drive Settings</span></button>' +
+                    '<button type="button" onclick="window.syncAllLocalDataToFirestore(true)" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5 shadow-2xs" title="Sync All 9 Modules to Firestore"><i class="fa-solid fa-cloud-arrow-up text-emerald-600"></i><span>Sync to Firestore</span></button>';
+            }
+
+            var totalUsers = (userRegistry || []).length;
+            var adminCount = (userRegistry || []).filter(function(u) { return u.role === 'Administrator'; }).length;
+            var execCount = (userRegistry || []).filter(function(u) { return (u.role || '').indexOf('Executive') !== -1; }).length;
+            var supCount = (userRegistry || []).filter(function(u) { return (u.role || '').indexOf('Supervisor') !== -1; }).length;
+
+            var html = '';
+
+            // Metric Cards
+            html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">';
+            html += '<div class="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center space-x-3.5">';
+            html += '<div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 flex items-center justify-center text-lg"><i class="fa-solid fa-users-gear"></i></div>';
+            html += '<div><span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Total Users</span><h3 class="text-xl font-black text-slate-900">' + totalUsers + '</h3></div>';
+            html += '</div>';
+
+            html += '<div class="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center space-x-3.5">';
+            html += '<div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg"><i class="fa-solid fa-user-shield"></i></div>';
+            html += '<div><span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Administrators</span><h3 class="text-xl font-black text-slate-900">' + adminCount + '</h3></div>';
+            html += '</div>';
+
+            html += '<div class="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center space-x-3.5">';
+            html += '<div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center text-lg"><i class="fa-solid fa-user-tie"></i></div>';
+            html += '<div><span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Executives</span><h3 class="text-xl font-black text-slate-900">' + execCount + '</h3></div>';
+            html += '</div>';
+
+            html += '<div class="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-2xs flex items-center space-x-3.5">';
+            html += '<div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center text-lg"><i class="fa-solid fa-user-check"></i></div>';
+            html += '<div><span class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Supervisors</span><h3 class="text-xl font-black text-slate-900">' + supCount + '</h3></div>';
+            html += '</div>';
+            html += '</div>';
+
+            // 2-Column Responsive Layout
+            html += '<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">';
+
+            // Left Column: User Access Form (lg:col-span-5)
+            html += '<div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">';
+            html += '<div class="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">';
+            html += '<h3 id="userAccessFormTitle" class="font-extrabold text-sm text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-user-plus text-emerald-600"></i><span>Grant / Edit User Access</span></h3>';
+            html += '<button type="button" onclick="resetUserAccessForm()" class="text-slate-400 hover:text-slate-600 text-xs font-semibold"><i class="fa-solid fa-rotate-left mr-1"></i>Reset</button>';
+            html += '</div>';
+
+            html += '<form id="userAccessForm" onsubmit="saveUserAccess(event)" class="space-y-4">';
+            html += '<input type="hidden" id="editingUserEmail">';
+
+            // 1. User Name (Full Name) - BEFORE User Email Address
+            html += '<div>';
+            html += '<label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">';
+            html += '<span>User Name (Full Name) <span class="text-red-500">*</span></span>';
+            html += '<span class="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Name appears first</span>';
+            html += '</label>';
+            html += '<div class="relative">';
+            html += '<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none"><i class="fa-solid fa-user text-xs"></i></span>';
+            html += '<input type="text" id="accessName" required placeholder="e.g. Murtaza Kheraluwala" class="w-full text-xs pl-8 pr-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition">';
+            html += '</div>';
+            html += '<p class="text-[10px] text-slate-400 mt-1">Full display name shown on rosters, badges, and system logs.</p>';
+            html += '</div>';
+
+            // 2. User Email Address
+            html += '<div>';
+            html += '<label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">';
+            html += '<span>User Email Address <span class="text-red-500">*</span></span>';
+            html += '<span class="text-[10px] text-slate-400 font-normal">Google Sign-In Email</span>';
+            html += '</label>';
+            html += '<div class="relative">';
+            html += '<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none"><i class="fa-solid fa-envelope text-xs"></i></span>';
+            html += '<input type="email" id="accessEmail" required placeholder="user@domain.com" class="w-full text-xs pl-8 pr-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition">';
+            html += '</div>';
+            html += '<p class="text-[10px] text-slate-400 mt-1">Exact institutional or personal email used for signing in.</p>';
+            html += '</div>';
+
+            // 3. Access Role Level
+            html += '<div>';
+            html += '<label class="block text-xs font-bold text-slate-700 mb-1">Access Role Level <span class="text-red-500">*</span></label>';
+            html += '<select id="accessRole" onchange="updateAccessAreaDropdown()" class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition font-medium">';
+            html += '<option value="Administrator">Administrator (Full Rights across All Modules)</option>';
+            html += '<option value="Executive – Admin">Executive – Admin (Admin Complex Oversight)</option>';
+            html += '<option value="Executive – Hostels">Executive – Hostels (Hostel Blocks Oversight)</option>';
+            html += '<option value="Supervisor">Supervisor (Area-level checklists & operations)</option>';
+            html += '<option value="Waste Management Supervisor">Waste Management Supervisor (Dry Waste & Compost Only)</option>';
+            html += '</select>';
+            html += '</div>';
+
+            // 4. Assigned Areas
+            html += '<div>';
+            html += '<label class="block text-xs font-bold text-slate-700 mb-1">Assigned Campus Area(s) <span class="text-red-500">*</span></label>';
+            html += '<select id="accessArea" class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition font-medium"></select>';
+            html += '<p class="text-[10px] text-slate-400 mt-1">Defines staff visibility, area checklists, and store inventory boundaries.</p>';
+            html += '</div>';
+
+            // 5. Module Permissions
+            html += '<div>';
+            html += '<label class="block text-xs font-bold text-slate-700 mb-1">Module Privileges (Optional Add-ons)</label>';
+            html += '<div class="space-y-2 text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">';
+            html += '<label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="mod_pest" checked class="rounded text-emerald-600 focus:ring-emerald-500"> <span><strong class="font-semibold text-slate-800">Module 4:</strong> Pest Control</span></label>';
+            html += '<label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="mod_waste" checked class="rounded text-emerald-600 focus:ring-emerald-500"> <span><strong class="font-semibold text-slate-800">Module 5:</strong> Dry Waste Management</span></label>';
+            html += '<label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="mod_compost" checked class="rounded text-emerald-600 focus:ring-emerald-500"> <span><strong class="font-semibold text-slate-800">Module 6:</strong> Compost Operations</span></label>';
+            html += '<label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="mod_water" checked class="rounded text-emerald-600 focus:ring-emerald-500"> <span><strong class="font-semibold text-slate-800">Module 7:</strong> Water Tanks Cleaning</span></label>';
+            html += '<label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="mod_procurement" checked class="rounded text-emerald-600 focus:ring-emerald-500"> <span><strong class="font-semibold text-slate-800">Module 8:</strong> Procurement & Rates</span></label>';
+            html += '<label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="mod_machinery" checked class="rounded text-emerald-600 focus:ring-emerald-500"> <span><strong class="font-semibold text-slate-800">Module 9:</strong> Machinery</span></label>';
+            html += '</div>';
+            html += '<p class="text-[10px] text-slate-400 mt-1">Note: Modules 1 (Inventory), 2 (HR), and 3 (Cleaning Reports) are core baseline modules.</p>';
+            html += '</div>';
+
+            // Form Submit / Reset Buttons
+            html += '<div class="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">';
+            html += '<button type="button" onclick="resetUserAccessForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2.5 px-4 rounded-xl transition shadow-2xs">Reset Form</button>';
+            html += '<button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-check"></i><span>Save User Permissions</span></button>';
+            html += '</div>';
+            html += '</form>';
+            html += '</div>';
+
+            // Right Column: User Directory List (lg:col-span-7)
+            html += '<div class="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">';
+            html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-slate-100 gap-3">';
+            html += '<div>';
+            html += '<h3 class="font-extrabold text-sm text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-address-book text-emerald-600"></i><span>Authorized System Directory</span></h3>';
+            html += '<p class="text-xs text-slate-500 mt-0.5">Live list of staff with active portal credentials and module rights</p>';
+            html += '</div>';
+            html += '</div>';
+
+            // Search and Filters Bar
+            html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">';
+            html += '<div class="relative">';
+            html += '<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>';
+            html += '<input type="text" id="userSearchInput" oninput="renderUserAccessList()" placeholder="Search user name, email, or area..." class="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition">';
+            html += '</div>';
+            html += '<div>';
+            html += '<select id="userRoleFilter" onchange="renderUserAccessList()" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none transition">';
+            html += '<option value="ALL">All Roles (' + totalUsers + ')</option>';
+            html += '<option value="Administrator">Administrators Only</option>';
+            html += '<option value="Executive – Admin">Executive – Admin</option>';
+            html += '<option value="Executive – Hostels">Executive – Hostels</option>';
+            html += '<option value="Supervisor">Supervisors</option>';
+            html += '<option value="Waste Management Supervisor">Waste Management Supervisors</option>';
+            html += '</select>';
+            html += '</div>';
+            html += '</div>';
+
+            // User Cards Container
+            html += '<div id="userAccessList" class="space-y-3 pt-2"></div>';
+            html += '</div>';
+
+            html += '</div>'; // End 2-column grid
+
+            container.innerHTML = html;
+            updateAccessAreaDropdown();
+            renderUserAccessList();
+        }
+
         function renderUserAccessList() {
             var listContainer = document.getElementById('userAccessList');
             if (!listContainer) return;
 
-            if (!userRegistry || userRegistry.length === 0) {
-                listContainer.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-4">No users configured in access list.</p>';
+            var filterTerm = (document.getElementById('userSearchInput') ? document.getElementById('userSearchInput').value.toLowerCase().trim() : '');
+            var filterRole = (document.getElementById('userRoleFilter') ? document.getElementById('userRoleFilter').value : 'ALL');
+
+            var filteredUsers = (userRegistry || []).filter(function(u) {
+                var nameMatch = (u.name || '').toLowerCase().indexOf(filterTerm) !== -1;
+                var emailMatch = (u.email || '').toLowerCase().indexOf(filterTerm) !== -1;
+                var roleMatch = (u.role || '').toLowerCase().indexOf(filterTerm) !== -1;
+                var areaMatch = (u.areas ? u.areas.join(' ') : '').toLowerCase().indexOf(filterTerm) !== -1;
+                var matchesSearch = !filterTerm || nameMatch || emailMatch || roleMatch || areaMatch;
+                var matchesRole = filterRole === 'ALL' || u.role === filterRole;
+                return matchesSearch && matchesRole;
+            });
+
+            if (filteredUsers.length === 0) {
+                listContainer.innerHTML = '<div class="bg-slate-50 rounded-2xl border border-slate-200 p-8 text-center text-slate-400"><i class="fa-solid fa-users-slash text-3xl mb-2 text-slate-300"></i><p class="text-xs font-semibold">No authorized users found matching search or filter criteria.</p></div>';
                 return;
             }
 
             var html = '';
-            userRegistry.forEach(function(u, idx) {
-                var areaStr = (u.role === 'Administrator' || u.role === 'Waste Management Supervisor') ? 'All Areas' : (u.areas ? u.areas.join(', ') : 'None');
-                var modulesCount = u.role === 'Administrator' ? 'All (9)' : (u.role === 'Waste Management Supervisor' ? 'Compost & Dry Waste Only (2)' : ((u.allowedModules ? u.allowedModules.length : 0) + ' Modules'));
+            filteredUsers.forEach(function(u) {
+                var globalIdx = userRegistry.indexOf(u);
+                var uName = u.name || (u.email ? u.email.split('@')[0].replace(/[._]/g, ' ') : 'Authorized User');
+                var areaStr = (u.role === 'Administrator' || u.role === 'Waste Management Supervisor') ? 'All Campus Areas' : (u.areas ? u.areas.join(', ') : 'None');
+                var modulesCount = u.role === 'Administrator' ? 'All (9) Modules' : (u.role === 'Waste Management Supervisor' ? 'Compost & Dry Waste Only (2)' : ((u.allowedModules ? u.allowedModules.length : 0) + ' Modules'));
 
-                html += '<div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2.5 overflow-hidden">';
-                html += '<div class="flex flex-wrap items-center justify-between gap-1.5">';
-                html += '<span class="font-bold text-xs text-slate-900 break-all leading-snug">' + u.email + '</span>';
-                html += '<span class="inline-flex items-center text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 whitespace-nowrap flex-shrink-0">' + u.role + '</span>';
+                var roleBadgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                if (u.role === 'Administrator') roleBadgeClass = 'bg-purple-100 text-purple-800 border-purple-200';
+                else if (u.role.indexOf('Executive') !== -1) roleBadgeClass = 'bg-blue-100 text-blue-800 border-blue-200';
+                else if (u.role === 'Supervisor') roleBadgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+
+                html += '<div class="bg-slate-50/70 hover:bg-white p-4 rounded-xl border border-slate-200 hover:border-emerald-300 hover:shadow-md transition space-y-3">';
+                html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
+                html += '<div class="flex items-center space-x-3 min-w-0">';
+                html += '<div class="w-10 h-10 rounded-xl bg-white text-emerald-700 border border-slate-200 flex items-center justify-center font-bold text-sm shadow-2xs flex-shrink-0">';
+                html += '<i class="fa-solid fa-user-shield"></i>';
                 html += '</div>';
-                html += '<div class="text-[11px] text-slate-600 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200/80 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">';
-                html += '<span class="break-words"><strong class="text-slate-700">Areas:</strong> ' + areaStr + '</span>';
-                html += '<span class="text-emerald-700 font-semibold whitespace-nowrap"><strong class="text-slate-700">Rights:</strong> ' + modulesCount + '</span>';
-                html += '</div>';
-                html += '<div class="grid grid-cols-2 gap-2 pt-0.5">';
-                html += '<button type="button" onclick="editUserAccess(\'' + u.email + '\')" class="w-full inline-flex items-center justify-center space-x-1.5 bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 text-xs font-semibold py-1.5 px-3 rounded-lg transition shadow-2xs"><i class="fa-solid fa-pen-to-square"></i><span>Edit</span></button>';
-                html += '<button type="button" onclick="removeUserAccess(' + idx + ')" class="w-full inline-flex items-center justify-center space-x-1.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 text-xs font-semibold py-1.5 px-3 rounded-lg transition shadow-2xs"><i class="fa-solid fa-trash-can"></i><span>Delete</span></button>';
+                html += '<div class="min-w-0">';
+                html += '<h4 class="font-bold text-sm text-slate-900 truncate flex items-center space-x-2">';
+                html += '<span>' + uName + '</span>';
+                html += '</h4>';
+                html += '<p class="text-xs text-slate-500 font-mono truncate flex items-center space-x-1"><i class="fa-solid fa-envelope text-[10px] text-slate-400"></i><span>' + u.email + '</span></p>';
                 html += '</div></div>';
+                html += '<span class="inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full font-bold border ' + roleBadgeClass + ' self-start sm:self-center whitespace-nowrap flex-shrink-0">' + u.role + '</span>';
+                html += '</div>';
+
+                html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white p-2.5 rounded-lg border border-slate-200/80">';
+                html += '<div><span class="text-[10px] font-bold uppercase text-slate-400 block">Assigned Areas</span><p class="font-semibold text-slate-700 text-xs truncate">' + areaStr + '</p></div>';
+                html += '<div><span class="text-[10px] font-bold uppercase text-slate-400 block">Module Rights</span><p class="font-semibold text-emerald-700 text-xs truncate">' + modulesCount + '</p></div>';
+                html += '</div>';
+
+                html += '<div class="flex items-center justify-end space-x-2 pt-1">';
+                html += '<button type="button" onclick="editUserAccess(\'' + u.email + '\')" class="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-100 text-indigo-600 border border-indigo-200 text-xs font-semibold py-1.5 px-3 rounded-lg transition shadow-2xs"><i class="fa-solid fa-pen-to-square"></i><span>Edit</span></button>';
+                html += '<button type="button" onclick="removeUserAccess(' + globalIdx + ')" class="inline-flex items-center space-x-1.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 text-xs font-semibold py-1.5 px-3 rounded-lg transition shadow-2xs"><i class="fa-solid fa-trash-can"></i><span>Delete</span></button>';
+                html += '</div>';
+                html += '</div>';
             });
             listContainer.innerHTML = html;
         }
 
         function updateAccessAreaDropdown() {
-            var role = document.getElementById('accessRole').value;
+            var roleSelect = document.getElementById('accessRole');
             var areaSelect = document.getElementById('accessArea');
+            if (!roleSelect || !areaSelect) return;
+            var role = roleSelect.value;
             var allModIds = ['mod_pest', 'mod_waste', 'mod_compost', 'mod_water', 'mod_procurement', 'mod_machinery'];
 
             if (role === 'Administrator') {
-                areaSelect.innerHTML = '<option value="All">All 9 Areas</option>';
+                areaSelect.innerHTML = '<option value="All">All 9 Campus Areas</option>';
             } else if (role === 'Executive – Admin') {
                 areaSelect.innerHTML = '<option value="AdminGroup">Executive Admin Group (' + ADMIN_EXECUTIVE_AREAS.join(', ') + ')</option>';
             } else if (role === 'Executive – Hostels') {
@@ -12047,10 +12228,17 @@
         }
 
         function resetUserAccessForm() {
-            document.getElementById('editingUserEmail').value = '';
-            document.getElementById('accessEmail').value = '';
-            document.getElementById('accessRole').value = 'Administrator';
-            document.getElementById('userAccessFormTitle').innerText = 'Grant / Edit User Access';
+            var editEmailInput = document.getElementById('editingUserEmail');
+            var accessNameInput = document.getElementById('accessName');
+            var accessEmailInput = document.getElementById('accessEmail');
+            var accessRoleInput = document.getElementById('accessRole');
+            var titleEl = document.getElementById('userAccessFormTitle');
+
+            if (editEmailInput) editEmailInput.value = '';
+            if (accessNameInput) accessNameInput.value = '';
+            if (accessEmailInput) accessEmailInput.value = '';
+            if (accessRoleInput) accessRoleInput.value = 'Administrator';
+            if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-user-plus text-emerald-600"></i><span>Grant / Edit User Access</span>';
 
             ['mod_pest', 'mod_waste', 'mod_compost', 'mod_water', 'mod_procurement', 'mod_machinery'].forEach(function(id) {
                 var el = document.getElementById(id);
@@ -12069,41 +12257,62 @@
             }
             if (!u) return;
 
-            document.getElementById('editingUserEmail').value = u.email;
-            document.getElementById('accessEmail').value = u.email;
-            document.getElementById('accessRole').value = u.role;
-            document.getElementById('userAccessFormTitle').innerText = 'Editing Access: ' + u.email;
+            var editEmailInput = document.getElementById('editingUserEmail');
+            var accessNameInput = document.getElementById('accessName');
+            var accessEmailInput = document.getElementById('accessEmail');
+            var accessRoleInput = document.getElementById('accessRole');
+            var titleEl = document.getElementById('userAccessFormTitle');
+
+            if (editEmailInput) editEmailInput.value = u.email;
+            if (accessNameInput) accessNameInput.value = u.name || '';
+            if (accessEmailInput) accessEmailInput.value = u.email;
+            if (accessRoleInput) accessRoleInput.value = u.role;
+            if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-user-pen text-indigo-600"></i><span>Editing Access: ' + (u.name || u.email) + '</span>';
 
             updateAccessAreaDropdown();
 
-            if (u.role === 'Supervisor') {
-                document.getElementById('accessArea').value = u.areas[0] || SUPERVISOR_ASSIGNED_AREAS[0];
+            var areaSelect = document.getElementById('accessArea');
+            if (areaSelect && u.role === 'Supervisor') {
+                areaSelect.value = (u.areas && u.areas[0]) ? u.areas[0] : SUPERVISOR_ASSIGNED_AREAS[0];
             }
 
             if (u.role === 'Waste Management Supervisor') {
-                document.getElementById('mod_pest').checked = false;
-                document.getElementById('mod_waste').checked = true;
-                document.getElementById('mod_compost').checked = true;
-                document.getElementById('mod_water').checked = false;
-                document.getElementById('mod_procurement').checked = false;
-                document.getElementById('mod_machinery').checked = false;
+                ['mod_pest', 'mod_water', 'mod_procurement', 'mod_machinery'].forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) { el.checked = false; el.disabled = true; }
+                });
+                ['mod_waste', 'mod_compost'].forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) { el.checked = true; el.disabled = true; }
+                });
             } else {
                 var allowed = u.allowedModules || [];
-                document.getElementById('mod_pest').checked = allowed.indexOf('pest') !== -1;
-                document.getElementById('mod_waste').checked = allowed.indexOf('waste') !== -1;
-                document.getElementById('mod_compost').checked = allowed.indexOf('compost') !== -1;
-                document.getElementById('mod_water').checked = allowed.indexOf('water') !== -1;
-                document.getElementById('mod_procurement').checked = allowed.indexOf('procurement') !== -1;
-                document.getElementById('mod_machinery').checked = allowed.indexOf('machinery') !== -1;
+                ['mod_pest', 'mod_waste', 'mod_compost', 'mod_water', 'mod_procurement', 'mod_machinery'].forEach(function(id) {
+                    var shortMod = id.replace('mod_', '');
+                    var el = document.getElementById(id);
+                    if (el) {
+                        el.disabled = false;
+                        el.checked = allowed.indexOf(shortMod) !== -1;
+                    }
+                });
             }
+
+            var form = document.getElementById('userAccessForm');
+            if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function saveUserAccess(e) {
             e.preventDefault();
-            var editingEmail = document.getElementById('editingUserEmail').value;
-            var email = document.getElementById('accessEmail').value.toLowerCase().trim();
-            var role = document.getElementById('accessRole').value;
-            var areaVal = document.getElementById('accessArea').value;
+            var editingEmail = document.getElementById('editingUserEmail') ? document.getElementById('editingUserEmail').value : '';
+            var name = (document.getElementById('accessName') ? document.getElementById('accessName').value.trim() : '') || 'Authorized Staff';
+            var email = document.getElementById('accessEmail') ? document.getElementById('accessEmail').value.toLowerCase().trim() : '';
+            var role = document.getElementById('accessRole') ? document.getElementById('accessRole').value : 'Administrator';
+            var areaVal = document.getElementById('accessArea') ? document.getElementById('accessArea').value : 'All';
+
+            if (!email) {
+                showAppNotification("Please enter a valid user email address", "error");
+                return;
+            }
 
             var assignedAreas = [];
             if (role === 'Administrator' || role === 'Waste Management Supervisor') assignedAreas = ALL_AREAS;
@@ -12116,15 +12325,14 @@
                 allowedModules = ['waste', 'compost'];
             } else {
                 allowedModules = ['inventory', 'hr', 'cleaning'];
-                if (document.getElementById('mod_pest').checked) allowedModules.push('pest');
-                if (document.getElementById('mod_waste').checked) allowedModules.push('waste');
-                if (document.getElementById('mod_compost').checked) allowedModules.push('compost');
-                if (document.getElementById('mod_water').checked) allowedModules.push('water');
-                if (document.getElementById('mod_procurement').checked) allowedModules.push('procurement');
-                if (document.getElementById('mod_machinery').checked) allowedModules.push('machinery');
+                ['mod_pest', 'mod_waste', 'mod_compost', 'mod_water', 'mod_procurement', 'mod_machinery'].forEach(function(id) {
+                    var shortMod = id.replace('mod_', '');
+                    var el = document.getElementById(id);
+                    if (el && el.checked) allowedModules.push(shortMod);
+                });
             }
 
-            var newUserObj = { email: email, role: role, areas: assignedAreas, allowedModules: allowedModules };
+            var newUserObj = { name: name, email: email, role: role, areas: assignedAreas, allowedModules: allowedModules };
 
             var targetEmail = editingEmail || email;
             var existingIndex = -1;
@@ -12138,31 +12346,43 @@
                 userRegistry.push(newUserObj);
             }
 
+            saveStateToLocalBackup();
+
             if (typeof window.saveUserToFirebase === 'function') {
                 window.saveUserToFirebase(newUserObj);
             }
 
-            showAppNotification("User access updated and synced to Firestore for " + email, "success");
+            showAppNotification("User access updated and synced to Firestore for " + name + " (" + email + ")", "success");
             resetUserAccessForm();
             renderUserAccessList();
+
+            if (currentUser && currentUser.email.toLowerCase() === email.toLowerCase()) {
+                currentUser = newUserObj;
+                updateUserDisplay();
+            }
         }
 
         function removeUserAccess(idx) {
             var targetUser = userRegistry[idx];
             if (!targetUser) return;
 
-            openConfirmDialog("Are you sure you want to remove access for " + targetUser.email + "?", function() {
+            var targetName = targetUser.name || targetUser.email;
+            openConfirmDialog("Are you sure you want to remove access for " + targetName + " (" + targetUser.email + ")?", function() {
                 var emailToRemove = targetUser.email;
                 userRegistry.splice(idx, 1);
+                saveStateToLocalBackup();
 
                 if (typeof window.removeUserFromFirebase === 'function') {
                     window.removeUserFromFirebase(emailToRemove);
                 }
 
                 renderUserAccessList();
-                showAppNotification("Removed access for " + emailToRemove, "info");
+                showAppNotification("Removed access for " + targetName, "info");
             });
         }
+
+        window.renderUserAccessList = renderUserAccessList;
+        window.renderAdminAccessPage = renderAdminAccessPage;
 
         // Download Single Receipt PDF
         function downloadWasteReceiptPDF(docId) {
@@ -12808,6 +13028,11 @@
                         });
 
                         if (firebaseUsers.length > 0) {
+                            firebaseUsers.forEach(function(fu) {
+                                if (!fu.name && fu.email) {
+                                    fu.name = fu.email.split('@')[0].replace(/[._]/g, ' ');
+                                }
+                            });
                             window.userRegistry = mergeCollectionWithLocal(firebaseUsers, window.userRegistry, 'email');
                             saveStateToLocalBackup();
                             if (window.currentUser) {
@@ -13218,7 +13443,11 @@
                     doc(db, "settings", "executives_data"),
                     (docSnap) => {
                         if (docSnap.exists() && docSnap.data().executives) {
-                            window.executivesData = Object.assign({}, window.executivesData, docSnap.data().executives);
+                            var rawExecs = docSnap.data().executives;
+                            Object.keys(rawExecs).forEach(function(k) {
+                                if (rawExecs[k]) delete rawExecs[k].email;
+                            });
+                            window.executivesData = Object.assign({}, window.executivesData, rawExecs);
                             saveStateToLocalBackup();
                             if (window.activeModule === "hr") window.switchModule("hr");
                         }
