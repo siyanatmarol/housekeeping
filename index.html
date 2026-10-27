@@ -1752,8 +1752,8 @@
 
         var MODULES = [
             { id: 'inventory', name: '1. Inventory Management', shortName: '1. Inventory', icon: 'fa-boxes-stacked', color: '#2563eb' },
-            { id: 'hr', name: '2. HR & Staff Schedule', shortName: '2. HR & Schedule', icon: 'fa-users', color: '#059669' },
-            { id: 'cleaning', name: '3. Cleaning Reports & Schedule', shortName: '3. Cleaning Reports', icon: 'fa-broom', color: '#0d9488' },
+            { id: 'hr', name: '2. HR', shortName: '2. HR', icon: 'fa-users', color: '#059669' },
+            { id: 'cleaning', name: '3. Cleaning Reports & Schedule', shortName: '3. Cleaning Reports & Schedule', icon: 'fa-broom', color: '#0d9488' },
             { id: 'pest', name: '4. Pest Control', shortName: '4. Pest Control', icon: 'fa-bug', color: '#d97706' },
             { id: 'waste', name: '5. Dry Waste Management', shortName: '5. Dry Waste', icon: 'fa-recycle', color: '#ea580c' },
             { id: 'compost', name: '6. Compost Operations', shortName: '6. Compost', icon: 'fa-seedling', color: '#16a34a' },
@@ -2851,38 +2851,348 @@
                         saveStateToLocalBackup();
                         switchModule('inventory');
                         showAppNotification('Excel Import Complete: ' + addedCount + ' added, ' + updatedCount + ' updated & synced!', 'success');
-                    } else if (activeModule === 'hr' && rows.length > 0) {
-                        rows.forEach(function(r, idx) {
-                            var stfCode = r['Staff ID'] || r['ID'] || ('STF-IMP-' + (idx + 1));
-                            var name = r['Full Name'] || r['Name'] || 'Imported Staff';
-                            if (!dbData.hrStaff.find(function(s) { return s.staffCode === stfCode; })) {
-                                var newStf = {
-                                    id: 'STF-' + Date.now() + '-' + idx,
-                                    staffCode: stfCode,
-                                    name: name,
-                                    role: r['Role Level'] || r['Role'] || 'Staff',
-                                    area: r['Area Name / Division'] || r['Area'] || ALL_AREAS[0],
-                                    contact: r['Contact'] || '',
-                                    locker: r['Locker No'] || '',
-                                    category: r['Category'] || 'Aljamea',
-                                    uniformIssued: r['Uniform Issued'] || 'Yes',
-                                    uniformIssuedDate: r['Uniform Date'] || '',
-                                    updatedAt: new Date().toISOString()
-                                };
-                                dbData.hrStaff.push(newStf);
-                                if (window.saveHrStaffToFirestore) {
-                                    window.saveHrStaffToFirestore(newStf);
+                    } else if (activeModule === 'hr') {
+                        var parsedStaffList = [];
+                        var detectedExecutives = {};
+
+                        var cleanStr = function(s) {
+                            return String(s !== undefined && s !== null ? s : '').trim();
+                        };
+
+                        var cleanKey = function(s) {
+                            return cleanStr(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+                        };
+
+                        var matchAreaName = function(text) {
+                            if (!text) return null;
+                            var s = cleanStr(text).toLowerCase().replace(/[\s_\-]+/g, ' ');
+                            if (s.indexOf('mahad') !== -1) return 'Mahad Bldg';
+                            if (s.indexOf('religious') !== -1 || s.indexOf('masjid') !== -1) return 'Religious Block';
+                            if (s.indexOf('phase 1') !== -1 || s.indexOf('phase1') !== -1) return 'Admin Phase 1';
+                            if (s.indexOf('phase 3') !== -1 || s.indexOf('phase3') !== -1) return 'Admin Phase 3';
+                            if (s.indexOf('estate') !== -1) return 'Estates';
+                            if (s.indexOf('boys') !== -1) return 'Boys Hostel';
+                            if (s.indexOf('girls') !== -1) return 'Girls Hostel';
+                            if (s.indexOf('compound') !== -1) return 'Compound Area';
+                            if (s.indexOf('najmi') !== -1) return 'Najmi Bldg';
+                            for (var a = 0; a < ALL_AREAS.length; a++) {
+                                if (s.indexOf(ALL_AREAS[a].toLowerCase()) !== -1) {
+                                    return ALL_AREAS[a];
+                                }
+                            }
+                            return null;
+                        };
+
+                        var normalizeRole = function(roleStr, targetArea) {
+                            if (!roleStr) return 'Staff';
+                            var r = cleanStr(roleStr).toLowerCase();
+                            if (r.indexOf('sup') !== -1) return 'Supervisor';
+                            if (r.indexOf('exec') !== -1) {
+                                if (r.indexOf('hostel') !== -1) return 'Executive – Hostels';
+                                if (r.indexOf('admin') !== -1) return 'Executive – Admin';
+                                if (HOSTEL_EXECUTIVE_AREAS.indexOf(targetArea) !== -1) return 'Executive – Hostels';
+                                return 'Executive – Admin';
+                            }
+                            return 'Staff';
+                        };
+
+                        var formatExcelDate = function(val) {
+                            if (!val) return '';
+                            var sVal = cleanStr(val);
+                            if (!sVal) return '';
+                            if (!isNaN(Number(sVal)) && Number(sVal) > 20000 && Number(sVal) < 80000) {
+                                var d = new Date(Math.round((Number(sVal) - 25569) * 86400 * 1000));
+                                var y = d.getFullYear();
+                                var m = String(d.getMonth() + 1).padStart(2, '0');
+                                var dt = String(d.getDate()).padStart(2, '0');
+                                return y + '-' + m + '-' + dt;
+                            }
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(sVal)) return sVal;
+                            var m1 = sVal.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+                            if (m1) {
+                                return m1[3] + '-' + m1[2].padStart(2, '0') + '-' + m1[1].padStart(2, '0');
+                            }
+                            var parsed = new Date(sVal);
+                            if (!isNaN(parsed.getTime())) {
+                                return parsed.getFullYear() + '-' + String(parsed.getMonth() + 1).padStart(2, '0') + '-' + String(parsed.getDate()).padStart(2, '0');
+                            }
+                            return sVal;
+                        };
+
+                        var getFlexValueFromObj = function(rowObj, candidateKeys) {
+                            var keys = Object.keys(rowObj || {});
+                            for (var i = 0; i < candidateKeys.length; i++) {
+                                var ck = candidateKeys[i].toLowerCase();
+                                for (var k = 0; k < keys.length; k++) {
+                                    if (keys[k].trim().toLowerCase() === ck && rowObj[keys[k]] !== undefined && cleanStr(rowObj[keys[k]]) !== '') {
+                                        return cleanStr(rowObj[keys[k]]);
+                                    }
+                                }
+                            }
+                            var cleanCands = candidateKeys.map(cleanKey);
+                            for (var j = 0; j < cleanCands.length; j++) {
+                                var cand = cleanCands[j];
+                                for (var m = 0; m < keys.length; m++) {
+                                    if (cleanKey(keys[m]) === cand && rowObj[keys[m]] !== undefined && cleanStr(rowObj[keys[m]]) !== '') {
+                                        return cleanStr(rowObj[keys[m]]);
+                                    }
+                                }
+                            }
+                            for (var n = 0; n < cleanCands.length; n++) {
+                                var cand2 = cleanCands[n];
+                                for (var p = 0; p < keys.length; p++) {
+                                    var rkClean = cleanKey(keys[p]);
+                                    if ((rkClean.indexOf(cand2) !== -1 || cand2.indexOf(rkClean) !== -1) && rowObj[keys[p]] !== undefined && cleanStr(rowObj[keys[p]]) !== '') {
+                                        return cleanStr(rowObj[keys[p]]);
+                                    }
+                                }
+                            }
+                            return '';
+                        };
+
+                        // Scan all sheets in the workbook to capture multi-table and multi-sheet layouts
+                        workbook.SheetNames.forEach(function(sheetName) {
+                            var sheet = workbook.Sheets[sheetName];
+                            if (!sheet) return;
+
+                            var sheetArea = matchAreaName(sheetName);
+                            var currentTableArea = sheetArea || '';
+
+                            // 1. First scan: 2D matrix traversal (handles multi-table sheets with area headers above each individual area table)
+                            var matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+                            var colMap = null;
+                            var parsedInThisSheet = 0;
+
+                            if (matrix && matrix.length > 0) {
+                                for (var rIdx = 0; rIdx < matrix.length; rIdx++) {
+                                    var row = matrix[rIdx] || [];
+                                    var nonBlank = [];
+                                    for (var cIdx = 0; cIdx < row.length; cIdx++) {
+                                        var val = cleanStr(row[cIdx]);
+                                        if (val !== '') nonBlank.push({ col: cIdx, val: val });
+                                    }
+                                    if (nonBlank.length === 0) continue;
+
+                                    // Detect Area Header row (e.g. single cell title: 'Admin Phase 1', 'Admin Phase 3', etc.)
+                                    if (nonBlank.length <= 3) {
+                                        var matchedA = matchAreaName(nonBlank[0].val);
+                                        if (matchedA) {
+                                            currentTableArea = matchedA;
+                                            colMap = null;
+                                            continue;
+                                        }
+                                    }
+
+                                    // Detect Column Headers row
+                                    var lowerRow = row.map(function(c) { return cleanStr(c).toLowerCase(); });
+                                    var isHeaderRow = lowerRow.some(function(c) {
+                                        var cl = cleanKey(c);
+                                        return cl.indexOf('staffid') !== -1 || cl === 'id' || cl.indexOf('empid') !== -1 || cl === 'code';
+                                    }) && lowerRow.some(function(c) {
+                                        var cl = cleanKey(c);
+                                        return cl.indexOf('fullname') !== -1 || cl === 'name' || cl.indexOf('staffname') !== -1;
+                                    });
+
+                                    if (isHeaderRow) {
+                                        colMap = {};
+                                        lowerRow.forEach(function(hCell, cPos) {
+                                            var cl = cleanKey(hCell);
+                                            if (cl.indexOf('staffid') !== -1 || cl === 'id' || cl.indexOf('empid') !== -1 || cl === 'code') colMap.staffId = cPos;
+                                            else if (cl.indexOf('fullname') !== -1 || cl === 'name' || cl.indexOf('staffname') !== -1) colMap.name = cPos;
+                                            else if (cl.indexOf('role') !== -1 || cl.indexOf('designation') !== -1 || cl.indexOf('position') !== -1) colMap.role = cPos;
+                                            else if (cl.indexOf('contact') !== -1 || cl.indexOf('phone') !== -1 || cl.indexOf('mobile') !== -1) colMap.contact = cPos;
+                                            else if (cl.indexOf('locker') !== -1) colMap.locker = cPos;
+                                            else if (cl.indexOf('category') !== -1 || cl.indexOf('agency') !== -1 || cl.indexOf('vendor') !== -1) colMap.category = cPos;
+                                            else if (cl.indexOf('uniformissueddate') !== -1 || cl.indexOf('uniformdate') !== -1 || cl.indexOf('issuedate') !== -1) colMap.uniformIssuedDate = cPos;
+                                            else if (cl.indexOf('uniformissued') !== -1 || cl.indexOf('uniformstatus') !== -1 || cl === 'uniform') colMap.uniformIssued = cPos;
+                                            else if (cl.indexOf('assignedarea') !== -1 || cl.indexOf('areaname') !== -1 || cl === 'area' || cl.indexOf('location') !== -1 || cl.indexOf('division') !== -1 || cl.indexOf('block') !== -1) colMap.area = cPos;
+                                        });
+                                        continue;
+                                    }
+
+                                    // Parse data row if colMap is available
+                                    if (colMap && (colMap.staffId !== undefined || colMap.name !== undefined)) {
+                                        var getVal = function(k) {
+                                            return (colMap[k] !== undefined && row[colMap[k]] !== undefined) ? cleanStr(row[colMap[k]]) : '';
+                                        };
+
+                                        var stfId = getVal('staffId');
+                                        var stfName = getVal('name');
+
+                                        if (!stfId && !stfName) continue;
+                                        if (stfName.toLowerCase() === 'full name' || stfId.toLowerCase() === 'staff id') continue;
+
+                                        var stfRoleRaw = getVal('role');
+                                        var stfContact = getVal('contact');
+                                        var stfLocker = getVal('locker');
+                                        var stfCategory = getVal('category') || 'Aljamea';
+                                        var stfUniformIssuedRaw = getVal('uniformIssued');
+                                        var stfUniformDate = formatExcelDate(getVal('uniformIssuedDate'));
+                                        var stfAreaRaw = getVal('area');
+
+                                        var targetArea = matchAreaName(stfAreaRaw) || currentTableArea || sheetArea || ALL_AREAS[0];
+                                        var normalizedRole = normalizeRole(stfRoleRaw, targetArea);
+
+                                        var uniformIssued = 'No';
+                                        var uLower = stfUniformIssuedRaw.toLowerCase();
+                                        if (uLower === 'yes' || uLower === 'y' || uLower === 'true' || uLower === '1' || uLower === 'issued' || stfUniformDate) {
+                                            uniformIssued = 'Yes';
+                                        }
+
+                                        var cleanContact = stfContact.replace(/[^0-9+]/g, '');
+                                        if (/^\d{10}$/.test(cleanContact)) cleanContact = '+91 ' + cleanContact;
+                                        else if (!cleanContact && stfContact) cleanContact = stfContact;
+
+                                        var newRecord = {
+                                            id: 'STF-' + Date.now() + '-' + parsedStaffList.length,
+                                            staffCode: stfId || ('STF-' + (parsedStaffList.length + 101)),
+                                            name: stfName || 'Staff Member',
+                                            role: normalizedRole,
+                                            area: targetArea,
+                                            contact: cleanContact || '',
+                                            locker: stfLocker || '',
+                                            category: stfCategory,
+                                            uniformIssued: uniformIssued,
+                                            uniformIssuedDate: (uniformIssued === 'Yes' && stfUniformDate) ? stfUniformDate : (stfUniformDate || ''),
+                                            updatedAt: new Date().toISOString()
+                                        };
+
+                                        parsedStaffList.push(newRecord);
+                                        parsedInThisSheet++;
+
+                                        if (normalizedRole === 'Executive – Admin' || normalizedRole === 'Executive – Hostels') {
+                                            detectedExecutives[normalizedRole] = {
+                                                name: newRecord.name,
+                                                staffId: newRecord.staffCode,
+                                                contact: newRecord.contact,
+                                                role: normalizedRole
+                                            };
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 2. Fallback scan: if 2D matrix parsed 0 records, use standard sheet_to_json
+                            if (parsedInThisSheet === 0) {
+                                var jsonRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+                                jsonRows.forEach(function(r) {
+                                    var stfId = getFlexValueFromObj(r, ['Staff ID', 'ID', 'Staff Code', 'Staff Id', 'Staff No', 'Employee ID', 'Emp ID', 'Code', 'Sr No']);
+                                    var stfName = getFlexValueFromObj(r, ['Full Name', 'Name', 'Staff Name', 'Employee Name']);
+                                    if (!stfId && !stfName) return;
+
+                                    var stfRoleRaw = getFlexValueFromObj(r, ['Role / Designation', 'Role/Designation', 'Role', 'Designation', 'Position', 'Role Level']);
+                                    var stfContact = getFlexValueFromObj(r, ['Contact Number', 'Contact No', 'Contact', 'Phone Number', 'Phone', 'Mobile Number', 'Mobile']);
+                                    var stfLocker = getFlexValueFromObj(r, ['Locker Number', 'Locker No', 'Locker', 'Locker #']);
+                                    var stfCategory = getFlexValueFromObj(r, ['Category', 'Cat', 'Agency', 'Vendor', 'Type']) || 'Aljamea';
+                                    var stfUniformIssuedRaw = getFlexValueFromObj(r, ['Uniform Issued', 'Uniform Status', 'Uniform']);
+                                    var stfUniformDate = formatExcelDate(getFlexValueFromObj(r, ['Uniform Issued Date', 'Uniform Issue Date', 'Uniform Date', 'Date of Issue', 'Issue Date']));
+                                    var stfAreaRaw = getFlexValueFromObj(r, ['Assigned Area', 'Area Name / Division', 'Area Name', 'Area', 'Division', 'Department', 'Location', 'Block']);
+
+                                    var targetArea = matchAreaName(stfAreaRaw) || currentTableArea || sheetArea || ALL_AREAS[0];
+                                    var normalizedRole = normalizeRole(stfRoleRaw, targetArea);
+
+                                    var uniformIssued = 'No';
+                                    var uLower = stfUniformIssuedRaw.toLowerCase();
+                                    if (uLower === 'yes' || uLower === 'y' || uLower === 'true' || uLower === '1' || uLower === 'issued' || stfUniformDate) {
+                                        uniformIssued = 'Yes';
+                                    }
+
+                                    var cleanContact = stfContact.replace(/[^0-9+]/g, '');
+                                    if (/^\d{10}$/.test(cleanContact)) cleanContact = '+91 ' + cleanContact;
+                                    else if (!cleanContact && stfContact) cleanContact = stfContact;
+
+                                    var newRecord = {
+                                        id: 'STF-' + Date.now() + '-' + parsedStaffList.length,
+                                        staffCode: stfId || ('STF-' + (parsedStaffList.length + 101)),
+                                        name: stfName || 'Staff Member',
+                                        role: normalizedRole,
+                                        area: targetArea,
+                                        contact: cleanContact || '',
+                                        locker: stfLocker || '',
+                                        category: stfCategory,
+                                        uniformIssued: uniformIssued,
+                                        uniformIssuedDate: (uniformIssued === 'Yes' && stfUniformDate) ? stfUniformDate : (stfUniformDate || ''),
+                                        updatedAt: new Date().toISOString()
+                                    };
+
+                                    parsedStaffList.push(newRecord);
+
+                                    if (normalizedRole === 'Executive – Admin' || normalizedRole === 'Executive – Hostels') {
+                                        detectedExecutives[normalizedRole] = {
+                                            name: newRecord.name,
+                                            staffId: newRecord.staffCode,
+                                            contact: newRecord.contact,
+                                            role: normalizedRole
+                                        };
+                                    }
+                                });
+                            }
+                        });
+
+                        if (parsedStaffList.length === 0) {
+                            showAppNotification('No valid staff records found in the uploaded Excel file.', 'error');
+                            return;
+                        }
+
+                        // REWRITE: Remove all existing staff records locally and delete from Firestore
+                        var oldStaffList = (dbData.hrStaff || []).slice();
+                        oldStaffList.forEach(function(oldStf) {
+                            markRecordDeleted(oldStf.id);
+                            if (window.deleteHrStaffFromFirestore) {
+                                window.deleteHrStaffFromFirestore(oldStf.id);
+                            }
+                        });
+
+                        // Completely rewrite with imported data
+                        dbData.hrStaff = parsedStaffList;
+
+                        // Save each new staff record to Firestore
+                        parsedStaffList.forEach(function(stf) {
+                            if (window.saveHrStaffToFirestore) {
+                                window.saveHrStaffToFirestore(stf);
+                            }
+                        });
+
+                        // Update executivesData if executives were found in imported data
+                        Object.keys(detectedExecutives).forEach(function(execKey) {
+                            if (executivesData[execKey]) {
+                                executivesData[execKey].name = detectedExecutives[execKey].name;
+                                executivesData[execKey].staffId = detectedExecutives[execKey].staffId;
+                                if (detectedExecutives[execKey].contact) {
+                                    executivesData[execKey].contact = detectedExecutives[execKey].contact;
                                 }
                             }
                         });
+                        if (Object.keys(detectedExecutives).length > 0 && window.saveExecutivesDataToFirestore) {
+                            window.saveExecutivesDataToFirestore(executivesData);
+                        }
+
+                        // Reconcile area capacities if imported staff count in any area exceeds default capacity
+                        var areaStaffCounts = {};
+                        var supCount = 0;
+                        parsedStaffList.forEach(function(s) {
+                            if (!areaStaffCounts[s.area]) areaStaffCounts[s.area] = 0;
+                            if (s.role === 'Staff') areaStaffCounts[s.area]++;
+                            if (s.role === 'Supervisor') supCount++;
+                        });
+                        Object.keys(areaStaffCounts).forEach(function(aName) {
+                            if (!areaCapacities[aName] || areaCapacities[aName] < areaStaffCounts[aName]) {
+                                areaCapacities[aName] = areaStaffCounts[aName];
+                            }
+                        });
+                        if (window.saveAreaCapacitiesToFirestore) {
+                            window.saveAreaCapacitiesToFirestore(areaCapacities);
+                        }
+
                         saveStateToLocalBackup();
                         switchModule('hr');
-                        showAppNotification('Imported ' + rows.length + ' HR staff rows from Excel!', 'success');
+                        showAppNotification('HR staff data successfully rewritten with ' + parsedStaffList.length + ' staff members (' + supCount + ' Supervisors) across ' + Object.keys(areaStaffCounts).length + ' areas!', 'success');
                     }
                 } catch (err) {
                     showAppNotification('Excel import error: ' + err.message, 'error');
                 }
             };
+            e.target.value = '';
             reader.readAsArrayBuffer(file);
         }
 
@@ -3846,7 +4156,7 @@
             });
         }
 
-        // ================= MODULE 2: HR & STAFF SCHEDULE =================
+        // ================= MODULE 2: HR =================
         function renderHrModule(container, actions) {
             var isAdmin = currentUser.role === 'Administrator';
             var isExec = currentUser.role.indexOf('Executive') === 0;
@@ -6090,6 +6400,7 @@
                     showAppNotification('Scope of Work import error: ' + err.message, 'error');
                 }
             };
+            e.target.value = '';
             reader.readAsArrayBuffer(file);
             e.target.value = '';
         }
@@ -11906,28 +12217,28 @@
                 Object.keys(executivesData).forEach(function(key) {
                     var ex = executivesData[key];
                     exportRows.push({
-                        'Role Level': 'Executive',
                         'Staff ID': ex.staffId,
                         'Full Name': ex.name,
-                        'Area Name / Division': ex.role,
-                        'Contact': ex.contact,
-                        'Locker No': 'N/A',
+                        'Role / Designation': ex.role,
+                        'Contact Number': ex.contact,
+                        'Locker Number': 'N/A',
                         'Category': 'Aljamea',
                         'Uniform Issued': 'N/A',
-                        'Uniform Date': 'N/A'
+                        'Uniform Issued Date': 'N/A',
+                        'Assigned Area': ex.role
                     });
                 });
                 dbData.hrStaff.forEach(function(stf) {
                     exportRows.push({
-                        'Role Level': stf.role,
                         'Staff ID': stf.staffCode,
                         'Full Name': stf.name,
-                        'Area Name / Division': stf.area,
-                        'Contact': stf.contact,
-                        'Locker No': stf.locker,
+                        'Role / Designation': stf.role === 'Staff' ? 'Housekeeping Staff' : stf.role,
+                        'Contact Number': stf.contact,
+                        'Locker Number': stf.locker,
                         'Category': stf.category,
                         'Uniform Issued': stf.uniformIssued,
-                        'Uniform Date': stf.uniformIssuedDate || 'N/A'
+                        'Uniform Issued Date': stf.uniformIssuedDate || '',
+                        'Assigned Area': stf.area
                     });
                 });
                 sheetName = "HR Staff Master";
