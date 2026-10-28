@@ -1837,79 +1837,13 @@
         };
 
         function generatePreseededStaff() {
-            var staffList = [];
-            var idCounter = 100;
-
-            var seedSpecs = [
-                { area: 'Admin Phase 1', staffCount: 12, hasSup: true, supName: 'Mustafa Supervisor' },
-                { area: 'Admin Phase 3', staffCount: 13, hasSup: true, supName: 'Yusuf Supervisor' },
-                { area: 'Mahad Bldg', staffCount: 6, hasSup: true, supName: 'Shabbir Supervisor' },
-                { area: 'Religious Block', staffCount: 10, hasSup: true, supName: 'Huzoifa Supervisor' },
-                { area: 'Estates', staffCount: 2, hasSup: false },
-                { area: 'Boys Hostel', staffCount: 12, hasSup: true, supName: 'Taha Supervisor' },
-                { area: 'Girls Hostel', staffCount: 13, hasSup: true, supName: 'Fatema Supervisor' },
-                { area: 'Najmi Bldg', staffCount: 2, hasSup: false },
-                { area: 'Compound Area', staffCount: 20, hasSup: true, supName: 'Ali Asgar Supervisor' }
-            ];
-
-            var categories = ['Aljamea', 'United', 'Dynamic', 'Swar Group'];
-
-            seedSpecs.forEach(function(spec) {
-                if (spec.hasSup) {
-                    idCounter++;
-                    staffList.push({
-                        id: 'SUP-' + idCounter,
-                        staffCode: 'SUP-' + idCounter,
-                        name: spec.supName,
-                        role: 'Supervisor',
-                        area: spec.area,
-                        contact: '+91 98200' + idCounter,
-                        locker: 'L-SUP-' + idCounter,
-                        category: 'Aljamea',
-                        uniformIssued: 'Yes',
-                        uniformIssuedDate: '2026-01-15'
-                    });
-                }
-
-                for (var i = 1; i <= spec.staffCount; i++) {
-                    idCounter++;
-                    var cat = categories[(i + idCounter) % categories.length];
-                    var isUniformYes = (i % 2 === 0) ? 'Yes' : 'No';
-                    var uniformDate = (isUniformYes === 'Yes' && (cat === 'Aljamea' || cat === 'Swar Group')) ? '2026-02-10' : '';
-
-                    staffList.push({
-                        id: 'STF-' + idCounter,
-                        staffCode: 'STF-' + idCounter,
-                        name: 'Staff ' + spec.area.substring(0,3).toUpperCase() + ' ' + i,
-                        role: 'Staff',
-                        area: spec.area,
-                        contact: '+91 98700' + idCounter,
-                        locker: 'L-' + idCounter,
-                        category: cat,
-                        uniformIssued: isUniformYes,
-                        uniformIssuedDate: uniformDate
-                    });
-                }
-            });
-
-            return staffList;
+            return [];
         }
 
         var dbData = {
-            inventory: [
-                { 
-                    id: 'INV-01', code: 'CHM-01', name: 'R1 Bathroom Cleaner', category: 'Chemicals', unit: 'Ltr', 
-                    openingStock: { 'Main Store': 200, 'Admin Phase 1': 10, 'Admin Phase 3': 10, 'Mahad Bldg': 8, 'Religious Block': 5, 'Estates': 2, 'Boys Hostel': 15, 'Girls Hostel': 10, 'Compound Area': 5, 'Najmi Bldg': 5 }
-                },
-                { 
-                    id: 'INV-02', code: 'CHM-02', name: 'R2 Hard Surface Cleaner', category: 'Chemicals', unit: 'Ltr', 
-                    openingStock: { 'Main Store': 150, 'Admin Phase 1': 8, 'Admin Phase 3': 8, 'Mahad Bldg': 6, 'Religious Block': 4, 'Estates': 3, 'Boys Hostel': 12, 'Girls Hostel': 10, 'Compound Area': 5, 'Najmi Bldg': 4 }
-                }
-            ],
-            inventoryArchive: [
-                { id: 'ARC-101', date: '2026-10-16 09:30', itemCode: 'CHM-01', itemName: 'R1 Bathroom Cleaner', area: 'Main Store', type: 'PURCHASE', qty: 50, user: 'fm.marol@jameasaifiyah.edu', remarks: 'Vendor Delivery' }
-            ],
-            hrStaff: generatePreseededStaff(),
+            inventory: [],
+            inventoryArchive: [],
+            hrStaff: [],
             machinery: [
                 { id: 'MAC-01', machineryId: 'MAC-01', category: 'Vacuum Cleaner', brand: 'Kärcher', model: 'WD 3 V-17/4/20', area: 'Mahad Bldg', purchaseDate: '2025-05-10', warranty: '2 Years', photo: 'https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=300&q=80' },
                 { id: 'MAC-02', machineryId: 'MAC-02', category: 'Surface Cleaning', brand: 'Taski', model: 'ergodisc 165', area: 'Boys Hostel', purchaseDate: '2024-11-20', warranty: '1 Year', photo: '' }
@@ -1934,12 +1868,47 @@
         var IDB_NAME = 'SiyanatMarolPersistentVaultDB';
         var IDB_STORE = 'portal_state_store';
 
+        function isLegacyDummyRecord(id, code, name) {
+            if (!id && !code && !name) return false;
+            var strId = String(id || '').trim();
+            var strCode = String(code || '').trim();
+            var strName = String(name || '').trim();
+            if (strId === 'INV-01' || strId === 'INV-02' || strId === 'ARC-101') return true;
+            if (strCode === 'CHM-01' || strCode === 'CHM-02') return true;
+            if (strName === 'R1 Bathroom Cleaner' || strName === 'R2 Hard Surface Cleaner') return true;
+            if (/^(SUP|STF)-1\d\d$/i.test(strId) || /^(SUP|STF)-1\d\d$/i.test(strCode)) return true;
+            var dummySupNames = [
+                'Mustafa Supervisor', 'Yusuf Supervisor', 'Shabbir Supervisor',
+                'Huzoifa Supervisor', 'Taha Supervisor', 'Fatema Supervisor', 'Ali Asgar Supervisor'
+            ];
+            if (dummySupNames.indexOf(strName) !== -1) return true;
+            if (/^Staff (ADM|MAH|REL|EST|BOY|GIR|NAJ|COM) \d+$/i.test(strName)) return true;
+            return false;
+        }
+
         function markRecordDeleted(id) {
             if (!id) return;
             deletedRecordIds[id] = Date.now();
             try {
                 localStorage.setItem(LOCAL_STORAGE_DELETED_KEY, JSON.stringify(deletedRecordIds));
             } catch (e) {}
+            if (typeof window.saveDeletedRecordToFirestore === 'function') {
+                window.saveDeletedRecordToFirestore(id);
+            }
+        }
+
+        function batchMarkRecordsDeleted(ids) {
+            if (!Array.isArray(ids) || ids.length === 0) return;
+            var now = Date.now();
+            ids.forEach(function(id) {
+                if (id) deletedRecordIds[id] = now;
+            });
+            try {
+                localStorage.setItem(LOCAL_STORAGE_DELETED_KEY, JSON.stringify(deletedRecordIds));
+            } catch (e) {}
+            if (typeof window.batchSaveDeletedRecordsToFirestore === 'function') {
+                window.batchSaveDeletedRecordsToFirestore(ids);
+            }
         }
 
         function isRecordDeleted(id) {
@@ -2028,14 +1997,23 @@
             if (snap.deletedRecordIds && typeof snap.deletedRecordIds === 'object') {
                 deletedRecordIds = Object.assign({}, deletedRecordIds, snap.deletedRecordIds);
             }
-            if (Array.isArray(snap.inventory) && snap.inventory.length > 0) {
-                dbData.inventory = snap.inventory.filter(function(x) { return !isRecordDeleted(x.id); });
+            if (Array.isArray(snap.inventory)) {
+                dbData.inventory = snap.inventory.filter(function(x) { 
+                    var isDummy = isLegacyDummyRecord(x.id, x.code, x.name);
+                    return !isDummy && !isRecordDeleted(x.id); 
+                });
             }
             if (Array.isArray(snap.inventoryArchive)) {
-                dbData.inventoryArchive = snap.inventoryArchive.filter(function(x) { return !isRecordDeleted(x.id); });
+                dbData.inventoryArchive = snap.inventoryArchive.filter(function(x) { 
+                    var isDummy = isLegacyDummyRecord(x.id, x.itemCode, x.itemName);
+                    return !isDummy && !isRecordDeleted(x.id); 
+                });
             }
-            if (Array.isArray(snap.hrStaff) && snap.hrStaff.length > 0) {
-                dbData.hrStaff = snap.hrStaff.filter(function(x) { return !isRecordDeleted(x.id); });
+            if (Array.isArray(snap.hrStaff)) {
+                dbData.hrStaff = snap.hrStaff.filter(function(x) { 
+                    var isDummy = isLegacyDummyRecord(x.id, x.staffCode, x.name);
+                    return !isDummy && !isRecordDeleted(x.id); 
+                });
             }
             if (Array.isArray(snap.machinery)) {
                 dbData.machinery = snap.machinery.filter(function(x) { return !isRecordDeleted(x.id); });
@@ -2144,11 +2122,55 @@
             }
         }
 
-     function loadStateFromLocalBackup() {
+        function purgeStaleLegacyData() {
+            var purgedAny = false;
+            if (dbData) {
+                if (Array.isArray(dbData.inventory)) {
+                    var origInvLen = dbData.inventory.length;
+                    dbData.inventory = dbData.inventory.filter(function(x) {
+                        if (isLegacyDummyRecord(x.id, x.code, x.name) || isRecordDeleted(x.id)) {
+                            markRecordDeleted(x.id);
+                            if (window.deleteInventoryItemFromFirestore) window.deleteInventoryItemFromFirestore(x.id);
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (dbData.inventory.length !== origInvLen) purgedAny = true;
+                }
+                if (Array.isArray(dbData.inventoryArchive)) {
+                    dbData.inventoryArchive = dbData.inventoryArchive.filter(function(x) {
+                        if (isLegacyDummyRecord(x.id, x.itemCode, x.itemName) || isRecordDeleted(x.id)) {
+                            markRecordDeleted(x.id);
+                            return false;
+                        }
+                        return true;
+                    });
+                }
+                if (Array.isArray(dbData.hrStaff)) {
+                    var origStaffLen = dbData.hrStaff.length;
+                    dbData.hrStaff = dbData.hrStaff.filter(function(x) {
+                        if (isLegacyDummyRecord(x.id, x.staffCode, x.name) || isRecordDeleted(x.id)) {
+                            markRecordDeleted(x.id);
+                            if (window.deleteHrStaffFromFirestore) window.deleteHrStaffFromFirestore(x.id);
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (dbData.hrStaff.length !== origStaffLen) purgedAny = true;
+                }
+            }
+            if (purgedAny) {
+                saveStateToLocalBackup();
+            }
+        }
+
+        function loadStateFromLocalBackup() {
             try {
                 var delRaw = localStorage.getItem(LOCAL_STORAGE_DELETED_KEY);
                 if (delRaw) deletedRecordIds = JSON.parse(delRaw) || {};
             } catch (e) {}
+            // Automatically purge legacy sample data (CHM-01, CHM-02, dummy staff)
+            purgeStaleLegacyData();
             try {
                 var driveRaw = localStorage.getItem(LOCAL_STORAGE_DRIVE_KEY);
                 if (driveRaw) {
@@ -2197,13 +2219,13 @@
 
             (cloudList || []).forEach(function(cItem) {
                 var itemKey = cItem[keyField];
-                if (!itemKey || isRecordDeleted(itemKey)) return;
+                if (!itemKey || isRecordDeleted(itemKey) || isLegacyDummyRecord(cItem.id, cItem.code || cItem.staffCode, cItem.name)) return;
                 mergedMap[itemKey] = cItem;
             });
 
             (localList || []).forEach(function(lItem) {
                 var itemKey = lItem[keyField];
-                if (!itemKey || isRecordDeleted(itemKey)) return;
+                if (!itemKey || isRecordDeleted(itemKey) || isLegacyDummyRecord(lItem.id, lItem.code || lItem.staffCode, lItem.name)) return;
                 if (!mergedMap[itemKey]) {
                     mergedMap[itemKey] = lItem;
                 } else {
@@ -8840,10 +8862,7 @@
 
         var dbVendors = DEFAULT_VENDOR_DIRECTORY.map(function(v) { return Object.assign({}, v); });
 
-        var dbVendorRates = {
-            'INV-01': { 'Diversey': 245, 'Raj Traders': 230, 'Anjum Sutterwala': 238 },
-            'INV-02': { 'Diversey': 260, 'Raj Traders': 250, 'Anjum Sutterwala': 255 }
-        }; // { [itemId]: { [vendorName]: number } }
+        var dbVendorRates = {}; // { [itemId]: { [vendorName]: number } }
 
         var dbProcurements = []; // Legacy/direct procurement orders from collection('procurements')
         var dbProcurementRequests = []; // Material requests synced with collection('procurement_requests')
@@ -13462,6 +13481,46 @@
                 )
             );
 
+            // 10B. Sync Deleted Records (Tombstones) across all devices in real-time
+            activeUnsubscribers.push(
+                onSnapshot(
+                    doc(db, "settings", "deleted_records"),
+                    (docSnap) => {
+                        if (docSnap.exists()) {
+                            const cloudDeleted = docSnap.data() || {};
+                            let changed = false;
+                            for (const id in cloudDeleted) {
+                                if (!deletedRecordIds[id]) {
+                                    deletedRecordIds[id] = cloudDeleted[id];
+                                    changed = true;
+                                }
+                            }
+                            if (changed) {
+                                try {
+                                    localStorage.setItem(LOCAL_STORAGE_DELETED_KEY, JSON.stringify(deletedRecordIds));
+                                } catch(e) {}
+                                if (window.dbData) {
+                                    if (Array.isArray(window.dbData.inventory)) {
+                                        window.dbData.inventory = window.dbData.inventory.filter(i => !deletedRecordIds[i.id]);
+                                    }
+                                    if (Array.isArray(window.dbData.hrStaff)) {
+                                        window.dbData.hrStaff = window.dbData.hrStaff.filter(s => !deletedRecordIds[s.id]);
+                                    }
+                                    if (Array.isArray(window.dbData.inventoryArchive)) {
+                                        window.dbData.inventoryArchive = window.dbData.inventoryArchive.filter(a => !deletedRecordIds[a.id]);
+                                    }
+                                }
+                                saveStateToLocalBackup();
+                                if (window.activeModule) {
+                                    window.switchModule(window.activeModule);
+                                }
+                            }
+                        }
+                    },
+                    (err) => handleSnapshotError("settings/deleted_records", err)
+                )
+            );
+
             // 11. Sync Inventory Master Collection (inventory)
             activeUnsubscribers.push(
                 onSnapshot(
@@ -13470,16 +13529,20 @@
                         setCloudSyncIndicator('connected', 'Cloud Synced (Firestore)');
                         const items = [];
                         snapshot.forEach((docSnap) => {
-                            items.push({ id: docSnap.id, ...docSnap.data() });
+                            const data = docSnap.data();
+                            const docId = docSnap.id;
+                            if (docId === 'INV-01' || docId === 'INV-02' || data.code === 'CHM-01' || data.code === 'CHM-02') {
+                                deleteDoc(doc(db, "inventory", docId)).catch(() => {});
+                                return;
+                            }
+                            if (window.isRecordDeleted && window.isRecordDeleted(docId)) {
+                                return;
+                            }
+                            items.push({ id: docId, ...data });
                         });
-                        if (items.length > 0) {
-                            // Firestore is authoritative source of truth across all devices!
-                            window.dbData.inventory = items;
-                            saveStateToLocalBackup();
-                        } else if (window.dbData.inventory && window.dbData.inventory.length > 2) {
-                            // Only push local data if local PC vault contains real imported data (> 2 items)
-                            window.batchSaveCollectionToFirestore('inventory', window.dbData.inventory).catch(() => {});
-                        }
+                        // Firestore is authoritative source of truth across all devices!
+                        window.dbData.inventory = items;
+                        saveStateToLocalBackup();
                         var osModal = document.getElementById('openingStockModal');
                         if (osModal && !osModal.classList.contains('hidden') && typeof window.renderOpeningStockTable === 'function') {
                             window.renderOpeningStockTable();
@@ -13647,16 +13710,24 @@
                         setCloudSyncIndicator('connected', 'Cloud Synced (Firestore)');
                         const staffDocs = [];
                         snapshot.forEach((docSnap) => {
-                            staffDocs.push({ id: docSnap.id, ...docSnap.data() });
+                            const data = docSnap.data();
+                            const docId = docSnap.id;
+                            const isDummyStaff = (docId && /^(SUP|STF)-1\d\d$/i.test(docId)) ||
+                                                 (data.staffCode && /^(SUP|STF)-1\d\d$/i.test(data.staffCode)) ||
+                                                 (data.name && /^Staff (ADM|MAH|REL|EST|BOY|GIR|NAJ|COM) \d+$/i.test(data.name)) ||
+                                                 (data.name && ['Mustafa Supervisor', 'Yusuf Supervisor', 'Shabbir Supervisor', 'Huzoifa Supervisor', 'Taha Supervisor', 'Fatema Supervisor', 'Ali Asgar Supervisor'].indexOf(data.name) !== -1);
+                            if (isDummyStaff) {
+                                deleteDoc(doc(db, "hr_staff", docId)).catch(() => {});
+                                return;
+                            }
+                            if (window.isRecordDeleted && window.isRecordDeleted(docId)) {
+                                return;
+                            }
+                            staffDocs.push({ id: docId, ...data });
                         });
-                        if (staffDocs.length > 0) {
-                            // Firestore is authoritative source of truth across all devices!
-                            window.dbData.hrStaff = staffDocs;
-                            saveStateToLocalBackup();
-                        } else if (window.dbData.hrStaff && window.dbData.hrStaff.length > 0) {
-                            // Local PC vault contains real imported HR staff data; push to Firestore!
-                            window.batchSaveCollectionToFirestore('hr_staff', window.dbData.hrStaff).catch(() => {});
-                        }
+                        // Firestore is authoritative source of truth across all devices!
+                        window.dbData.hrStaff = staffDocs;
+                        saveStateToLocalBackup();
                         if (window.activeModule === "hr") {
                             window.switchModule("hr");
                         }
@@ -13947,8 +14018,31 @@
             }
         };
 
+        window.saveDeletedRecordToFirestore = async function(id) {
+            if (!id) return;
+            try {
+                await setDoc(doc(db, "settings", "deleted_records"), { [id]: Date.now() }, { merge: true });
+            } catch (err) {
+                console.warn("Deleted tombstone cloud sync notice:", err.message);
+            }
+        };
+
+        window.batchSaveDeletedRecordsToFirestore = async function(ids) {
+            if (!Array.isArray(ids) || ids.length === 0) return;
+            const updateObj = {};
+            ids.forEach(id => { if (id) updateObj[id] = Date.now(); });
+            try {
+                await setDoc(doc(db, "settings", "deleted_records"), updateObj, { merge: true });
+            } catch (err) {
+                console.warn("Bulk deleted tombstones cloud sync notice:", err.message);
+            }
+        };
+
         window.deleteInventoryItemFromFirestore = async function(itemId) {
             saveStateToLocalBackup();
+            if (window.saveDeletedRecordToFirestore) {
+                window.saveDeletedRecordToFirestore(itemId);
+            }
             try {
                 await deleteDoc(doc(db, "inventory", itemId));
             } catch (err) {
@@ -13976,6 +14070,9 @@
 
         window.deleteHrStaffFromFirestore = async function(stfId) {
             saveStateToLocalBackup();
+            if (window.saveDeletedRecordToFirestore) {
+                window.saveDeletedRecordToFirestore(stfId);
+            }
             try {
                 await deleteDoc(doc(db, "hr_staff", stfId));
             } catch (err) {
@@ -14575,15 +14672,7 @@
         window.autoSyncPendingLocalVaultToFirestore = async function() {
             if (!auth.currentUser) return;
             try {
-                if (window.dbData && window.dbData.inventory && window.dbData.inventory.length > 2) {
-                    await window.batchSaveCollectionToFirestore('inventory', window.dbData.inventory);
-                }
-                if (window.dbData && window.dbData.inventoryArchive && window.dbData.inventoryArchive.length > 0) {
-                    await window.batchSaveCollectionToFirestore('inventory_archive', window.dbData.inventoryArchive);
-                }
-                if (window.dbData && window.dbData.hrStaff && window.dbData.hrStaff.length > 0) {
-                    await window.batchSaveCollectionToFirestore('hr_staff', window.dbData.hrStaff);
-                }
+                // Ensure authoritative Firestore streaming takes precedence over unverified local defaults
                 if (window.areaCapacities && Object.keys(window.areaCapacities).length > 0) {
                     await setDoc(doc(db, "settings", "area_capacities"), { capacities: window.areaCapacities, updatedAt: new Date().toISOString() }, { merge: true });
                 }
