@@ -8666,12 +8666,12 @@
                     html += '<td class="p-3 font-mono font-bold text-slate-800">' + capDisplay + '</td>';
                     html += '<td class="p-3">' + recentDatesHtml + '</td>';
                     html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-1.5 flex-wrap gap-y-1">';
-                    html += '<button type="button" onclick="openWaterTankModal('' + tank.id + '')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Tank"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
-                    html += '<button type="button" onclick="openTankCleaningReportModal('' + tank.id + '')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
-                    html += '<button type="button" onclick="openTankHistoryModal('' + tank.id + '')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>View History (' + tankLogs.length + ')</button>';
-                    html += '<button type="button" onclick="toggleInlineTankHistory('' + tank.id + '')" class="text-slate-500 hover:text-sky-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
+                    html += '<button type="button" onclick="openWaterTankModal(\'' + tank.id + '\')\" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Tank"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
+                    html += '<button type="button" onclick="openTankCleaningReportModal(\'' + tank.id + '\')\" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
+                    html += '<button type="button" onclick="openTankHistoryModal(\'' + tank.id + '\')\" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>View History (' + tankLogs.length + ')</button>';
+                    html += '<button type="button" onclick="toggleInlineTankHistory(\'' + tank.id + '\')\" class="text-slate-500 hover:text-sky-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
                     if (isAdmin || isExec) {
-                        html += '<button type="button" onclick="deleteWaterTank('' + tank.id + '')" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Tank"><i class="fa-solid fa-trash-can"></i></button>';
+                        html += '<button type="button" onclick="deleteWaterTank(\'' + tank.id + '\')\" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Tank"><i class="fa-solid fa-trash-can"></i></button>';
                     }
                     html += '</div></td>';
                     html += '</tr>';
@@ -8739,12 +8739,12 @@
                     html += '<td class="p-3 font-mono font-bold text-slate-800"><span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">' + sump.depth + '</span></td>';
                     html += '<td class="p-3">' + recentDatesHtml + '</td>';
                     html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-1.5 flex-wrap gap-y-1">';
-                    html += '<button type="button" onclick="openSumpModal('' + sump.id + '')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Sump"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
-                    html += '<button type="button" onclick="openSumpCleaningReportModal('' + sump.id + '')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
-                    html += '<button type="button" onclick="openSumpHistoryModal('' + sump.id + '')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full Sump History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>History (' + sumpLogs.length + ')</button>';
-                    html += '<button type="button" onclick="toggleInlineSumpHistory('' + sump.id + '')" class="text-slate-500 hover:text-indigo-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
+                    html += '<button type="button" onclick="openSumpModal(\'' + sump.id + '\')\" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Sump"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
+                    html += '<button type="button" onclick="openSumpCleaningReportModal(\'' + sump.id + '\')\" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
+                    html += '<button type="button" onclick="openSumpHistoryModal(\'' + sump.id + '\')\" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full Sump History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>History (' + sumpLogs.length + ')</button>';
+                    html += '<button type="button" onclick="toggleInlineSumpHistory(\'' + sump.id + '\')\" class="text-slate-500 hover:text-indigo-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
                     if (isAdmin || isExec) {
-                        html += '<button type="button" onclick="deleteSump('' + sump.id + '')" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Sump"><i class="fa-solid fa-trash-can"></i></button>';
+                        html += '<button type="button" onclick="deleteSump(\'' + sump.id + '\')\" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Sump"><i class="fa-solid fa-trash-can"></i></button>';
                     }
                     html += '</div></td>';
                     html += '</tr>';
@@ -8964,7 +8964,7 @@
             el.innerHTML = list.map(function(src, idx) {
                 return '<div class="relative inline-block group">' +
                     renderInlineMediaThumbnail(src, 'Sump ' + stage.toUpperCase() + ' Media', 'h-16 w-16') +
-                    '<button type="button" onclick="removeSumpPhotoPreview('' + stage + '', ' + idx + ')" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] shadow z-20"><i class="fa-solid fa-xmark"></i></button>' +
+                    '<button type="button" onclick="removeSumpPhotoPreview(\'' + stage + '\', ' + idx + ')\" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] shadow z-20"><i class="fa-solid fa-xmark"></i></button>' +
                 '</div>';
             }).join('');
         }
@@ -9064,7 +9064,7 @@
                 html += '<div class="flex items-center space-x-3 text-[11px] text-slate-400">';
                 html += '<span>Logged by: <strong class="text-slate-600">' + (log.loggedBy || 'System') + '</strong></span>';
                 if (isAdmin) {
-                    html += '<button type="button" onclick="deleteSumpCleaningReport('' + log.id + '', '' + sump.id + '')" class="text-red-500 hover:text-red-700 font-semibold"><i class="fa-solid fa-trash-can"></i></button>';
+                    html += '<button type="button" onclick="deleteSumpCleaningReport(\'' + log.id + '\', \'' + sump.id + '\')\" class="text-red-500 hover:text-red-700 font-semibold"><i class="fa-solid fa-trash-can"></i></button>';
                 }
                 html += '</div></div>';
 
@@ -9352,7 +9352,7 @@
             el.innerHTML = list.map(function(src, idx) {
                 return '<div class="relative inline-block group">' +
                     renderInlineMediaThumbnail(src, 'Water Tank ' + stage.toUpperCase() + ' Media', 'h-16 w-16') +
-                    '<button type="button" onclick="removeTankPhotoPreview('' + stage + '', ' + idx + ')" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] shadow z-20"><i class="fa-solid fa-xmark"></i></button>' +
+                    '<button type="button" onclick="removeTankPhotoPreview(\'' + stage + '\', ' + idx + ')\" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] shadow z-20"><i class="fa-solid fa-xmark"></i></button>' +
                 '</div>';
             }).join('');
         }
@@ -9458,7 +9458,7 @@
                 html += '<div class="flex items-center space-x-3 text-[11px] text-slate-400">';
                 html += '<span>Logged by: <strong class="text-slate-600">' + (log.loggedBy || 'System') + '</strong></span>';
                 if (isAdmin) {
-                    html += '<button type="button" onclick="deleteTankCleaningReport('' + log.id + '', '' + tank.id + '')" class="text-red-500 hover:text-red-700 font-semibold"><i class="fa-solid fa-trash-can"></i></button>';
+                    html += '<button type="button" onclick="deleteTankCleaningReport(\'' + log.id + '\', \'' + tank.id + '\')\" class="text-red-500 hover:text-red-700 font-semibold"><i class="fa-solid fa-trash-can"></i></button>';
                 }
                 html += '</div></div>';
 
