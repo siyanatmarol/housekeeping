@@ -1143,16 +1143,20 @@
         <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-4 border border-slate-100 flex flex-col items-center">
             <div class="w-full flex justify-between items-center mb-3 pb-2 border-b border-slate-100 gap-2">
                 <span id="photoPreviewCaption" class="text-xs font-bold text-slate-800 truncate">Media Preview</span>
-                <div class="flex items-center space-x-2 flex-shrink-0">
+                <div class="flex items-center space-x-2 flex-shrink-0 flex-wrap gap-1">
+                    <button id="videoPlayerToggleBtn" type="button" onclick="toggleVideoPlayerEngine()" class="hidden text-xs font-semibold px-2 py-1 rounded-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center space-x-1" title="Switch between Native Mobile Player and Drive Player">
+                        <i class="fa-solid fa-sliders text-indigo-600"></i>
+                        <span id="videoPlayerToggleText">Drive Player</span>
+                    </button>
                     <a id="photoPreviewDownloadLink" href="#" download target="_blank" rel="noopener noreferrer" class="hidden text-xs font-semibold text-emerald-700 hover:text-emerald-900 flex items-center space-x-1 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition">
                         <i class="fa-solid fa-download"></i>
-                        <span>Download / Play Video</span>
+                        <span>Download / Play</span>
                     </a>
                     <a id="photoPreviewDriveLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition">
                         <i class="fa-brands fa-google-drive"></i>
                         <span>Open in Drive</span>
                     </a>
-                    <button type="button" onclick="closeMediaPreviewModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                    <button type="button" onclick="closeMediaPreviewModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
             </div>
             <div id="videoProcessingNotice" class="hidden w-full mb-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] sm:text-xs text-amber-800 flex items-start space-x-2">
@@ -1161,9 +1165,11 @@
                     <strong class="font-semibold text-amber-900">Google Drive Video Processing:</strong> Newly uploaded videos take 5–15 minutes for Google Drive to transcode for browser streaming. If you see "still being processed", click <strong>Open in Drive</strong> or <strong>Download / Play Video</strong> above to view it immediately.
                 </div>
             </div>
-            <img id="photoPreviewImage" src="" onerror="handlePreviewModalImgError(this)" class="max-h-[75vh] max-w-full w-auto rounded-lg object-contain border border-slate-200 shadow-md">
-            <video id="videoPreviewPlayer" src="" controls class="hidden max-h-[75vh] max-w-full w-auto rounded-lg border border-slate-200 shadow-md bg-black"></video>
-            <iframe id="docPreviewFrame" src="about:blank" class="hidden w-full h-[72vh] rounded-lg border border-slate-200 shadow-md bg-slate-50"></iframe>
+            <div id="mediaViewerContainer" class="w-full flex items-center justify-center bg-slate-950 rounded-xl overflow-hidden relative shadow-inner" style="max-height: 75vh; min-height: 200px;">
+                <img id="photoPreviewImage" src="" onerror="handlePreviewModalImgError(this)" class="hidden max-h-[75vh] max-w-full w-auto object-contain">
+                <video id="videoPreviewPlayer" playsinline controls preload="metadata" class="hidden w-full max-h-[75vh] object-contain bg-black"></video>
+                <iframe id="docPreviewFrame" src="about:blank" allow="autoplay; fullscreen" class="hidden w-full rounded-xl border-0 bg-slate-900" style="max-height: 75vh; min-height: 240px;"></iframe>
+            </div>
         </div>
     </div>
 
@@ -2803,6 +2809,10 @@
             return '<img src="' + resolved + '" data-fallback-step="0" onerror="handleInlineThumbnailImgError(this, \'' + safeSrcArg + '\')" onclick="expandPhotoModal(\'' + safeSrcArg + '\', \'' + safeCaption + '\')" title="Click to expand preview" class="' + cls + ' object-cover rounded-lg border border-slate-300 cursor-pointer hover:opacity-85 transition shadow-2xs">';
         }
 
+        var currentActiveVideoSrc = '';
+        var currentActiveVideoDriveId = '';
+        var currentVideoPlayerMode = 'native'; // 'native' or 'drive'
+
         function expandPhotoModal(src, caption) {
             var resolved = resolveMediaUrl(src);
             if (!resolved) return;
@@ -2812,20 +2822,26 @@
             var capEl = document.getElementById('photoPreviewCaption');
             var driveLinkEl = document.getElementById('photoPreviewDriveLink');
             var downloadLinkEl = document.getElementById('photoPreviewDownloadLink');
+            var toggleBtn = document.getElementById('videoPlayerToggleBtn');
             var noticeEl = document.getElementById('videoProcessingNotice');
 
             if (capEl) capEl.innerText = caption || 'Media View';
             if (noticeEl) noticeEl.classList.add('hidden');
+            if (toggleBtn) toggleBtn.classList.add('hidden');
             if (imgEl) {
                 imgEl.classList.add('hidden');
                 imgEl.setAttribute('data-fallback-step', '0');
                 imgEl.setAttribute('data-raw-src', src || '');
                 imgEl.src = '';
             }
-            if (vidEl) { vidEl.pause(); vidEl.classList.add('hidden'); vidEl.src = ''; }
+            if (vidEl) { vidEl.pause(); vidEl.classList.add('hidden'); vidEl.src = ''; vidEl.onerror = null; }
             if (docEl) { docEl.classList.add('hidden'); docEl.src = 'about:blank'; }
 
             var dId = extractGoogleDriveFileId(src);
+            currentActiveVideoSrc = src || '';
+            currentActiveVideoDriveId = dId || '';
+            currentVideoPlayerMode = 'native';
+
             if (driveLinkEl) {
                 if (dId) {
                     driveLinkEl.href = 'https://drive.google.com/file/d/' + dId + '/view';
@@ -2851,17 +2867,32 @@
                         downloadLinkEl.classList.add('hidden');
                     }
                 }
-                if (dId && resolved.indexOf('data:') !== 0) {
-                    if (noticeEl) noticeEl.classList.remove('hidden');
-                    docEl.src = 'https://drive.google.com/file/d/' + dId + '/preview';
-                    docEl.classList.remove('hidden');
-                } else if (vidEl) {
-                    vidEl.src = resolved;
-                    vidEl.classList.remove('hidden');
+
+                if (toggleBtn && dId) {
+                    toggleBtn.classList.remove('hidden');
+                    updateVideoToggleBtnLabel();
                 }
+
+                // Primary video strategy: Native HTML5 <video> with object-contain.
+                // This eliminates mid-screen floating controls, letterbox cutoffs,
+                // and perfectly fits both horizontal (16:9) and portrait (9:16) videos on mobile screens.
+                var directStreamUrl = (dId && resolved.indexOf('data:') !== 0)
+                    ? ('https://drive.google.com/uc?export=download&id=' + dId)
+                    : resolved;
+
+                vidEl.src = directStreamUrl;
+                vidEl.classList.remove('hidden');
+
+                // If direct streaming endpoint encounters an error, automatically fall back to responsive Drive player
+                vidEl.onerror = function() {
+                    console.warn('HTML5 direct video playback encountered an error; falling back to Drive preview player.');
+                    switchToDrivePlayer();
+                };
             } else {
                 if (downloadLinkEl) downloadLinkEl.classList.add('hidden');
                 if (mType === 'document' && docEl) {
+                    docEl.style.aspectRatio = '';
+                    docEl.style.height = '72vh';
                     docEl.src = dId ? ('https://drive.google.com/file/d/' + dId + '/preview') : resolved;
                     docEl.classList.remove('hidden');
                 } else if (imgEl) {
@@ -2872,13 +2903,64 @@
             openModal('photoPreviewModal');
         }
 
+        function toggleVideoPlayerEngine() {
+            if (currentVideoPlayerMode === 'native') {
+                switchToDrivePlayer();
+            } else {
+                switchToNativePlayer();
+            }
+        }
+
+        function switchToDrivePlayer() {
+            var vidEl = document.getElementById('videoPreviewPlayer');
+            var docEl = document.getElementById('docPreviewFrame');
+            var noticeEl = document.getElementById('videoProcessingNotice');
+            if (vidEl) { vidEl.pause(); vidEl.classList.add('hidden'); }
+            if (docEl && currentActiveVideoDriveId) {
+                currentVideoPlayerMode = 'drive';
+                // Use a responsive aspect ratio for video iframe so it does not force tall 72vh letterbox
+                docEl.style.aspectRatio = '16/9';
+                docEl.style.height = 'auto';
+                docEl.src = 'https://drive.google.com/file/d/' + currentActiveVideoDriveId + '/preview';
+                docEl.classList.remove('hidden');
+                if (noticeEl) noticeEl.classList.remove('hidden');
+                updateVideoToggleBtnLabel();
+            }
+        }
+
+        function switchToNativePlayer() {
+            var vidEl = document.getElementById('videoPreviewPlayer');
+            var docEl = document.getElementById('docPreviewFrame');
+            var noticeEl = document.getElementById('videoProcessingNotice');
+            if (docEl) { docEl.classList.add('hidden'); docEl.src = 'about:blank'; }
+            if (noticeEl) noticeEl.classList.add('hidden');
+            if (vidEl && currentActiveVideoDriveId) {
+                currentVideoPlayerMode = 'native';
+                vidEl.src = 'https://drive.google.com/uc?export=download&id=' + currentActiveVideoDriveId;
+                vidEl.classList.remove('hidden');
+                updateVideoToggleBtnLabel();
+            }
+        }
+
+        function updateVideoToggleBtnLabel() {
+            var textEl = document.getElementById('videoPlayerToggleText');
+            if (!textEl) return;
+            if (currentVideoPlayerMode === 'native') {
+                textEl.innerText = 'Drive Player';
+            } else {
+                textEl.innerText = 'Native Player';
+            }
+        }
+
         function closeMediaPreviewModal() {
             var vidEl = document.getElementById('videoPreviewPlayer');
-            if (vidEl) { vidEl.pause(); vidEl.src = ''; }
+            if (vidEl) { vidEl.pause(); vidEl.src = ''; vidEl.onerror = null; }
             var docEl = document.getElementById('docPreviewFrame');
             if (docEl) { docEl.src = 'about:blank'; }
             var noticeEl = document.getElementById('videoProcessingNotice');
             if (noticeEl) noticeEl.classList.add('hidden');
+            var toggleBtn = document.getElementById('videoPlayerToggleBtn');
+            if (toggleBtn) toggleBtn.classList.add('hidden');
             closeModal('photoPreviewModal');
         }
 
