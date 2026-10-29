@@ -73,7 +73,7 @@
             padding: 0.75rem !important;
         }
         @media (max-width: 640px) {
-            header .max-w-7xl {
+            header .max-w-\[98\%\] {
                 padding-left: 0.75rem !important;
                 padding-right: 0.75rem !important;
             }
@@ -93,7 +93,7 @@
 
     <!-- TOP HEADER -->
     <header class="bg-[#004d3d] text-white sticky top-0 z-40 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-[98%] 2xl:max-w-[96%] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between py-3">
                 <!-- Branding -->
                 <div class="flex items-center space-x-3">
@@ -152,13 +152,13 @@
 
     <!-- SUB-NAVIGATION BAR (MODULE TABS) -->
     <div id="subModuleNavbar" class="bg-white border-b border-slate-200 shadow-sm py-3 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-7xl mx-auto flex items-center space-x-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0" id="housekeepingSubTabs">
+        <div class="max-w-[98%] 2xl:max-w-[96%] mx-auto flex items-center space-x-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0" id="housekeepingSubTabs">
             <!-- Dynamic Sub Module Buttons -->
         </div>
     </div>
 
     <!-- MAIN CONTENT CONTAINER -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <main class="flex-1 max-w-[98%] 2xl:max-w-[96%] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         <!-- MODULE BANNER & UTILITIES -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 mb-6 border-b border-slate-200 gap-4">
@@ -1139,16 +1139,26 @@
     </div>
 
     <!-- MEDIA (PHOTO / VIDEO / DOCUMENT) ENLARGE PREVIEW MODAL -->
-    <div id="photoPreviewModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div id="photoPreviewModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-4 border border-slate-100 flex flex-col items-center">
             <div class="w-full flex justify-between items-center mb-3 pb-2 border-b border-slate-100 gap-2">
                 <span id="photoPreviewCaption" class="text-xs font-bold text-slate-800 truncate">Media Preview</span>
-                <div class="flex items-center space-x-3 flex-shrink-0">
+                <div class="flex items-center space-x-2 flex-shrink-0">
+                    <a id="photoPreviewDownloadLink" href="#" download target="_blank" rel="noopener noreferrer" class="hidden text-xs font-semibold text-emerald-700 hover:text-emerald-900 flex items-center space-x-1 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Download / Play Video</span>
+                    </a>
                     <a id="photoPreviewDriveLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition">
                         <i class="fa-brands fa-google-drive"></i>
                         <span>Open in Drive</span>
                     </a>
                     <button type="button" onclick="closeMediaPreviewModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+            </div>
+            <div id="videoProcessingNotice" class="hidden w-full mb-2 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-[11px] sm:text-xs text-amber-800 flex items-start space-x-2">
+                <i class="fa-solid fa-circle-info text-amber-600 mt-0.5 flex-shrink-0"></i>
+                <div class="flex-1">
+                    <strong class="font-semibold text-amber-900">Google Drive Video Processing:</strong> Newly uploaded videos take 5–15 minutes for Google Drive to transcode for browser streaming. If you see "still being processed", click <strong>Open in Drive</strong> or <strong>Download / Play Video</strong> above to view it immediately.
                 </div>
             </div>
             <img id="photoPreviewImage" src="" onerror="handlePreviewModalImgError(this)" class="max-h-[75vh] max-w-full w-auto rounded-lg object-contain border border-slate-200 shadow-md">
@@ -1443,6 +1453,21 @@
                     <textarea id="cleanReportRemarks" rows="2" placeholder="Enter cleaning agent used, sludge removal details, chlorination status..." class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none"></textarea>
                 </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                            <i class="fa-solid fa-indian-rupee-sign text-emerald-600 mr-1"></i>Cleaning Cost (₹)
+                        </label>
+                        <input type="number" id="cleanReportCost" min="0" step="any" placeholder="e.g. 3500" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                            <i class="fa-solid fa-building-user text-slate-500 mr-1"></i>Cleaning Agency / Vendor (Optional)
+                        </label>
+                        <input type="text" id="cleanReportAgency" placeholder="e.g. In-house Team / Vendor Name" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none">
+                    </div>
+                </div>
+
                 <!-- BEFORE PHOTOS / VIDEOS / DOCUMENTS -->
                 <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                     <label class="block text-xs font-bold text-slate-700">
@@ -1578,6 +1603,21 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Remarks / Cleaning Observations</label>
                     <textarea id="sumpCleanReportRemarks" rows="2" placeholder="Sludge removal details, pump chamber check, desiltation observations..." class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                            <i class="fa-solid fa-indian-rupee-sign text-emerald-600 mr-1"></i>Cleaning Cost (₹)
+                        </label>
+                        <input type="number" id="sumpCleanReportCost" min="0" step="any" placeholder="e.g. 2500" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">
+                            <i class="fa-solid fa-building-user text-slate-500 mr-1"></i>Cleaning Agency / Vendor (Optional)
+                        </label>
+                        <input type="text" id="sumpCleanReportAgency" placeholder="e.g. In-house Team / Vendor Name" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
                 </div>
 
                 <!-- BEFORE PHOTOS / VIDEOS / DOCUMENTS -->
@@ -2771,8 +2811,11 @@
             var docEl = document.getElementById('docPreviewFrame');
             var capEl = document.getElementById('photoPreviewCaption');
             var driveLinkEl = document.getElementById('photoPreviewDriveLink');
+            var downloadLinkEl = document.getElementById('photoPreviewDownloadLink');
+            var noticeEl = document.getElementById('videoProcessingNotice');
 
             if (capEl) capEl.innerText = caption || 'Media View';
+            if (noticeEl) noticeEl.classList.add('hidden');
             if (imgEl) {
                 imgEl.classList.add('hidden');
                 imgEl.setAttribute('data-fallback-step', '0');
@@ -2796,20 +2839,35 @@
             }
 
             var mType = detectMediaType(src);
-            if (mType === 'video' && vidEl) {
+            if (mType === 'video') {
+                if (downloadLinkEl) {
+                    if (dId) {
+                        downloadLinkEl.href = 'https://drive.google.com/uc?export=download&id=' + dId;
+                        downloadLinkEl.classList.remove('hidden');
+                    } else if (typeof src === 'string' && src.indexOf('http') === 0) {
+                        downloadLinkEl.href = src.split('#')[0];
+                        downloadLinkEl.classList.remove('hidden');
+                    } else {
+                        downloadLinkEl.classList.add('hidden');
+                    }
+                }
                 if (dId && resolved.indexOf('data:') !== 0) {
+                    if (noticeEl) noticeEl.classList.remove('hidden');
                     docEl.src = 'https://drive.google.com/file/d/' + dId + '/preview';
                     docEl.classList.remove('hidden');
-                } else {
+                } else if (vidEl) {
                     vidEl.src = resolved;
                     vidEl.classList.remove('hidden');
                 }
-            } else if (mType === 'document' && docEl) {
-                docEl.src = dId ? ('https://drive.google.com/file/d/' + dId + '/preview') : resolved;
-                docEl.classList.remove('hidden');
-            } else if (imgEl) {
-                imgEl.src = resolved;
-                imgEl.classList.remove('hidden');
+            } else {
+                if (downloadLinkEl) downloadLinkEl.classList.add('hidden');
+                if (mType === 'document' && docEl) {
+                    docEl.src = dId ? ('https://drive.google.com/file/d/' + dId + '/preview') : resolved;
+                    docEl.classList.remove('hidden');
+                } else if (imgEl) {
+                    imgEl.src = resolved;
+                    imgEl.classList.remove('hidden');
+                }
             }
             openModal('photoPreviewModal');
         }
@@ -2819,6 +2877,8 @@
             if (vidEl) { vidEl.pause(); vidEl.src = ''; }
             var docEl = document.getElementById('docPreviewFrame');
             if (docEl) { docEl.src = 'about:blank'; }
+            var noticeEl = document.getElementById('videoProcessingNotice');
+            if (noticeEl) noticeEl.classList.add('hidden');
             closeModal('photoPreviewModal');
         }
 
@@ -2977,6 +3037,13 @@
                             try { onLocalPreviewReady(rawDataUrl); } catch (e) {}
                         }
                         var uploadedMediaUrl = await uploadToFmMarolDriveBackend(rawDataUrl, file.name, mime, subFolderLabel);
+                        if (uploadedMediaUrl && rawDataUrl) {
+                            dbMediaCache[uploadedMediaUrl] = rawDataUrl;
+                            var dId = extractGoogleDriveFileId(uploadedMediaUrl);
+                            if (dId) {
+                                dbMediaCache['drive_' + dId] = rawDataUrl;
+                            }
+                        }
                         resolve(uploadedMediaUrl);
                         return;
                     }
@@ -3752,18 +3819,18 @@
             html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-5 py-3 border-b border-slate-200 font-bold text-xs text-slate-700 flex justify-between items-center bg-slate-50"><span>Area Stores Current Stock</span><span class="text-[11px] text-blue-600 font-semibold">' + currentUser.role + '</span></div>';
             html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs table-auto"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
-            html += '<th class="py-3 px-2 whitespace-nowrap">Code</th>';
-            html += '<th class="py-3 px-2 min-w-[100px]">Item Name</th>';
-            html += '<th class="py-3 px-1.5 whitespace-nowrap">Category</th>';
-            html += '<th class="py-3 px-1.5 whitespace-nowrap">Unit</th>';
+            html += '<th class="py-2.5 px-3 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 shadow-sm min-w-[130px] sm:min-w-[170px]">Item Name</th>';
+            html += '<th class="py-2.5 px-2 whitespace-nowrap">Code</th>';
+            html += '<th class="py-2.5 px-1.5 whitespace-nowrap">Category</th>';
+            html += '<th class="py-2.5 px-1.5 whitespace-nowrap">Unit</th>';
             if (isAdmin || isExec) html += '<th class="py-3 px-1 text-center bg-blue-50 text-blue-800 border-l border-slate-200 w-[60px] text-[10px] leading-tight">Main Store</th>';
             visibleAreas.forEach(function(a) { html += '<th class="py-3 px-1 text-center bg-slate-50 text-slate-800 border-l border-slate-200 w-[68px] text-[10px] leading-tight">' + a + '</th>'; });
             html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
             filteredItems.forEach(function(item) {
                 html += '<tr class="hover:bg-slate-50 transition">';
-                html += '<td class="py-3 px-2 font-mono text-slate-500 whitespace-nowrap text-[11px]">' + item.code + '</td>';
-                html += '<td class="py-3 px-2 font-semibold text-slate-900 leading-snug">' + item.name + '</td>';
+                html += '<td class="py-2.5 px-3 sticky left-0 z-10 bg-white border-r border-slate-200 shadow-sm font-semibold text-slate-900 leading-snug"><div class="font-bold text-slate-900 text-xs sm:text-sm">' + item.name + '</div><div class="text-[10px] text-slate-400 font-mono sm:hidden">' + item.code + ' &bull; ' + (item.unit || '') + '</div></td>';
+                html += '<td class="py-2.5 px-2 font-mono text-slate-500 whitespace-nowrap text-[11px]">' + item.code + '</td>';
                 html += '<td class="py-3 px-1.5 whitespace-nowrap"><span class="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-600 font-medium">' + item.category + '</span></td>';
                 html += '<td class="py-3 px-1.5 text-slate-600 font-medium whitespace-nowrap text-[11px]">' + (item.unit || '-') + '</td>';
                 if (isAdmin || isExec) {
@@ -4685,8 +4752,8 @@
             html += '<span>Staff Directory — ' + areaName + ' (' + staffList.length + ' Members)</span>';
             html += '<span class="text-[11px] font-normal text-slate-500">Area Store & Deployment Records</span></div>';
 
-            html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
-            html += '<th class="p-3">Staff ID</th><th class="p-3">Name</th><th class="p-3">Role</th><th class="p-3">Contact</th><th class="p-3">Locker No</th><th class="p-3">Category</th><th class="p-3">Uniform Issued</th><th class="p-3">Uniform Date</th>';
+            html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs whitespace-nowrap"><thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+            html += '<th class="p-3 sticky left-0 z-20 bg-slate-50 border-r border-slate-200 shadow-sm min-w-[130px] sm:min-w-[160px]">Staff Name</th><th class="p-3 font-mono">Staff ID</th><th class="p-3">Role</th><th class="p-3">Contact</th><th class="p-3">Locker No</th><th class="p-3">Category</th><th class="p-3">Uniform Issued</th><th class="p-3">Uniform Date</th>';
             if (showActions) html += '<th class="p-3 text-center">Actions</th>';
             html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
@@ -4698,8 +4765,8 @@
                     var uniformBadge = stf.uniformIssued === 'Yes' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-red-100 text-red-800 border-red-300';
                     var roleBadge = stf.role === 'Supervisor' ? 'bg-indigo-100 text-indigo-800 border-indigo-200' : 'bg-slate-100 text-slate-700 border-slate-200';
 
-                    html += '<tr class="hover:bg-slate-50 transition"><td class="p-3 font-mono font-bold text-slate-800">' + stf.staffCode + '</td>';
-                    html += '<td class="p-3 font-bold text-slate-900">' + stf.name + '</td>';
+                    html += '<tr class="hover:bg-slate-50 transition"><td class="p-3 sticky left-0 z-10 bg-white border-r border-slate-200 shadow-sm font-bold text-slate-900 leading-snug"><div>' + stf.name + '</div><div class="text-[10px] text-slate-400 font-mono sm:hidden">' + stf.staffCode + ' &bull; ' + stf.role + '</div></td>';
+                    html += '<td class="p-3 font-mono font-bold text-slate-800">' + stf.staffCode + '</td>';
                     html += '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + roleBadge + '">' + stf.role + '</span></td>';
                     html += '<td class="p-3 text-slate-600">' + stf.contact + '</td>';
                     html += '<td class="p-3 font-mono text-slate-500">' + stf.locker + '</td>';
@@ -5851,7 +5918,7 @@
             html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200">';
             html += '<div>';
             html += '<h4 class="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center space-x-2"><i class="fa-solid fa-sitemap text-teal-600"></i><span>Scope of Work Checklist — ' + formatAreaDisplayLabel(dwrFormState.area) + '</span></h4>';
-            html += '<p class="text-[11px] text-slate-500">Synced with Firestore document <code class="font-mono text-teal-700">settings/scope_of_work</code> (' + subAreaNames.length + ' Sub-areas, ' + totalTasksInArea + ' Tasks)</p>';
+            html += '<p class="text-[11px] text-slate-500">' + subAreaNames.length + ' Sub-areas &bull; ' + totalTasksInArea + ' Tasks</p>';
             html += '</div>';
             html += '<div class="relative w-full sm:w-64">';
             html += '<i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
@@ -5927,13 +5994,9 @@
             html += '<textarea id="dwrRemarksInput" rows="4" oninput="dwrFormState.remarks = this.value" placeholder="Enter inspection observations, pending maintenance notes, or special cleaning remarks..." class="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500">' + (dwrFormState.remarks || '') + '</textarea>';
             html += '</div>';
 
-            // Photo Attachment (Images ONLY, accept="image/*", multiple, NO videos allowed)
+            // Photo Attachment
             html += '<div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">';
-            html += '<div class="flex items-center justify-between">';
-            html += '<label class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-camera text-teal-600 mr-1.5"></i>Photo Attachments (Images Only)</label>';
-            html += '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"><i class="fa-brands fa-google-drive mr-1"></i>fm.marol Drive / Cloud</span>';
-            html += '</div>';
-            html += '<p class="text-[11px] text-slate-500">Select one or more photos (<code class="font-mono">accept="image/*"</code>). Video files are strictly disabled.</p>';
+            html += '<label class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider"><i class="fa-solid fa-camera text-teal-600 mr-1.5"></i>Photo Attachments</label>';
             html += '<input type="file" id="dwrPhotosFileInput" accept="image/*" multiple onchange="handleDwrPhotoUpload(this)" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg bg-white cursor-pointer">';
             html += '<div id="dwrPhotosPreviewContainer" class="flex flex-wrap gap-2.5 pt-2">';
             html += renderDwrFormPhotoThumbnailsHtml();
@@ -5943,14 +6006,12 @@
             html += '</div>';
 
             // Form Submit Footer
-            html += '<div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
-            html += '<div class="text-xs text-slate-500"><i class="fa-solid fa-shield-halved text-teal-600 mr-1"></i>Report saves to Firestore <code class="font-mono text-slate-700">daily_work_reports</code> collection and updates calendar status to <strong class="text-emerald-700">Filled</strong>.</div>';
-            html += '<div class="flex items-center space-x-3 self-end sm:self-auto">';
+            html += '<div class="pt-4 border-t border-slate-200 flex items-center justify-end space-x-3">';
             html += '<button type="button" onclick="switchCleaningSubPage(\'dashboard\')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl transition">Cancel</button>';
             html += '<button type="submit" id="dwrSubmitBtn" class="bg-[#004d3d] hover:bg-[#00382c] text-white text-xs font-extrabold px-6 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2">';
             html += '<i class="fa-solid fa-floppy-disk text-emerald-300"></i><span>' + (dwrFormState.editReportId ? 'Update Daily Work Report' : 'Submit Daily Work Report') + '</span>';
             html += '</button>';
-            html += '</div></div>';
+            html += '</div>';
 
             html += '</form></div>';
             container.innerHTML = html;
@@ -8620,14 +8681,14 @@
                 html += '<span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200 self-start sm:self-auto">' + sortedTanks.length + (sortedTanks.length === 1 ? ' Tank' : ' Tanks') + '</span>';
                 html += '</div>';
 
-                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs whitespace-nowrap"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
-                html += '<th class="p-3">Tank Location &amp; ID</th>';
-                html += '<th class="p-3">Providing Water To</th>';
-                html += '<th class="p-3">Type</th>';
-                html += '<th class="p-3">Category</th>';
-                html += '<th class="p-3">Capacity</th>';
-                html += '<th class="p-3">3 Most Recent Cleaning Dates</th>';
-                html += '<th class="p-3 text-center">Actions</th>';
+                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+                html += '<th class="p-2.5 sm:p-3 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 shadow-sm min-w-[125px] sm:min-w-[160px]">Tank Location &amp; ID</th>';
+                html += '<th class="p-2.5 sm:p-3 min-w-[110px] max-w-[140px] sm:max-w-none">Providing Water To</th>';
+                html += '<th class="p-2.5 sm:p-3 whitespace-nowrap">Type</th>';
+                html += '<th class="p-2.5 sm:p-3 whitespace-nowrap">Category</th>';
+                html += '<th class="p-2.5 sm:p-3 whitespace-nowrap font-mono">Capacity</th>';
+                html += '<th class="p-2.5 sm:p-3 min-w-[120px]">Recent Cleanings</th>';
+                html += '<th class="p-2.5 sm:p-3 text-center min-w-[130px]">Actions</th>';
                 html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
                 sortedTanks.forEach(function(tank) {
@@ -8645,12 +8706,12 @@
                     if (recent3.length === 0) {
                         recentDatesHtml = '<span class="text-slate-400 italic text-[11px]">No cleaning logged yet</span>';
                     } else {
-                        recentDatesHtml = '<div class="flex items-center flex-wrap gap-1.5">';
+                        recentDatesHtml = '<div class="flex items-center flex-wrap gap-1">';
                         recent3.forEach(function(rLog, idx) {
                             var badgeTone = idx === 0
                                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold'
                                 : 'bg-slate-100 text-slate-700 border-slate-300 font-medium';
-                            recentDatesHtml += '<span class="px-2 py-0.5 rounded-md text-[11px] font-mono border ' + badgeTone + '" title="' + (rLog.remarks || 'Cleaned') + '"><i class="fa-regular fa-calendar-check mr-1 text-[10px]"></i>' + rLog.date + '</span>';
+                            recentDatesHtml += '<span class="px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-mono border ' + badgeTone + '" title="' + (rLog.remarks || 'Cleaned') + '"><i class="fa-regular fa-calendar-check mr-0.5 text-[9px]"></i>' + rLog.date + '</span>';
                         });
                         recentDatesHtml += '</div>';
                     }
@@ -8659,25 +8720,25 @@
                     var isExpanded = !!expandedTankHistoryIds[tank.id];
 
                     html += '<tr class="hover:bg-slate-50 transition">';
-                    html += '<td class="p-3"><div class="font-bold text-slate-900">' + tank.location + '</div><div class="text-[10px] font-mono text-slate-400">' + (tank.tankCode || tank.id) + '</div></td>';
-                    html += '<td class="p-3 font-medium text-slate-700">' + (tank.providingWaterTo ? '<span class="inline-flex items-center space-x-1"><i class="fa-solid fa-share-nodes text-sky-600 text-[10px]"></i><span>' + tank.providingWaterTo + '</span></span>' : '<span class="text-slate-400 italic">-</span>') + '</td>';
-                    html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + typeBadge + '">' + tank.type + '</span></td>';
-                    html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + catBadge + '">' + tank.category + '</span></td>';
-                    html += '<td class="p-3 font-mono font-bold text-slate-800">' + capDisplay + '</td>';
-                    html += '<td class="p-3">' + recentDatesHtml + '</td>';
-                    html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-1.5 flex-wrap gap-y-1">';
-                    html += '<button type="button" onclick="openWaterTankModal(\'' + tank.id + '\')\" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Tank"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
-                    html += '<button type="button" onclick="openTankCleaningReportModal(\'' + tank.id + '\')\" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
-                    html += '<button type="button" onclick="openTankHistoryModal(\'' + tank.id + '\')\" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>View History (' + tankLogs.length + ')</button>';
-                    html += '<button type="button" onclick="toggleInlineTankHistory(\'' + tank.id + '\')\" class="text-slate-500 hover:text-sky-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
+                    html += '<td class="p-2.5 sm:p-3 sticky left-0 z-10 bg-white border-r border-slate-200 shadow-sm"><div class="font-bold text-slate-900 text-xs sm:text-sm leading-tight">' + tank.location + '</div><div class="text-[10px] font-mono text-slate-400 mt-0.5">' + (tank.tankCode || tank.id) + '</div></td>';
+                    html += '<td class="p-2.5 sm:p-3 min-w-[110px] max-w-[140px] sm:max-w-none font-medium text-slate-700 text-[11px] sm:text-xs leading-snug break-words">' + (tank.providingWaterTo ? '<span class="inline-flex items-center space-x-1"><i class="fa-solid fa-share-nodes text-sky-600 text-[10px] flex-shrink-0"></i><span>' + tank.providingWaterTo + '</span></span>' : '<span class="text-slate-400 italic">-</span>') + '</td>';
+                    html += '<td class="p-2.5 sm:p-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + typeBadge + '">' + tank.type + '</span></td>';
+                    html += '<td class="p-2.5 sm:p-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + catBadge + '">' + tank.category + '</span></td>';
+                    html += '<td class="p-2.5 sm:p-3 whitespace-nowrap font-mono font-bold text-slate-800 text-[11px] sm:text-xs">' + capDisplay + '</td>';
+                    html += '<td class="p-2.5 sm:p-3 min-w-[120px]">' + recentDatesHtml + '</td>';
+                    html += '<td class="p-2.5 sm:p-3 text-center min-w-[130px]"><div class="flex items-center justify-center gap-1 flex-wrap">';
+                    html += '<button type="button" onclick="openWaterTankModal(\'' + tank.id + '\')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[10px] sm:text-[11px] font-semibold px-2 py-1 rounded-lg transition" title="Edit Tank"><i class="fa-solid fa-pen-to-square"></i></button>';
+                    html += '<button type="button" onclick="openTankCleaningReportModal(\'' + tank.id + '\')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] sm:text-[11px] font-semibold px-2 py-1 rounded-lg transition flex items-center space-x-1" title="Add Cleaning Report"><i class="fa-solid fa-plus text-[9px]"></i><span>Report</span></button>';
+                    html += '<button type="button" onclick="openTankHistoryModal(\'' + tank.id + '\')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[10px] sm:text-[11px] font-semibold px-2 py-1 rounded-lg transition flex items-center space-x-1" title="View Full History Modal"><i class="fa-solid fa-clock-rotate-left text-[9px]"></i><span>History (' + tankLogs.length + ')</span></button>';
+                    html += '<button type="button" onclick="toggleInlineTankHistory(\'' + tank.id + '\')" class="text-slate-500 hover:text-sky-700 px-1 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
                     if (isAdmin || isExec) {
-                        html += '<button type="button" onclick="deleteWaterTank(\'' + tank.id + '\')\" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Tank"><i class="fa-solid fa-trash-can"></i></button>';
+                        html += '<button type="button" onclick="deleteWaterTank(\'' + tank.id + '\')" class="text-red-500 hover:text-red-700 px-1 py-1 text-xs" title="Delete Tank"><i class="fa-solid fa-trash-can"></i></button>';
                     }
                     html += '</div></td>';
                     html += '</tr>';
 
                     if (isExpanded) {
-                        html += '<tr class="bg-sky-50/40"><td colspan="7" class="p-4 border-t border-sky-100">';
+                        html += '<tr class="bg-sky-50/40"><td colspan="7" class="p-3 sm:p-4 border-t border-sky-100">';
                         html += renderTankChronologicalHistoryHtml(tank, tankLogs);
                         html += '</td></tr>';
                     }
@@ -8705,12 +8766,12 @@
                 html += '<span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 self-start sm:self-auto">' + sortedSumps.length + (sortedSumps.length === 1 ? ' Sump' : ' Sumps') + '</span>';
                 html += '</div>';
 
-                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs whitespace-nowrap"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
-                html += '<th class="p-3">Sump Location &amp; ID</th>';
-                html += '<th class="p-3">Sump Drainage for</th>';
-                html += '<th class="p-3">Depth</th>';
-                html += '<th class="p-3">3 Most Recent Cleaning Dates</th>';
-                html += '<th class="p-3 text-center">Actions</th>';
+                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+                html += '<th class="p-2.5 sm:p-3 sticky left-0 z-20 bg-slate-100 border-r border-slate-200 shadow-sm min-w-[125px] sm:min-w-[150px]">Sump Location &amp; ID</th>';
+                html += '<th class="p-2.5 sm:p-3 min-w-[110px] max-w-[140px] sm:max-w-none">Sump Drainage for</th>';
+                html += '<th class="p-2.5 sm:p-3 whitespace-nowrap">Depth</th>';
+                html += '<th class="p-2.5 sm:p-3 min-w-[120px]">Recent Cleanings</th>';
+                html += '<th class="p-2.5 sm:p-3 text-center min-w-[130px]">Actions</th>';
                 html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
                 sortedSumps.forEach(function(sump) {
@@ -8721,12 +8782,12 @@
                     if (recent3.length === 0) {
                         recentDatesHtml = '<span class="text-slate-400 italic text-[11px]">No cleaning logged yet</span>';
                     } else {
-                        recentDatesHtml = '<div class="flex items-center flex-wrap gap-1.5">';
+                        recentDatesHtml = '<div class="flex items-center flex-wrap gap-1">';
                         recent3.forEach(function(rLog, idx) {
                             var badgeTone = idx === 0
                                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold'
                                 : 'bg-slate-100 text-slate-700 border-slate-300 font-medium';
-                            recentDatesHtml += '<span class="px-2 py-0.5 rounded-md text-[11px] font-mono border ' + badgeTone + '" title="' + (rLog.remarks || 'Cleaned') + '"><i class="fa-regular fa-calendar-check mr-1 text-[10px]"></i>' + rLog.date + '</span>';
+                            recentDatesHtml += '<span class="px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-mono border ' + badgeTone + '" title="' + (rLog.remarks || 'Cleaned') + '"><i class="fa-regular fa-calendar-check mr-0.5 text-[9px]"></i>' + rLog.date + '</span>';
                         });
                         recentDatesHtml += '</div>';
                     }
@@ -8734,23 +8795,23 @@
                     var isExpanded = !!expandedSumpHistoryIds[sump.id];
 
                     html += '<tr class="hover:bg-slate-50 transition">';
-                    html += '<td class="p-3"><div class="font-bold text-slate-900">' + sump.location + '</div><div class="text-[10px] font-mono text-slate-400">' + (sump.sumpCode || sump.id) + '</div></td>';
-                    html += '<td class="p-3 font-semibold text-indigo-900"><span class="inline-flex items-center space-x-1"><i class="fa-solid fa-faucet text-indigo-500 text-[10px]"></i><span>' + sump.drainageFor + '</span></span></td>';
-                    html += '<td class="p-3 font-mono font-bold text-slate-800"><span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">' + sump.depth + '</span></td>';
-                    html += '<td class="p-3">' + recentDatesHtml + '</td>';
-                    html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-1.5 flex-wrap gap-y-1">';
-                    html += '<button type="button" onclick="openSumpModal(\'' + sump.id + '\')\" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Sump"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
-                    html += '<button type="button" onclick="openSumpCleaningReportModal(\'' + sump.id + '\')\" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
-                    html += '<button type="button" onclick="openSumpHistoryModal(\'' + sump.id + '\')\" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full Sump History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>History (' + sumpLogs.length + ')</button>';
-                    html += '<button type="button" onclick="toggleInlineSumpHistory(\'' + sump.id + '\')\" class="text-slate-500 hover:text-indigo-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
+                    html += '<td class="p-2.5 sm:p-3 sticky left-0 z-10 bg-white border-r border-slate-200 shadow-sm"><div class="font-bold text-slate-900 text-xs sm:text-sm leading-tight">' + sump.location + '</div><div class="text-[10px] font-mono text-slate-400 mt-0.5">' + (sump.sumpCode || sump.id) + '</div></td>';
+                    html += '<td class="p-2.5 sm:p-3 min-w-[110px] max-w-[140px] sm:max-w-none font-semibold text-indigo-900 text-[11px] sm:text-xs leading-snug break-words"><span class="inline-flex items-center space-x-1"><i class="fa-solid fa-faucet text-indigo-500 text-[10px] flex-shrink-0"></i><span>' + sump.drainageFor + '</span></span></td>';
+                    html += '<td class="p-2.5 sm:p-3 whitespace-nowrap font-mono font-bold text-slate-800 text-[11px] sm:text-xs"><span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">' + sump.depth + '</span></td>';
+                    html += '<td class="p-2.5 sm:p-3 min-w-[120px]">' + recentDatesHtml + '</td>';
+                    html += '<td class="p-2.5 sm:p-3 text-center min-w-[130px]"><div class="flex items-center justify-center gap-1 flex-wrap">';
+                    html += '<button type="button" onclick="openSumpModal(\'' + sump.id + '\')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[10px] sm:text-[11px] font-semibold px-2 py-1 rounded-lg transition" title="Edit Sump"><i class="fa-solid fa-pen-to-square"></i></button>';
+                    html += '<button type="button" onclick="openSumpCleaningReportModal(\'' + sump.id + '\')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] sm:text-[11px] font-semibold px-2 py-1 rounded-lg transition flex items-center space-x-1" title="Add Cleaning Report"><i class="fa-solid fa-plus text-[9px]"></i><span>Report</span></button>';
+                    html += '<button type="button" onclick="openSumpHistoryModal(\'' + sump.id + '\')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 text-[10px] sm:text-[11px] font-semibold px-2 py-1 rounded-lg transition flex items-center space-x-1" title="View Full Sump History Modal"><i class="fa-solid fa-clock-rotate-left text-[9px]"></i><span>History (' + sumpLogs.length + ')</span></button>';
+                    html += '<button type="button" onclick="toggleInlineSumpHistory(\'' + sump.id + '\')" class="text-slate-500 hover:text-indigo-700 px-1 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
                     if (isAdmin || isExec) {
-                        html += '<button type="button" onclick="deleteSump(\'' + sump.id + '\')\" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Sump"><i class="fa-solid fa-trash-can"></i></button>';
+                        html += '<button type="button" onclick="deleteSump(\'' + sump.id + '\')" class="text-red-500 hover:text-red-700 px-1 py-1 text-xs" title="Delete Sump"><i class="fa-solid fa-trash-can"></i></button>';
                     }
                     html += '</div></td>';
                     html += '</tr>';
 
                     if (isExpanded) {
-                        html += '<tr class="bg-indigo-50/40"><td colspan="5" class="p-4 border-t border-indigo-100">';
+                        html += '<tr class="bg-indigo-50/40"><td colspan="5" class="p-3 sm:p-4 border-t border-indigo-100">';
                         html += renderSumpChronologicalHistoryHtml(sump, sumpLogs);
                         html += '</td></tr>';
                     }
@@ -8886,10 +8947,21 @@
                 return;
             }
 
+            var titleEl = document.getElementById('sumpCleaningModalTitle');
+            if (titleEl) {
+                titleEl.innerHTML = '<i class="fa-solid fa-clipboard-check text-indigo-600"></i><span>Add Sump Cleaning Report</span>';
+            }
+            var submitBtn = document.getElementById('saveSumpCleanReportSubmitBtn');
+            if (submitBtn) submitBtn.innerText = 'Save Sump Cleaning Report';
+
             document.getElementById('sumpCleanReportEditId').value = '';
             document.getElementById('sumpCleanReportPreselectedSumpId').value = preselectedSumpId || '';
             document.getElementById('sumpCleanReportDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('sumpCleanReportRemarks').value = '';
+            var costEl = document.getElementById('sumpCleanReportCost');
+            if (costEl) costEl.value = '';
+            var agencyEl = document.getElementById('sumpCleanReportAgency');
+            if (agencyEl) agencyEl.value = '';
             document.getElementById('sumpCleanBeforeFileInput').value = '';
             document.getElementById('sumpCleanAfterFileInput').value = '';
             currentSumpCleanBeforePhotos = [];
@@ -8909,6 +8981,52 @@
             }
 
             onSumpCleanReportSelectChange(selectEl.value);
+            openModal('sumpCleaningReportModal');
+        }
+
+        
+        function editSumpCleaningReport(reportId, sumpId) {
+            var log = dbTankCleaningLogs.find(function(l) { return l.id === reportId; });
+            if (!log) {
+                showAppNotification('Cleaning report not found.', 'error');
+                return;
+            }
+
+            var titleEl = document.getElementById('sumpCleaningModalTitle');
+            if (titleEl) {
+                titleEl.innerHTML = '<i class="fa-solid fa-pen-to-square text-indigo-600"></i><span>Edit Sump Cleaning Report</span>';
+            }
+            var submitBtn = document.getElementById('saveSumpCleanReportSubmitBtn');
+            if (submitBtn) submitBtn.innerText = 'Update Sump Cleaning Report';
+
+            document.getElementById('sumpCleanReportEditId').value = log.id;
+            document.getElementById('sumpCleanReportPreselectedSumpId').value = log.sumpId || sumpId || '';
+            document.getElementById('sumpCleanReportDate').value = log.date || new Date().toISOString().split('T')[0];
+            document.getElementById('sumpCleanReportRemarks').value = log.remarks || '';
+            var costEl = document.getElementById('sumpCleanReportCost');
+            if (costEl) costEl.value = (log.cost != null && log.cost !== '') ? log.cost : '';
+            var agencyEl = document.getElementById('sumpCleanReportAgency');
+            if (agencyEl) agencyEl.value = log.agency || '';
+
+            var selectEl = document.getElementById('sumpCleanReportMatchedSumpSelect');
+            selectEl.innerHTML = dbSumps.map(function(s) {
+                return '<option value="' + s.id + '">' + s.location + ' — ' + s.drainageFor + ' (' + s.depth + ')</option>';
+            }).join('');
+
+            var targetSumpId = log.sumpId || sumpId;
+            if (targetSumpId && dbSumps.some(function(s) { return s.id === targetSumpId; })) {
+                selectEl.value = targetSumpId;
+            }
+            onSumpCleanReportSelectChange(selectEl.value);
+
+            currentSumpCleanBeforePhotos = Array.isArray(log.beforePhotos) ? log.beforePhotos.slice() : (log.beforePhoto ? [log.beforePhoto] : []);
+            currentSumpCleanAfterPhotos = Array.isArray(log.afterPhotos) ? log.afterPhotos.slice() : (log.afterPhoto ? [log.afterPhoto] : []);
+            renderSumpCleanPhotoPreviews('before');
+            renderSumpCleanPhotoPreviews('after');
+
+            document.getElementById('sumpCleanBeforeFileInput').value = '';
+            document.getElementById('sumpCleanAfterFileInput').value = '';
+
             openModal('sumpCleaningReportModal');
         }
 
@@ -8971,9 +9089,12 @@
 
         async function handleSaveSumpCleaningReport(e) {
             e.preventDefault();
+            var editId = document.getElementById('sumpCleanReportEditId').value;
             var date = document.getElementById('sumpCleanReportDate').value;
             var matchedSumpId = document.getElementById('sumpCleanReportMatchedSumpSelect').value;
             var remarks = document.getElementById('sumpCleanReportRemarks').value.trim();
+            var costVal = document.getElementById('sumpCleanReportCost') ? document.getElementById('sumpCleanReportCost').value.trim() : '';
+            var agencyVal = document.getElementById('sumpCleanReportAgency') ? document.getElementById('sumpCleanReportAgency').value.trim() : '';
 
             var linkedSump = dbSumps.find(function(s) { return s.id === matchedSumpId; });
             var location = linkedSump ? linkedSump.location : '';
@@ -8983,26 +9104,58 @@
             var submitBtn = document.getElementById('saveSumpCleanReportSubmitBtn');
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerText = 'Saving Report...';
+                submitBtn.innerText = editId ? 'Updating Report...' : 'Saving Report...';
             }
 
-            var reportObj = {
-                id: 'SCL-' + Date.now(),
-                assetType: 'Sump',
-                sumpId: matchedSumpId || '',
-                date: date,
-                location: location,
-                drainageFor: drainageFor,
-                depth: depth,
-                remarks: remarks,
-                beforePhotos: currentSumpCleanBeforePhotos.slice(),
-                afterPhotos: currentSumpCleanAfterPhotos.slice(),
-                loggedBy: currentUser ? currentUser.email : 'System',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
+            var reportObj = null;
+            if (editId) {
+                var existingIdx = -1;
+                for (var i = 0; i < dbTankCleaningLogs.length; i++) {
+                    if (dbTankCleaningLogs[i].id === editId) {
+                        existingIdx = i;
+                        break;
+                    }
+                }
+                if (existingIdx !== -1) {
+                    reportObj = Object.assign({}, dbTankCleaningLogs[existingIdx], {
+                        date: date,
+                        sumpId: matchedSumpId || '',
+                        location: location,
+                        drainageFor: drainageFor,
+                        depth: depth,
+                        remarks: remarks,
+                        cost: costVal !== '' ? parseFloat(costVal) : null,
+                        agency: agencyVal,
+                        beforePhotos: currentSumpCleanBeforePhotos.slice(),
+                        afterPhotos: currentSumpCleanAfterPhotos.slice(),
+                        updatedAt: new Date().toISOString(),
+                        updatedBy: currentUser ? currentUser.email : 'System'
+                    });
+                    dbTankCleaningLogs[existingIdx] = reportObj;
+                }
+            }
 
-            dbTankCleaningLogs.unshift(reportObj);
+            if (!reportObj) {
+                reportObj = {
+                    id: 'SCL-' + Date.now(),
+                    assetType: 'Sump',
+                    sumpId: matchedSumpId || '',
+                    date: date,
+                    location: location,
+                    drainageFor: drainageFor,
+                    depth: depth,
+                    remarks: remarks,
+                    cost: costVal !== '' ? parseFloat(costVal) : null,
+                    agency: agencyVal,
+                    beforePhotos: currentSumpCleanBeforePhotos.slice(),
+                    afterPhotos: currentSumpCleanAfterPhotos.slice(),
+                    loggedBy: currentUser ? currentUser.email : 'System',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                dbTankCleaningLogs.unshift(reportObj);
+            }
+
             saveStateToLocalBackup();
 
             if (window.saveTankCleaningReportToFirestore) {
@@ -9018,7 +9171,16 @@
             if (activeModule === 'water') {
                 renderWaterTanksAndSumpsTablesOnly();
             }
-            showAppNotification('Sump cleaning report saved for ' + location + '!', 'success');
+
+            var sumpHistoryModal = document.getElementById('sumpHistoryModal');
+            if (sumpHistoryModal && !sumpHistoryModal.classList.contains('hidden') && linkedSump) {
+                var logs = getSumpRecentCleanings(linkedSump);
+                document.getElementById('sumpHistoryModalSubtitle').innerText =
+                    'Drainage for: ' + (linkedSump.drainageFor || '-') + ' | Depth: ' + (linkedSump.depth || '-') + ' | Total Cleanings: ' + logs.length;
+                document.getElementById('sumpHistoryModalBody').innerHTML = renderSumpChronologicalHistoryHtml(linkedSump, logs);
+            }
+
+            showAppNotification(editId ? ('Sump cleaning report updated for ' + location + '!') : ('Sump cleaning report saved for ' + location + '!'), 'success');
         }
 
         function openSumpHistoryModal(sumpId) {
@@ -9047,24 +9209,37 @@
             }
 
             var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role && currentUser.role.indexOf('Executive') === 0;
             var html = '<div class="space-y-3">';
             logs.forEach(function(log, idx) {
                 var beforeArr = Array.isArray(log.beforePhotos) ? log.beforePhotos : (log.beforePhoto ? [log.beforePhoto] : []);
                 var afterArr = Array.isArray(log.afterPhotos) ? log.afterPhotos : (log.afterPhoto ? [log.afterPhoto] : []);
 
+                var costBadge = '';
+                if (log.cost != null && log.cost !== '') {
+                    costBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-indian-rupee-sign mr-0.5 text-[10px]"></i>Cost: ₹' + Number(log.cost).toLocaleString() + '</span>';
+                }
+                var agencyBadge = '';
+                if (log.agency) {
+                    agencyBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200"><i class="fa-solid fa-building-user mr-1 text-[10px]"></i>' + log.agency + '</span>';
+                }
+
                 html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">';
                 html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">';
-                html += '<div class="flex items-center space-x-2.5">';
+                html += '<div class="flex items-center flex-wrap gap-2">';
                 html += '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">Cleaning #' + (logs.length - idx) + '</span>';
                 html += '<span class="font-mono font-extrabold text-sm text-slate-900"><i class="fa-regular fa-calendar mr-1 text-indigo-600"></i>' + log.date + '</span>';
                 if (idx === 0) {
                     html += '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Latest</span>';
                 }
+                if (costBadge) html += costBadge;
+                if (agencyBadge) html += agencyBadge;
                 html += '</div>';
-                html += '<div class="flex items-center space-x-3 text-[11px] text-slate-400">';
+                html += '<div class="flex items-center space-x-2 text-[11px] text-slate-400">';
                 html += '<span>Logged by: <strong class="text-slate-600">' + (log.loggedBy || 'System') + '</strong></span>';
-                if (isAdmin) {
-                    html += '<button type="button" onclick="deleteSumpCleaningReport(\'' + log.id + '\', \'' + sump.id + '\')\" class="text-red-500 hover:text-red-700 font-semibold"><i class="fa-solid fa-trash-can"></i></button>';
+                html += '<button type="button" onclick="editSumpCleaningReport(\'' + log.id + '\', \'' + sump.id + '\')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 rounded text-[11px] font-semibold transition flex items-center space-x-1" title="Edit this report"><i class="fa-solid fa-pen-to-square text-[10px]"></i><span>Edit</span></button>';
+                if (isAdmin || isExec) {
+                    html += '<button type="button" onclick="deleteSumpCleaningReport(\'' + log.id + '\', \'' + sump.id + '\')" class="text-red-500 hover:text-red-700 px-1 py-0.5 text-xs font-semibold" title="Delete report"><i class="fa-solid fa-trash-can"></i></button>';
                 }
                 html += '</div></div>';
 
@@ -9234,10 +9409,21 @@
                 return;
             }
 
+            var titleEl = document.getElementById('tankCleaningModalTitle');
+            if (titleEl) {
+                titleEl.innerHTML = '<i class="fa-solid fa-clipboard-check text-sky-600"></i><span>Add Water Tank Cleaning Report</span>';
+            }
+            var submitBtn = document.getElementById('saveCleanReportSubmitBtn');
+            if (submitBtn) submitBtn.innerText = 'Save Cleaning Report';
+
             document.getElementById('cleanReportEditId').value = '';
             document.getElementById('cleanReportPreselectedTankId').value = preselectedTankId || '';
             document.getElementById('cleanReportDate').value = new Date().toISOString().split('T')[0];
             document.getElementById('cleanReportRemarks').value = '';
+            var costEl = document.getElementById('cleanReportCost');
+            if (costEl) costEl.value = '';
+            var agencyEl = document.getElementById('cleanReportAgency');
+            if (agencyEl) agencyEl.value = '';
             document.getElementById('cleanBeforeFileInput').value = '';
             document.getElementById('cleanAfterFileInput').value = '';
             currentCleanBeforePhotos = [];
@@ -9269,6 +9455,67 @@
             }
 
             syncCleanReportMatchedTanks(preselectedTankId);
+            openModal('tankCleaningReportModal');
+        }
+
+        
+        function editTankCleaningReport(reportId, tankId) {
+            var log = dbTankCleaningLogs.find(function(l) { return l.id === reportId; });
+            if (!log) {
+                showAppNotification('Cleaning report not found.', 'error');
+                return;
+            }
+
+            var titleEl = document.getElementById('tankCleaningModalTitle');
+            if (titleEl) {
+                titleEl.innerHTML = '<i class="fa-solid fa-pen-to-square text-sky-600"></i><span>Edit Water Tank Cleaning Report</span>';
+            }
+            var submitBtn = document.getElementById('saveCleanReportSubmitBtn');
+            if (submitBtn) submitBtn.innerText = 'Update Cleaning Report';
+
+            document.getElementById('cleanReportEditId').value = log.id;
+            document.getElementById('cleanReportPreselectedTankId').value = log.tankId || tankId || '';
+            document.getElementById('cleanReportDate').value = log.date || new Date().toISOString().split('T')[0];
+            document.getElementById('cleanReportRemarks').value = log.remarks || '';
+            var costEl = document.getElementById('cleanReportCost');
+            if (costEl) costEl.value = (log.cost != null && log.cost !== '') ? log.cost : '';
+            var agencyEl = document.getElementById('cleanReportAgency');
+            if (agencyEl) agencyEl.value = log.agency || '';
+
+            var uniqueLocations = [];
+            dbWaterTanks.forEach(function(t) {
+                if (t.location && uniqueLocations.indexOf(t.location) === -1) {
+                    uniqueLocations.push(t.location);
+                }
+            });
+            uniqueLocations.sort();
+
+            var locSelect = document.getElementById('cleanReportLocation');
+            locSelect.innerHTML = uniqueLocations.map(function(loc) {
+                return '<option value="' + loc + '">' + loc + '</option>';
+            }).join('');
+
+            var targetTank = (log.tankId && dbWaterTanks.find(function(t) { return t.id === log.tankId; })) ||
+                (tankId && dbWaterTanks.find(function(t) { return t.id === tankId; })) ||
+                (log.location && dbWaterTanks.find(function(t) { return t.location === log.location; })) ||
+                dbWaterTanks[0];
+
+            if (targetTank) {
+                locSelect.value = targetTank.location;
+                document.getElementById('cleanReportType').value = targetTank.type;
+                document.getElementById('cleanReportCategory').value = targetTank.category;
+            }
+
+            syncCleanReportMatchedTanks(log.tankId || tankId);
+
+            currentCleanBeforePhotos = Array.isArray(log.beforePhotos) ? log.beforePhotos.slice() : (log.beforePhoto ? [log.beforePhoto] : []);
+            currentCleanAfterPhotos = Array.isArray(log.afterPhotos) ? log.afterPhotos.slice() : (log.afterPhoto ? [log.afterPhoto] : []);
+            renderCleanPhotoPreviews('before');
+            renderCleanPhotoPreviews('after');
+
+            document.getElementById('cleanBeforeFileInput').value = '';
+            document.getElementById('cleanAfterFileInput').value = '';
+
             openModal('tankCleaningReportModal');
         }
 
@@ -9359,12 +9606,15 @@
 
         async function handleSaveTankCleaningReport(e) {
             e.preventDefault();
+            var editId = document.getElementById('cleanReportEditId').value;
             var date = document.getElementById('cleanReportDate').value;
             var location = document.getElementById('cleanReportLocation').value;
             var type = document.getElementById('cleanReportType').value;
             var category = document.getElementById('cleanReportCategory').value;
             var matchedTankId = document.getElementById('cleanReportMatchedTankSelect').value;
             var remarks = document.getElementById('cleanReportRemarks').value.trim();
+            var costVal = document.getElementById('cleanReportCost') ? document.getElementById('cleanReportCost').value.trim() : '';
+            var agencyVal = document.getElementById('cleanReportAgency') ? document.getElementById('cleanReportAgency').value.trim() : '';
 
             var linkedTank = dbWaterTanks.find(function(t) { return t.id === matchedTankId; });
             if (linkedTank) {
@@ -9376,26 +9626,58 @@
             var submitBtn = document.getElementById('saveCleanReportSubmitBtn');
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerText = 'Saving Report...';
+                submitBtn.innerText = editId ? 'Updating Report...' : 'Saving Report...';
             }
 
-            var reportObj = {
-                id: 'TCL-' + Date.now(),
-                assetType: 'Tank',
-                tankId: matchedTankId || '',
-                date: date,
-                location: location,
-                type: type,
-                category: category,
-                remarks: remarks,
-                beforePhotos: currentCleanBeforePhotos.slice(),
-                afterPhotos: currentCleanAfterPhotos.slice(),
-                loggedBy: currentUser ? currentUser.email : 'System',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
+            var reportObj = null;
+            if (editId) {
+                var existingIdx = -1;
+                for (var i = 0; i < dbTankCleaningLogs.length; i++) {
+                    if (dbTankCleaningLogs[i].id === editId) {
+                        existingIdx = i;
+                        break;
+                    }
+                }
+                if (existingIdx !== -1) {
+                    reportObj = Object.assign({}, dbTankCleaningLogs[existingIdx], {
+                        date: date,
+                        location: location,
+                        type: type,
+                        category: category,
+                        tankId: matchedTankId || '',
+                        remarks: remarks,
+                        cost: costVal !== '' ? parseFloat(costVal) : null,
+                        agency: agencyVal,
+                        beforePhotos: currentCleanBeforePhotos.slice(),
+                        afterPhotos: currentCleanAfterPhotos.slice(),
+                        updatedAt: new Date().toISOString(),
+                        updatedBy: currentUser ? currentUser.email : 'System'
+                    });
+                    dbTankCleaningLogs[existingIdx] = reportObj;
+                }
+            }
 
-            dbTankCleaningLogs.unshift(reportObj);
+            if (!reportObj) {
+                reportObj = {
+                    id: 'TCL-' + Date.now(),
+                    assetType: 'Tank',
+                    tankId: matchedTankId || '',
+                    date: date,
+                    location: location,
+                    type: type,
+                    category: category,
+                    remarks: remarks,
+                    cost: costVal !== '' ? parseFloat(costVal) : null,
+                    agency: agencyVal,
+                    beforePhotos: currentCleanBeforePhotos.slice(),
+                    afterPhotos: currentCleanAfterPhotos.slice(),
+                    loggedBy: currentUser ? currentUser.email : 'System',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                dbTankCleaningLogs.unshift(reportObj);
+            }
+
             saveStateToLocalBackup();
 
             if (window.saveTankCleaningReportToFirestore) {
@@ -9411,7 +9693,17 @@
             if (activeModule === 'water') {
                 renderWaterTanksAndSumpsTablesOnly();
             }
-            showAppNotification('Water tank cleaning report saved for ' + location + '!', 'success');
+
+            var tankHistoryModal = document.getElementById('tankHistoryModal');
+            if (tankHistoryModal && !tankHistoryModal.classList.contains('hidden') && linkedTank) {
+                var logs = getTankRecentCleanings(linkedTank);
+                var capDisplay = linkedTank.capacity || ((linkedTank.capacityValue || '') + ' ' + (linkedTank.capacityUnit || 'Liters'));
+                document.getElementById('tankHistoryModalSubtitle').innerText =
+                    'Providing Water To: ' + (linkedTank.providingWaterTo || '-') + ' | Type: ' + linkedTank.type + ' | Category: ' + linkedTank.category + ' | Capacity: ' + capDisplay + ' | Total Cleanings: ' + logs.length;
+                document.getElementById('tankHistoryModalBody').innerHTML = renderTankChronologicalHistoryHtml(linkedTank, logs);
+            }
+
+            showAppNotification(editId ? ('Water tank cleaning report updated for ' + location + '!') : ('Water tank cleaning report saved for ' + location + '!'), 'success');
         }
 
         function openTankHistoryModal(tankId) {
@@ -9441,24 +9733,37 @@
             }
 
             var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role && currentUser.role.indexOf('Executive') === 0;
             var html = '<div class="space-y-3">';
             logs.forEach(function(log, idx) {
                 var beforeArr = Array.isArray(log.beforePhotos) ? log.beforePhotos : (log.beforePhoto ? [log.beforePhoto] : []);
                 var afterArr = Array.isArray(log.afterPhotos) ? log.afterPhotos : (log.afterPhoto ? [log.afterPhoto] : []);
 
+                var costBadge = '';
+                if (log.cost != null && log.cost !== '') {
+                    costBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-indian-rupee-sign mr-0.5 text-[10px]"></i>Cost: ₹' + Number(log.cost).toLocaleString() + '</span>';
+                }
+                var agencyBadge = '';
+                if (log.agency) {
+                    agencyBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200"><i class="fa-solid fa-building-user mr-1 text-[10px]"></i>' + log.agency + '</span>';
+                }
+
                 html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">';
                 html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">';
-                html += '<div class="flex items-center space-x-2.5">';
+                html += '<div class="flex items-center flex-wrap gap-2">';
                 html += '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200">Cleaning #' + (logs.length - idx) + '</span>';
                 html += '<span class="font-mono font-extrabold text-sm text-slate-900"><i class="fa-regular fa-calendar mr-1 text-sky-600"></i>' + log.date + '</span>';
                 if (idx === 0) {
                     html += '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Latest</span>';
                 }
+                if (costBadge) html += costBadge;
+                if (agencyBadge) html += agencyBadge;
                 html += '</div>';
-                html += '<div class="flex items-center space-x-3 text-[11px] text-slate-400">';
+                html += '<div class="flex items-center space-x-2 text-[11px] text-slate-400">';
                 html += '<span>Logged by: <strong class="text-slate-600">' + (log.loggedBy || 'System') + '</strong></span>';
-                if (isAdmin) {
-                    html += '<button type="button" onclick="deleteTankCleaningReport(\'' + log.id + '\', \'' + tank.id + '\')\" class="text-red-500 hover:text-red-700 font-semibold"><i class="fa-solid fa-trash-can"></i></button>';
+                html += '<button type="button" onclick="editTankCleaningReport(\'' + log.id + '\', \'' + tank.id + '\')" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-2.5 py-0.5 rounded text-[11px] font-semibold transition flex items-center space-x-1" title="Edit this report"><i class="fa-solid fa-pen-to-square text-[10px]"></i><span>Edit</span></button>';
+                if (isAdmin || isExec) {
+                    html += '<button type="button" onclick="deleteTankCleaningReport(\'' + log.id + '\', \'' + tank.id + '\')" class="text-red-500 hover:text-red-700 px-1 py-0.5 text-xs font-semibold" title="Delete report"><i class="fa-solid fa-trash-can"></i></button>';
                 }
                 html += '</div></div>';
 
