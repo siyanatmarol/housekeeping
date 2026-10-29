@@ -13,9 +13,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Siyanat HK">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="shortcut icon" href="favicon.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,10 +47,46 @@
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        html, body {
+            max-width: 100vw;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        /* Dynamic Device Detection & Adaptive Mobile Formatting */
+        .device-mobile {
+            font-size: 13px;
+        }
+        .device-mobile h1 {
+            font-size: 0.95rem !important;
+            line-height: 1.25 !important;
+        }
+        .device-mobile h2 {
+            font-size: 1rem !important;
+        }
+        .device-mobile .overview-card,
+        .device-mobile .kpi-card {
+            padding: 0.75rem !important;
+        }
+        @media (max-width: 640px) {
+            header .max-w-7xl {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+            #primaryTopTabs button {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+                font-size: 11px !important;
+            }
+            .overview-card-btn {
+                width: 100% !important;
+                margin-top: 0.5rem !important;
+            }
+        }
     </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col">
@@ -63,9 +100,9 @@
                     <div class="w-10 h-10 rounded-lg bg-[#006e57] flex items-center justify-center font-bold text-xl text-emerald-300 shadow">
                         <i class="fa-solid fa-building-user"></i>
                     </div>
-                    <div>
-                        <h1 class="font-bold text-lg sm:text-xl leading-tight tracking-tight text-white">Aljamea-tus-Saifiyah Facilities Management Department (Marol)</h1>
-                        <p class="text-base sm:text-lg text-emerald-200 font-bold mt-0.5">Housekeeping Management Portal</p>
+                    <div class="min-w-0 pr-1">
+                        <h1 class="font-bold text-sm sm:text-base md:text-xl leading-tight tracking-tight text-white break-words">Aljamea-tus-Saifiyah Facilities Management Department (Marol)</h1>
+                        <p class="text-xs sm:text-sm md:text-base text-emerald-200 font-bold mt-0.5">Housekeeping Management Portal</p>
                     </div>
                 </div>
 
@@ -1458,6 +1495,143 @@
         </div>
     </div>
 
+
+    <!-- MODULE 7: ADD / EDIT SUMP MODAL -->
+    <div id="sumpModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 id="sumpModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-water text-indigo-600"></i>
+                    <span>Add Sump</span>
+                </h3>
+                <button type="button" onclick="closeModal('sumpModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form onsubmit="handleSaveSump(event)" class="space-y-3.5">
+                <input type="hidden" id="sumpEditId">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Sump Location <span class="text-red-500">*</span></label>
+                    <input type="text" id="sumpLocation" list="sumpLocationDatalist" required placeholder="e.g. Boys Hostel Basement, Phase 1 Ground, Mahad Sump" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <datalist id="sumpLocationDatalist">
+                        <option value="Admin Phase 1"></option>
+                        <option value="Admin Phase 3"></option>
+                        <option value="Mahad Bldg"></option>
+                        <option value="Religious Block"></option>
+                        <option value="Estates"></option>
+                        <option value="Boys Hostel Basement"></option>
+                        <option value="Girls Hostel Basement"></option>
+                        <option value="Compound Area"></option>
+                        <option value="Najmi Bldg"></option>
+                    </datalist>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Sump Drainage for <span class="text-red-500">*</span></label>
+                    <input type="text" id="sumpDrainageFor" required placeholder="e.g. Storm Water, Basement Drainage, Greywater, Sewage" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Depth <span class="text-red-500">*</span></label>
+                    <input type="text" id="sumpDepth" required placeholder="e.g. 10 ft, 3.5 meters, 12 feet" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+
+                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('sumpModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
+                    <button type="submit" id="saveSumpSubmitBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow transition">Save Sump</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODULE 7: ADD SUMP CLEANING REPORT MODAL -->
+    <div id="sumpCleaningReportModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 id="sumpCleaningModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-clipboard-check text-indigo-600"></i>
+                    <span>Add Sump Cleaning Report</span>
+                </h3>
+                <button type="button" onclick="closeModal('sumpCleaningReportModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form onsubmit="handleSaveSumpCleaningReport(event)" class="flex-1 overflow-y-auto custom-scrollbar space-y-3.5 pr-1">
+                <input type="hidden" id="sumpCleanReportEditId">
+                <input type="hidden" id="sumpCleanReportPreselectedSumpId">
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Cleaning Date</label>
+                        <input type="date" id="sumpCleanReportDate" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Sump (From Registered Sumps)</label>
+                        <select id="sumpCleanReportMatchedSumpSelect" onchange="onSumpCleanReportSelectChange(this.value)" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
+                    <div><span class="text-slate-500">Drainage for:</span> <strong id="sumpCleanDispDrainage" class="text-indigo-700 font-bold">-</strong></div>
+                    <div><span class="text-slate-500">Depth:</span> <strong id="sumpCleanDispDepth" class="text-slate-800 font-bold">-</strong></div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Remarks / Cleaning Observations</label>
+                    <textarea id="sumpCleanReportRemarks" rows="2" placeholder="Sludge removal details, pump chamber check, desiltation observations..." class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+                </div>
+
+                <!-- BEFORE PHOTOS / VIDEOS / DOCUMENTS -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <label class="block text-xs font-bold text-slate-700">
+                        <i class="fa-solid fa-photo-film text-amber-600 mr-1"></i> Before Photos / Videos / Documents
+                    </label>
+                    <input type="file" id="sumpCleanBeforeFileInput" accept="image/*,video/*,.pdf,.doc,.docx" multiple onchange="handleSumpPhotoUpload(this, 'before')" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white">
+                    <div id="sumpCleanBeforePhotosPreview" class="flex flex-wrap gap-2 pt-1"></div>
+                </div>
+
+                <!-- AFTER PHOTOS / VIDEOS / DOCUMENTS -->
+                <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <label class="block text-xs font-bold text-slate-700">
+                        <i class="fa-solid fa-photo-film text-emerald-600 mr-1"></i> After Photos / Videos / Documents
+                    </label>
+                    <input type="file" id="sumpCleanAfterFileInput" accept="image/*,video/*,.pdf,.doc,.docx" multiple onchange="handleSumpPhotoUpload(this, 'after')" class="w-full text-xs px-2.5 py-1.5 border border-slate-300 rounded-lg bg-white">
+                    <div id="sumpCleanAfterPhotosPreview" class="flex flex-wrap gap-2 pt-1"></div>
+                </div>
+
+                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('sumpCleaningReportModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
+                    <button type="submit" id="saveSumpCleanReportSubmitBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow transition">Save Sump Cleaning Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODULE 7: SUMP CLEANING HISTORY MODAL -->
+    <div id="sumpHistoryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-start mb-4 pb-3 border-b border-slate-100">
+                <div>
+                    <h3 id="sumpHistoryModalTitle" class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i>
+                        <span>Sump Chronological Cleaning History</span>
+                    </h3>
+                    <p id="sumpHistoryModalSubtitle" class="text-xs text-slate-500 mt-1"></p>
+                </div>
+                <button type="button" onclick="closeModal('sumpHistoryModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div id="sumpHistoryModalBody" class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1"></div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-between items-center mt-3">
+                <button type="button" id="sumpHistoryAddReportBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Add Cleaning Report for this Sump</span>
+                </button>
+                <button type="button" onclick="closeModal('sumpHistoryModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- CLOUD DATABASE & FM.MAROL GOOGLE DRIVE CONFIGURATION MODAL -->
     <div id="driveConfigModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
@@ -1819,15 +1993,19 @@
         var compostSelectedMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
         var compostDailyShowAllDays = false;
 
-        // Module 7 (Water Tank Cleaning Management) State & Collections
+        // Module 7 (Water Tank & Sump Cleaning Management) State & Collections
         var dbWaterTanks = [];
+        var dbSumps = [];
         var dbTankCleaningLogs = [];
         var waterTankSearchLocation = '';
         var waterTankFilterType = 'All';
         var waterTankFilterCategory = 'All';
         var expandedTankHistoryIds = {};
+        var expandedSumpHistoryIds = {};
         var currentCleanBeforePhotos = [];
         var currentCleanAfterPhotos = [];
+        var currentSumpCleanBeforePhotos = [];
+        var currentSumpCleanAfterPhotos = [];
 
         // Google Apps Script Drive Config State (fm.marol)
         var DEFAULT_FM_MAROL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlC50dxfxCLRxdkSdl79qPuDaS2WXVDp6ltAhA8oTzvOyBWCJEJfSqzVYJi3nZ5ryZ/exec';
@@ -1978,6 +2156,7 @@
                 dbWetWasteLogs: dbWetWasteLogs || [],
                 dbCompostLogs: dbCompostLogs || [],
                 dbWaterTanks: dbWaterTanks || [],
+                dbSumps: dbSumps || [],
                 dbTankCleaningLogs: dbTankCleaningLogs || [],
                 dbProcurementVendors: dbProcurementVendors || [],
                 dbVendorRates: dbVendorRates || {},
@@ -2061,6 +2240,9 @@
             }
             if (Array.isArray(snap.dbWaterTanks)) {
                 dbWaterTanks = snap.dbWaterTanks.filter(function(x) { return !isRecordDeleted(x.id); });
+            }
+            if (Array.isArray(snap.dbSumps)) {
+                dbSumps = snap.dbSumps.filter(function(x) { return !isRecordDeleted(x.id); });
             }
             if (Array.isArray(snap.dbTankCleaningLogs)) {
                 dbTankCleaningLogs = snap.dbTankCleaningLogs.filter(function(x) { return !isRecordDeleted(x.id); });
@@ -3487,7 +3669,7 @@
                     'pest': 'Area-wise recurring and complaint-based pest treatments',
                     'waste': isWasteFinancialRestrictedUser() ? 'Dry waste offloading quantities and category weight summaries' : 'Dry waste offloading receipts, rates, and revenue summaries',
                     'compost': 'Wet waste intake, 90-crate lifecycle tracking, and daily/monthly compost logs',
-                    'water': 'Campus water tank registry, cleaning schedules, and before/after photo history',
+                    'water': 'Campus water tanks & sumps registry, cleaning schedules, and before/after photo history',
                     'procurement': 'Vendor rates and purchase requisitions',
                     'machinery': 'Equipment assets, breakdowns, and repair maintenance logs'
                 };
@@ -6148,6 +6330,7 @@
                     html += '<span class="text-[10px] font-mono bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded">' + tasks.length + '</span>';
                     html += '</div>';
                     html += '<div class="flex items-center space-x-1.5 flex-shrink-0">';
+                    html += '<button type="button" onclick="promptCloneDwrSubArea(\'' + safeArea + '\', \'' + safeSub + '\')" class="text-emerald-400 hover:text-emerald-200 p-1 rounded hover:bg-slate-800 transition" title="Clone Sub-Area (Duplicate with Tasks)"><i class="fa-solid fa-copy text-[11px]"></i></button>';
                     html += '<button type="button" onclick="promptRenameDwrSubArea(\'' + safeArea + '\', \'' + safeSub + '\')" class="text-slate-300 hover:text-white p-1 rounded hover:bg-slate-800 transition" title="Rename Sub-Area"><i class="fa-solid fa-pen text-[11px]"></i></button>';
                     html += '<button type="button" onclick="deleteDwrSubArea(\'' + safeArea + '\', \'' + safeSub + '\')" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-slate-800 transition" title="Delete Sub-Area"><i class="fa-solid fa-trash-can text-[11px]"></i></button>';
                     html += '</div></div>';
@@ -6276,14 +6459,43 @@
 
         function deleteDwrSubArea(areaName, subName) {
             openConfirmDialog('Delete Sub-Area "' + subName + '" and all its tasks from ' + areaName + '?', async function() {
-                var canon = ensureAreaExistsInScope(areaName);
-                if (dbScopeOfWork[canon]) {
-                    delete dbScopeOfWork[canon][subName];
-                }
+                var norm = normalizeAreaAlias(areaName).toLowerCase();
+                // Delete from all alias keys of dbScopeOfWork
+                Object.keys(dbScopeOfWork || {}).forEach(function(k) {
+                    if (normalizeAreaAlias(k).toLowerCase() === norm || k.toLowerCase() === norm) {
+                        if (dbScopeOfWork[k] && typeof dbScopeOfWork[k] === 'object') {
+                            delete dbScopeOfWork[k][subName];
+                        }
+                    }
+                });
                 await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Deleted Sub-Area "' + subName + '".', 'info');
             });
+        }
+
+        function promptCloneDwrSubArea(areaName, subName) {
+            var subAreasMap = getScopeSubAreasForArea(areaName);
+            var existingTasks = Array.isArray(subAreasMap[subName]) ? subAreasMap[subName].slice() : [];
+            var defaultCloneName = subName + ' (Copy)';
+            openPromptDialog('Clone Sub-Area: ' + subName, defaultCloneName, async function(newSubName) {
+                if (!newSubName || !newSubName.trim()) return;
+                var cleanSub = newSubName.trim();
+                var canon = ensureAreaExistsInScope(areaName);
+                if (dbScopeOfWork[canon] && dbScopeOfWork[canon][cleanSub]) {
+                    showAppNotification('Sub-Area "' + cleanSub + '" already exists in ' + canon + '.', 'error');
+                    return;
+                }
+                if (!dbScopeOfWork[canon]) dbScopeOfWork[canon] = {};
+                dbScopeOfWork[canon][cleanSub] = existingTasks.slice();
+                await syncModifiedScopeOfWork();
+                renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+                showAppNotification('Cloned Sub-Area "' + cleanSub + '" with ' + existingTasks.length + ' tasks!', 'success');
+            });
+            setTimeout(function() {
+                var pInp = document.getElementById('appPromptInput');
+                if (pInp) pInp.value = defaultCloneName;
+            }, 70);
         }
 
         async function handleAddDwrTaskToSubArea(e, areaName, subName, sIdx) {
@@ -8249,15 +8461,30 @@
             });
         }
 
-        // ================= MODULE 7: WATER TANK CLEANING MANAGEMENT =================
+        // ================= MODULE 7: WATER TANK & SUMP CLEANING MANAGEMENT =================
         function getTankRecentCleanings(tank) {
             return dbTankCleaningLogs.filter(function(log) {
+                if (log.assetType === 'Sump') return false;
                 if (log.tankId && log.tankId === tank.id) return true;
                 return (
                     !log.tankId &&
+                    !log.sumpId &&
                     log.location === tank.location &&
                     log.type === tank.type &&
                     log.category === tank.category
+                );
+            }).sort(function(a, b) {
+                return new Date(b.date) - new Date(a.date);
+            });
+        }
+
+        function getSumpRecentCleanings(sump) {
+            return dbTankCleaningLogs.filter(function(log) {
+                if (log.sumpId && log.sumpId === sump.id) return true;
+                return (
+                    log.assetType === 'Sump' &&
+                    log.location === sump.location &&
+                    log.drainageFor === sump.drainageFor
                 );
             }).sort(function(a, b) {
                 return new Date(b.date) - new Date(a.date);
@@ -8268,8 +8495,10 @@
             var isAdmin = currentUser && currentUser.role === 'Administrator';
             var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
 
+            // Action buttons: "Add Water Tank", "Add Sump", "Add Cleaning Report"
             var actionHtml = '<div class="flex items-center space-x-2 flex-wrap gap-y-2">';
             actionHtml += '<button type="button" onclick="openWaterTankModal()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Add Water Tank</span></button>';
+            actionHtml += '<button type="button" onclick="openSumpModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Add Sump</span></button>';
             actionHtml += '<button type="button" onclick="openTankCleaningReportModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-clipboard-check"></i><span>Add Cleaning Report</span></button>';
             actionHtml += '</div>';
             actions.innerHTML = actionHtml;
@@ -8281,47 +8510,73 @@
 
             var html = '<div class="space-y-6">';
 
-            // Top KPI Overview Cards
-            html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">';
-            html += '<div class="bg-gradient-to-br from-sky-700 to-sky-900 text-white p-4 rounded-2xl shadow-sm border border-sky-600 flex items-center justify-between">';
-            html += '<div><span class="text-[11px] font-bold uppercase text-sky-200 block">Registered Water Tanks</span><div class="text-2xl font-extrabold font-mono mt-1">' + dbWaterTanks.length + '</div><span class="text-[11px] text-sky-200">Underground first, sorted A–Z by Tank Location</span></div>';
-            html += '<div class="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center text-lg"><i class="fa-solid fa-faucet-drip"></i></div></div>';
+            // Top KPI Overview Cards (Tanks & Sumps)
+            html += '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">';
+            
+            // Card 1: Registered Tanks
+            html += '<div class="bg-gradient-to-br from-sky-700 to-sky-900 text-white p-3.5 rounded-2xl shadow-sm border border-sky-600 flex items-center justify-between">';
+            html += '<div><span class="text-[10px] sm:text-[11px] font-bold uppercase text-sky-200 block">Water Tanks</span><div class="text-xl sm:text-2xl font-extrabold font-mono mt-0.5">' + dbWaterTanks.length + '</div><span class="text-[10px] text-sky-200">UG &amp; Overhead</span></div>';
+            html += '<div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-white/15 flex items-center justify-center text-base sm:text-lg"><i class="fa-solid fa-faucet-drip"></i></div></div>';
 
-            html += '<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">';
-            html += '<div><span class="text-[11px] font-bold uppercase text-slate-400 block">By Water Type</span><div class="text-base font-extrabold text-slate-800 mt-1">Domestic: <span class="text-sky-600 font-mono">' + domesticCount + '</span> | Flushing: <span class="text-amber-600 font-mono">' + flushingCount + '</span></div><span class="text-[11px] text-slate-400">Potable &amp; Non-potable</span></div>';
-            html += '<div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-base"><i class="fa-solid fa-droplet"></i></div></div>';
+            // Card 2: Registered Sumps
+            html += '<div class="bg-gradient-to-br from-indigo-700 to-indigo-900 text-white p-3.5 rounded-2xl shadow-sm border border-indigo-600 flex items-center justify-between">';
+            html += '<div><span class="text-[10px] sm:text-[11px] font-bold uppercase text-indigo-200 block">Sumps</span><div class="text-xl sm:text-2xl font-extrabold font-mono mt-0.5">' + dbSumps.length + '</div><span class="text-[10px] text-indigo-200">Drainage Sumps</span></div>';
+            html += '<div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-white/15 flex items-center justify-center text-base sm:text-lg"><i class="fa-solid fa-water"></i></div></div>';
 
-            html += '<div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">';
-            html += '<div><span class="text-[11px] font-bold uppercase text-slate-400 block">By Tank Category</span><div class="text-base font-extrabold text-slate-800 mt-1">Underground: <span class="text-indigo-600 font-mono">' + undergroundCount + '</span> | Overhead: <span class="text-teal-600 font-mono">' + overheadCount + '</span></div><span class="text-[11px] text-slate-400">Structural elevation</span></div>';
-            html += '<div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base"><i class="fa-solid fa-layer-group"></i></div></div>';
+            // Card 3: By Water Type
+            html += '<div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">';
+            html += '<div><span class="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block">By Water Type</span><div class="text-xs sm:text-sm font-extrabold text-slate-800 mt-0.5">Domestic: <span class="text-sky-600 font-mono">' + domesticCount + '</span><br>Flushing: <span class="text-amber-600 font-mono">' + flushingCount + '</span></div></div>';
+            html += '<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-sm sm:text-base"><i class="fa-solid fa-droplet"></i></div></div>';
 
-            html += '<div class="bg-white p-4 rounded-2xl shadow-sm border border-emerald-200 flex items-center justify-between">';
-            html += '<div><span class="text-[11px] font-bold uppercase text-slate-400 block">Total Cleaning Reports</span><div class="text-2xl font-extrabold text-emerald-700 font-mono mt-1">' + dbTankCleaningLogs.length + '</div><span class="text-[11px] text-emerald-600">With before &amp; after photo logs</span></div>';
-            html += '<div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base"><i class="fa-solid fa-clipboard-check"></i></div></div>';
+            // Card 4: By Tank Category
+            html += '<div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">';
+            html += '<div><span class="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block">Tank Category</span><div class="text-xs sm:text-sm font-extrabold text-slate-800 mt-0.5">UG: <span class="text-indigo-600 font-mono">' + undergroundCount + '</span> | OH: <span class="text-teal-600 font-mono">' + overheadCount + '</span></div></div>';
+            html += '<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm sm:text-base"><i class="fa-solid fa-layer-group"></i></div></div>';
+
+            // Card 5: Cleaning Reports
+            html += '<div class="col-span-2 sm:col-span-1 bg-white p-3.5 rounded-2xl shadow-sm border border-emerald-200 flex items-center justify-between">';
+            html += '<div><span class="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block">Cleaning Reports</span><div class="text-xl sm:text-2xl font-extrabold text-emerald-700 font-mono mt-0.5">' + dbTankCleaningLogs.length + '</div><span class="text-[10px] text-emerald-600">With photo logs</span></div>';
+            html += '<div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base"><i class="fa-solid fa-clipboard-check"></i></div></div>';
             html += '</div>';
 
-            // Filter Bar
+            // Filter Bar with ID for Search Input
             html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
             html += '<div class="relative w-full sm:w-80"><i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
-            html += '<input type="text" placeholder="Filter by Tank Location or Providing Water To..." value="' + waterTankSearchLocation + '" oninput="handleWaterTankLocationSearch(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500"></div>';
+            html += '<input type="text" id="waterTankSearchInput" placeholder="Filter Tanks &amp; Sumps by Location, Drainage, Water To..." value="' + (waterTankSearchLocation || '') + '" oninput="handleWaterTankLocationSearch(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500"></div>';
 
             html += '<div class="flex items-center space-x-2 flex-wrap gap-y-2">';
-            html += '<select onchange="setWaterTankFilterType(this.value)" class="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-medium">';
-            html += '<option value="All" ' + (waterTankFilterType === 'All' ? 'selected' : '') + '>All Types (Domestic &amp; Flushing)</option>';
+            html += '<select id="waterTankFilterTypeSelect" onchange="setWaterTankFilterType(this.value)" class="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-medium">';
+            html += '<option value="All" ' + (waterTankFilterType === 'All' ? 'selected' : '') + '>All Tank Types (Domestic &amp; Flushing)</option>';
             html += '<option value="Domestic" ' + (waterTankFilterType === 'Domestic' ? 'selected' : '') + '>Domestic Only</option>';
             html += '<option value="Flushing" ' + (waterTankFilterType === 'Flushing' ? 'selected' : '') + '>Flushing Only</option>';
             html += '</select>';
 
-            html += '<select onchange="setWaterTankFilterCategory(this.value)" class="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-medium">';
+            html += '<select id="waterTankFilterCategorySelect" onchange="setWaterTankFilterCategory(this.value)" class="text-xs px-3 py-1.5 rounded-lg border border-slate-300 bg-white font-medium">';
             html += '<option value="All" ' + (waterTankFilterCategory === 'All' ? 'selected' : '') + '>All Categories (Underground &amp; Overhead)</option>';
             html += '<option value="Underground" ' + (waterTankFilterCategory === 'Underground' ? 'selected' : '') + '>Underground Only</option>';
             html += '<option value="Overhead" ' + (waterTankFilterCategory === 'Overhead' ? 'selected' : '') + '>Overhead Only</option>';
             html += '</select>';
             html += '</div></div>';
 
-            // Filter Water Tanks
+            // Container for Both Tables (Water Tanks & Sumps)
+            html += '<div id="waterTanksAndSumpsTablesContainer" class="space-y-6"></div>';
+            html += '</div>';
+
+            container.innerHTML = html;
+            renderWaterTanksAndSumpsTablesOnly();
+        }
+
+        // Dedicated renderer that updates ONLY the table bodies/cards without destroying the search input
+        function renderWaterTanksAndSumpsTablesOnly() {
+            var container = document.getElementById('waterTanksAndSumpsTablesContainer');
+            if (!container) return;
+
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
+            var q = (waterTankSearchLocation || '').toLowerCase().trim();
+
+            // 1. Filter Water Tanks
             var filteredTanks = dbWaterTanks.filter(function(t) {
-                var q = (waterTankSearchLocation || '').toLowerCase();
                 var locMatch = !q ||
                     (t.location && t.location.toLowerCase().indexOf(q) !== -1) ||
                     (t.providingWaterTo && t.providingWaterTo.toLowerCase().indexOf(q) !== -1);
@@ -8330,15 +8585,24 @@
                 return locMatch && typeMatch && catMatch;
             });
 
+            // 2. Filter Sumps (Include Sump Location and Drainage For in search filter!)
+            var filteredSumps = dbSumps.filter(function(s) {
+                var sumpMatch = !q ||
+                    (s.location && s.location.toLowerCase().indexOf(q) !== -1) ||
+                    (s.drainageFor && s.drainageFor.toLowerCase().indexOf(q) !== -1);
+                return sumpMatch;
+            });
+
+            var html = '';
+
+            // ================= TABLE 1: WATER TANKS MASTER LIST =================
             if (filteredTanks.length === 0) {
-                html += '<div class="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-3 shadow-sm">';
-                html += '<div class="w-14 h-14 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mx-auto text-2xl"><i class="fa-solid fa-faucet-drip"></i></div>';
-                html += '<h4 class="text-sm font-bold text-slate-800">No Water Tanks Registered Matching Criteria</h4>';
-                html += '<p class="text-xs text-slate-500 max-w-md mx-auto">Click "Add Water Tank" to register Domestic or Flushing tanks (Underground / Overhead) and start tracking cleaning reports.</p>';
-                html += '<button type="button" onclick="openWaterTankModal()" class="bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition inline-flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Add First Water Tank</span></button>';
+                html += '<div class="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-2.5 shadow-sm">';
+                html += '<div class="w-12 h-12 rounded-full bg-sky-50 text-sky-600 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-faucet-drip"></i></div>';
+                html += '<h4 class="text-sm font-bold text-slate-800">No Water Tanks Matching Search / Filter Criteria</h4>';
+                html += '<p class="text-xs text-slate-500 max-w-md mx-auto">Try clearing your search query or click "Add Water Tank" to register new tanks.</p>';
                 html += '</div>';
             } else {
-                // Single unified list sorted with Underground tanks on top, then Overhead tanks, and alphabetically by Tank Location within each
                 var sortedTanks = filteredTanks.slice().sort(function(a, b) {
                     var catOrderA = (a.category === 'Underground') ? 0 : 1;
                     var catOrderB = (b.category === 'Underground') ? 0 : 1;
@@ -8352,11 +8616,11 @@
 
                 html += '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
                 html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
-                html += '<h4 class="font-bold text-sm text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-list-check text-sky-600"></i><span>Water Tanks Master List (Underground First &bull; Alphabetical by Tank Location)</span></h4>';
+                html += '<h4 class="font-bold text-sm text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-faucet-drip text-sky-600"></i><span>Water Tanks Master List (Underground First &bull; Alphabetical by Location)</span></h4>';
                 html += '<span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200 self-start sm:self-auto">' + sortedTanks.length + (sortedTanks.length === 1 ? ' Tank' : ' Tanks') + '</span>';
                 html += '</div>';
 
-                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs whitespace-nowrap"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
                 html += '<th class="p-3">Tank Location &amp; ID</th>';
                 html += '<th class="p-3">Providing Water To</th>';
                 html += '<th class="p-3">Type</th>';
@@ -8402,12 +8666,12 @@
                     html += '<td class="p-3 font-mono font-bold text-slate-800">' + capDisplay + '</td>';
                     html += '<td class="p-3">' + recentDatesHtml + '</td>';
                     html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-1.5 flex-wrap gap-y-1">';
-                    html += '<button type="button" onclick="openWaterTankModal(\'' + tank.id + '\')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Tank"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
-                    html += '<button type="button" onclick="openTankCleaningReportModal(\'' + tank.id + '\')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
-                    html += '<button type="button" onclick="openTankHistoryModal(\'' + tank.id + '\')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>View History (' + tankLogs.length + ')</button>';
-                    html += '<button type="button" onclick="toggleInlineTankHistory(\'' + tank.id + '\')" class="text-slate-500 hover:text-sky-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
+                    html += '<button type="button" onclick="openWaterTankModal('' + tank.id + '')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Tank"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
+                    html += '<button type="button" onclick="openTankCleaningReportModal('' + tank.id + '')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
+                    html += '<button type="button" onclick="openTankHistoryModal('' + tank.id + '')" class="bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>View History (' + tankLogs.length + ')</button>';
+                    html += '<button type="button" onclick="toggleInlineTankHistory('' + tank.id + '')" class="text-slate-500 hover:text-sky-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
                     if (isAdmin || isExec) {
-                        html += '<button type="button" onclick="deleteWaterTank(\'' + tank.id + '\')" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Tank"><i class="fa-solid fa-trash-can"></i></button>';
+                        html += '<button type="button" onclick="deleteWaterTank('' + tank.id + '')" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Tank"><i class="fa-solid fa-trash-can"></i></button>';
                     }
                     html += '</div></td>';
                     html += '</tr>';
@@ -8422,30 +8686,443 @@
                 html += '</tbody></table></div></div>';
             }
 
-            html += '</div>';
+            // ================= TABLE 2: SUMPS MASTER LIST =================
+            if (filteredSumps.length === 0) {
+                html += '<div class="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-2.5 shadow-sm">';
+                html += '<div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-water"></i></div>';
+                html += '<h4 class="text-sm font-bold text-slate-800">No Sumps Registered' + (q ? ' Matching Search' : '') + '</h4>';
+                html += '<p class="text-xs text-slate-500 max-w-md mx-auto">Click "Add Sump" to register drainage sumps with location, drainage type, and depth.</p>';
+                html += '<button type="button" onclick="openSumpModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition inline-flex items-center space-x-1.5"><i class="fa-solid fa-plus"></i><span>Add First Sump</span></button>';
+                html += '</div>';
+            } else {
+                var sortedSumps = filteredSumps.slice().sort(function(a, b) {
+                    return (a.location || '').localeCompare(b.location || '', undefined, { numeric: true, sensitivity: 'base' });
+                });
+
+                html += '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
+                html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
+                html += '<h4 class="font-bold text-sm text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-water text-indigo-600"></i><span>Sumps Master List (Drainage Sumps)</span></h4>';
+                html += '<span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 self-start sm:self-auto">' + sortedSumps.length + (sortedSumps.length === 1 ? ' Sump' : ' Sumps') + '</span>';
+                html += '</div>';
+
+                html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs whitespace-nowrap"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+                html += '<th class="p-3">Sump Location &amp; ID</th>';
+                html += '<th class="p-3">Sump Drainage for</th>';
+                html += '<th class="p-3">Depth</th>';
+                html += '<th class="p-3">3 Most Recent Cleaning Dates</th>';
+                html += '<th class="p-3 text-center">Actions</th>';
+                html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
+
+                sortedSumps.forEach(function(sump) {
+                    var sumpLogs = getSumpRecentCleanings(sump);
+                    var recent3 = sumpLogs.slice(0, 3);
+
+                    var recentDatesHtml = '';
+                    if (recent3.length === 0) {
+                        recentDatesHtml = '<span class="text-slate-400 italic text-[11px]">No cleaning logged yet</span>';
+                    } else {
+                        recentDatesHtml = '<div class="flex items-center flex-wrap gap-1.5">';
+                        recent3.forEach(function(rLog, idx) {
+                            var badgeTone = idx === 0
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold'
+                                : 'bg-slate-100 text-slate-700 border-slate-300 font-medium';
+                            recentDatesHtml += '<span class="px-2 py-0.5 rounded-md text-[11px] font-mono border ' + badgeTone + '" title="' + (rLog.remarks || 'Cleaned') + '"><i class="fa-regular fa-calendar-check mr-1 text-[10px]"></i>' + rLog.date + '</span>';
+                        });
+                        recentDatesHtml += '</div>';
+                    }
+
+                    var isExpanded = !!expandedSumpHistoryIds[sump.id];
+
+                    html += '<tr class="hover:bg-slate-50 transition">';
+                    html += '<td class="p-3"><div class="font-bold text-slate-900">' + sump.location + '</div><div class="text-[10px] font-mono text-slate-400">' + (sump.sumpCode || sump.id) + '</div></td>';
+                    html += '<td class="p-3 font-semibold text-indigo-900"><span class="inline-flex items-center space-x-1"><i class="fa-solid fa-faucet text-indigo-500 text-[10px]"></i><span>' + sump.drainageFor + '</span></span></td>';
+                    html += '<td class="p-3 font-mono font-bold text-slate-800"><span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">' + sump.depth + '</span></td>';
+                    html += '<td class="p-3">' + recentDatesHtml + '</td>';
+                    html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-1.5 flex-wrap gap-y-1">';
+                    html += '<button type="button" onclick="openSumpModal('' + sump.id + '')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Edit Sump"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>';
+                    html += '<button type="button" onclick="openSumpCleaningReportModal('' + sump.id + '')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="Add Cleaning Report"><i class="fa-solid fa-plus mr-1"></i>Add Cleaning Report</button>';
+                    html += '<button type="button" onclick="openSumpHistoryModal('' + sump.id + '')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition" title="View Full Sump History Modal"><i class="fa-solid fa-clock-rotate-left mr-1"></i>History (' + sumpLogs.length + ')</button>';
+                    html += '<button type="button" onclick="toggleInlineSumpHistory('' + sump.id + '')" class="text-slate-500 hover:text-indigo-700 px-1.5 py-1 text-xs" title="Toggle Inline History"><i class="fa-solid ' + (isExpanded ? 'fa-chevron-up' : 'fa-chevron-down') + '"></i></button>';
+                    if (isAdmin || isExec) {
+                        html += '<button type="button" onclick="deleteSump('' + sump.id + '')" class="text-red-500 hover:text-red-700 px-1.5 py-1 text-xs" title="Delete Sump"><i class="fa-solid fa-trash-can"></i></button>';
+                    }
+                    html += '</div></td>';
+                    html += '</tr>';
+
+                    if (isExpanded) {
+                        html += '<tr class="bg-indigo-50/40"><td colspan="5" class="p-4 border-t border-indigo-100">';
+                        html += renderSumpChronologicalHistoryHtml(sump, sumpLogs);
+                        html += '</td></tr>';
+                    }
+                });
+
+                html += '</tbody></table></div></div>';
+            }
+
             container.innerHTML = html;
         }
 
+        // Live search handler - updates tables directly without losing focus or freezing
         function handleWaterTankLocationSearch(val) {
-            waterTankSearchLocation = val;
-            switchModule('water');
+            waterTankSearchLocation = val || '';
+            renderWaterTanksAndSumpsTablesOnly();
         }
 
         function setWaterTankFilterType(val) {
-            waterTankFilterType = val;
-            switchModule('water');
+            waterTankFilterType = val || 'All';
+            renderWaterTanksAndSumpsTablesOnly();
         }
 
         function setWaterTankFilterCategory(val) {
-            waterTankFilterCategory = val;
-            switchModule('water');
+            waterTankFilterCategory = val || 'All';
+            renderWaterTanksAndSumpsTablesOnly();
         }
 
         function toggleInlineTankHistory(tankId) {
             expandedTankHistoryIds[tankId] = !expandedTankHistoryIds[tankId];
-            switchModule('water');
+            renderWaterTanksAndSumpsTablesOnly();
         }
 
+        function toggleInlineSumpHistory(sumpId) {
+            expandedSumpHistoryIds[sumpId] = !expandedSumpHistoryIds[sumpId];
+            renderWaterTanksAndSumpsTablesOnly();
+        }
+
+        // ================= SUMP CRUD & CLEANING REPORT FUNCTIONS =================
+        function openSumpModal(editId) {
+            if (editId) {
+                var sump = dbSumps.find(function(s) { return s.id === editId; });
+                if (sump) {
+                    document.getElementById('sumpEditId').value = sump.id;
+                    document.getElementById('sumpLocation').value = sump.location || '';
+                    document.getElementById('sumpDrainageFor').value = sump.drainageFor || '';
+                    document.getElementById('sumpDepth').value = sump.depth || '';
+                    document.getElementById('sumpModalTitle').innerHTML = '<i class="fa-solid fa-water text-indigo-600"></i><span>Edit Sump</span>';
+                }
+            } else {
+                document.getElementById('sumpEditId').value = '';
+                document.getElementById('sumpLocation').value = '';
+                document.getElementById('sumpDrainageFor').value = '';
+                document.getElementById('sumpDepth').value = '';
+                document.getElementById('sumpModalTitle').innerHTML = '<i class="fa-solid fa-water text-indigo-600"></i><span>Add Sump</span>';
+            }
+            openModal('sumpModal');
+        }
+
+        async function handleSaveSump(e) {
+            e.preventDefault();
+            var editId = document.getElementById('sumpEditId').value;
+            var location = document.getElementById('sumpLocation').value.trim();
+            var drainageFor = document.getElementById('sumpDrainageFor').value.trim();
+            var depth = document.getElementById('sumpDepth').value.trim();
+
+            var submitBtn = document.getElementById('saveSumpSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Saving...';
+            }
+
+            var sumpObj = {
+                location: location,
+                drainageFor: drainageFor,
+                depth: depth,
+                updatedAt: new Date().toISOString(),
+                loggedBy: currentUser ? currentUser.email : 'System'
+            };
+
+            var targetSumpId = editId || ('SMP-' + Date.now());
+            sumpObj.id = targetSumpId;
+
+            if (!editId) {
+                sumpObj.sumpCode = 'SMP-' + String(dbSumps.length + 1).padStart(2, '0');
+                sumpObj.createdAt = new Date().toISOString();
+                dbSumps.push(sumpObj);
+            } else {
+                var sIdx = dbSumps.findIndex(function(s) { return s.id === editId; });
+                if (sIdx >= 0) {
+                    sumpObj.sumpCode = dbSumps[sIdx].sumpCode || ('SMP-' + String(sIdx + 1).padStart(2, '0'));
+                    dbSumps[sIdx] = Object.assign({}, dbSumps[sIdx], sumpObj);
+                }
+            }
+
+            saveStateToLocalBackup();
+            if (window.saveSumpToFirestore) {
+                await window.saveSumpToFirestore(targetSumpId, sumpObj);
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Save Sump';
+            }
+
+            closeModal('sumpModal');
+            if (activeModule === 'water') {
+                renderWaterTanksAndSumpsTablesOnly();
+            }
+            showAppNotification(editId ? 'Sump updated!' : 'New sump registered successfully!', 'success');
+        }
+
+        function deleteSump(sumpId) {
+            var sump = dbSumps.find(function(s) { return s.id === sumpId; });
+            if (!sump) return;
+            openConfirmDialog('Are you sure you want to delete the sump at "' + sump.location + '" (' + sump.drainageFor + ')?', async function() {
+                markRecordDeleted(sumpId);
+                dbSumps = dbSumps.filter(function(s) { return s.id !== sumpId; });
+                saveStateToLocalBackup();
+                if (window.deleteSumpFromFirestore) {
+                    await window.deleteSumpFromFirestore(sumpId);
+                }
+                if (activeModule === 'water') {
+                    renderWaterTanksAndSumpsTablesOnly();
+                }
+                showAppNotification('Sump deleted.', 'info');
+            });
+        }
+
+        function openSumpCleaningReportModal(preselectedSumpId) {
+            if (dbSumps.length === 0) {
+                showAppNotification('Please register at least one Sump first before logging a cleaning report.', 'error');
+                openSumpModal();
+                return;
+            }
+
+            document.getElementById('sumpCleanReportEditId').value = '';
+            document.getElementById('sumpCleanReportPreselectedSumpId').value = preselectedSumpId || '';
+            document.getElementById('sumpCleanReportDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('sumpCleanReportRemarks').value = '';
+            document.getElementById('sumpCleanBeforeFileInput').value = '';
+            document.getElementById('sumpCleanAfterFileInput').value = '';
+            currentSumpCleanBeforePhotos = [];
+            currentSumpCleanAfterPhotos = [];
+            renderSumpCleanPhotoPreviews('before');
+            renderSumpCleanPhotoPreviews('after');
+
+            var selectEl = document.getElementById('sumpCleanReportMatchedSumpSelect');
+            selectEl.innerHTML = dbSumps.map(function(s) {
+                return '<option value="' + s.id + '">' + s.location + ' — ' + s.drainageFor + ' (' + s.depth + ')</option>';
+            }).join('');
+
+            if (preselectedSumpId && dbSumps.some(function(s) { return s.id === preselectedSumpId; })) {
+                selectEl.value = preselectedSumpId;
+            } else if (dbSumps.length > 0) {
+                selectEl.value = dbSumps[0].id;
+            }
+
+            onSumpCleanReportSelectChange(selectEl.value);
+            openModal('sumpCleaningReportModal');
+        }
+
+        function onSumpCleanReportSelectChange(sumpId) {
+            var sump = dbSumps.find(function(s) { return s.id === sumpId; });
+            var drainDisp = document.getElementById('sumpCleanDispDrainage');
+            var depthDisp = document.getElementById('sumpCleanDispDepth');
+            if (sump) {
+                if (drainDisp) drainDisp.innerText = sump.drainageFor || '-';
+                if (depthDisp) depthDisp.innerText = sump.depth || '-';
+            }
+        }
+
+        async function handleSumpPhotoUpload(inputEl, stage) {
+            var files = Array.from(inputEl.files || []);
+            if (files.length === 0) return;
+
+            showAppNotification('Processing ' + files.length + ' ' + stage + ' media file(s)...', 'info');
+            for (var i = 0; i < files.length; i++) {
+                var urlOrBase64 = await processAndUploadImageFile(files[i], 'Sump_' + stage);
+                if (urlOrBase64) {
+                    if (stage === 'before') {
+                        currentSumpCleanBeforePhotos.push(urlOrBase64);
+                    } else {
+                        currentSumpCleanAfterPhotos.push(urlOrBase64);
+                    }
+                }
+            }
+            inputEl.value = '';
+            renderSumpCleanPhotoPreviews(stage);
+        }
+
+        function removeSumpPhotoPreview(stage, idx) {
+            if (stage === 'before') {
+                currentSumpCleanBeforePhotos.splice(idx, 1);
+            } else {
+                currentSumpCleanAfterPhotos.splice(idx, 1);
+            }
+            renderSumpCleanPhotoPreviews(stage);
+        }
+
+        function renderSumpCleanPhotoPreviews(stage) {
+            var containerId = stage === 'before' ? 'sumpCleanBeforePhotosPreview' : 'sumpCleanAfterPhotosPreview';
+            var list = stage === 'before' ? currentSumpCleanBeforePhotos : currentSumpCleanAfterPhotos;
+            var el = document.getElementById(containerId);
+            if (!el) return;
+
+            if (list.length === 0) {
+                el.innerHTML = '<span class="text-[11px] text-slate-400 italic">No ' + stage + ' media attached yet.</span>';
+                return;
+            }
+
+            el.innerHTML = list.map(function(src, idx) {
+                return '<div class="relative inline-block group">' +
+                    renderInlineMediaThumbnail(src, 'Sump ' + stage.toUpperCase() + ' Media', 'h-16 w-16') +
+                    '<button type="button" onclick="removeSumpPhotoPreview('' + stage + '', ' + idx + ')" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] shadow z-20"><i class="fa-solid fa-xmark"></i></button>' +
+                '</div>';
+            }).join('');
+        }
+
+        async function handleSaveSumpCleaningReport(e) {
+            e.preventDefault();
+            var date = document.getElementById('sumpCleanReportDate').value;
+            var matchedSumpId = document.getElementById('sumpCleanReportMatchedSumpSelect').value;
+            var remarks = document.getElementById('sumpCleanReportRemarks').value.trim();
+
+            var linkedSump = dbSumps.find(function(s) { return s.id === matchedSumpId; });
+            var location = linkedSump ? linkedSump.location : '';
+            var drainageFor = linkedSump ? linkedSump.drainageFor : '';
+            var depth = linkedSump ? linkedSump.depth : '';
+
+            var submitBtn = document.getElementById('saveSumpCleanReportSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Saving Report...';
+            }
+
+            var reportObj = {
+                id: 'SCL-' + Date.now(),
+                assetType: 'Sump',
+                sumpId: matchedSumpId || '',
+                date: date,
+                location: location,
+                drainageFor: drainageFor,
+                depth: depth,
+                remarks: remarks,
+                beforePhotos: currentSumpCleanBeforePhotos.slice(),
+                afterPhotos: currentSumpCleanAfterPhotos.slice(),
+                loggedBy: currentUser ? currentUser.email : 'System',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            dbTankCleaningLogs.unshift(reportObj);
+            saveStateToLocalBackup();
+
+            if (window.saveTankCleaningReportToFirestore) {
+                await window.saveTankCleaningReportToFirestore(reportObj);
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Save Sump Cleaning Report';
+            }
+
+            closeModal('sumpCleaningReportModal');
+            if (activeModule === 'water') {
+                renderWaterTanksAndSumpsTablesOnly();
+            }
+            showAppNotification('Sump cleaning report saved for ' + location + '!', 'success');
+        }
+
+        function openSumpHistoryModal(sumpId) {
+            var sump = dbSumps.find(function(s) { return s.id === sumpId; });
+            if (!sump) return;
+
+            var logs = getSumpRecentCleanings(sump);
+
+            document.getElementById('sumpHistoryModalTitle').innerHTML =
+                '<i class="fa-solid fa-clock-rotate-left text-indigo-600"></i><span>Cleaning History — ' + sump.location + ' (Sump)</span>';
+            document.getElementById('sumpHistoryModalSubtitle').innerText =
+                'Drainage for: ' + (sump.drainageFor || '-') + ' | Depth: ' + (sump.depth || '-') + ' | Total Cleanings: ' + logs.length;
+
+            document.getElementById('sumpHistoryModalBody').innerHTML = renderSumpChronologicalHistoryHtml(sump, logs);
+            document.getElementById('sumpHistoryAddReportBtn').onclick = function() {
+                closeModal('sumpHistoryModal');
+                openSumpCleaningReportModal(sump.id);
+            };
+
+            openModal('sumpHistoryModal');
+        }
+
+        function renderSumpChronologicalHistoryHtml(sump, logs) {
+            if (!logs || logs.length === 0) {
+                return '<div class="p-6 text-center bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-400 italic">No chronological cleaning history found for this sump yet.</div>';
+            }
+
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var html = '<div class="space-y-3">';
+            logs.forEach(function(log, idx) {
+                var beforeArr = Array.isArray(log.beforePhotos) ? log.beforePhotos : (log.beforePhoto ? [log.beforePhoto] : []);
+                var afterArr = Array.isArray(log.afterPhotos) ? log.afterPhotos : (log.afterPhoto ? [log.afterPhoto] : []);
+
+                html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">';
+                html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">';
+                html += '<div class="flex items-center space-x-2.5">';
+                html += '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">Cleaning #' + (logs.length - idx) + '</span>';
+                html += '<span class="font-mono font-extrabold text-sm text-slate-900"><i class="fa-regular fa-calendar mr-1 text-indigo-600"></i>' + log.date + '</span>';
+                if (idx === 0) {
+                    html += '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Latest</span>';
+                }
+                html += '</div>';
+                html += '<div class="flex items-center space-x-3 text-[11px] text-slate-400">';
+                html += '<span>Logged by: <strong class="text-slate-600">' + (log.loggedBy || 'System') + '</strong></span>';
+                if (isAdmin) {
+                    html += '<button type="button" onclick="deleteSumpCleaningReport('' + log.id + '', '' + sump.id + '')" class="text-red-500 hover:text-red-700 font-semibold"><i class="fa-solid fa-trash-can"></i></button>';
+                }
+                html += '</div></div>';
+
+                html += '<div class="text-xs text-slate-700"><span class="font-semibold text-slate-900">Remarks:</span> ' + (log.remarks || '<span class="italic text-slate-400">No remarks recorded</span>') + '</div>';
+
+                html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">';
+                // Before Photos Column
+                html += '<div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200">';
+                html += '<div class="text-[10px] font-bold uppercase text-amber-700 mb-1.5"><i class="fa-solid fa-camera mr-1"></i>Before Cleaning Media (' + beforeArr.length + ')</div>';
+                if (beforeArr.length === 0) {
+                    html += '<span class="text-[11px] text-slate-400 italic">No before media</span>';
+                } else {
+                    html += '<div class="flex flex-wrap gap-2">';
+                    beforeArr.forEach(function(src) {
+                        html += renderInlineMediaThumbnail(src, 'Before Sump Cleaning — ' + sump.location + ' (' + log.date + ')', 'h-16 w-20');
+                    });
+                    html += '</div>';
+                }
+                html += '</div>';
+
+                // After Photos Column
+                html += '<div class="bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-200">';
+                html += '<div class="text-[10px] font-bold uppercase text-emerald-800 mb-1.5"><i class="fa-solid fa-circle-check mr-1"></i>After Cleaning Media (' + afterArr.length + ')</div>';
+                if (afterArr.length === 0) {
+                    html += '<span class="text-[11px] text-slate-400 italic">No after media</span>';
+                } else {
+                    html += '<div class="flex flex-wrap gap-2">';
+                    afterArr.forEach(function(src) {
+                        html += renderInlineMediaThumbnail(src, 'After Sump Cleaning — ' + sump.location + ' (' + log.date + ')', 'h-16 w-20');
+                    });
+                    html += '</div>';
+                }
+                html += '</div>';
+
+                html += '</div></div>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function deleteSumpCleaningReport(reportId, sumpId) {
+            openConfirmDialog('Are you sure you want to delete this sump cleaning report?', async function() {
+                markRecordDeleted(reportId);
+                dbTankCleaningLogs = dbTankCleaningLogs.filter(function(r) { return r.id !== reportId; });
+                saveStateToLocalBackup();
+                if (window.deleteTankCleaningReportFromFirestore) {
+                    await window.deleteTankCleaningReportFromFirestore(reportId);
+                }
+                renderWaterTanksAndSumpsTablesOnly();
+                var modalEl = document.getElementById('sumpHistoryModal');
+                if (modalEl && !modalEl.classList.contains('hidden') && sumpId) {
+                    openSumpHistoryModal(sumpId);
+                }
+                showAppNotification('Sump cleaning report deleted.', 'info');
+            });
+        }
+
+        // ================= WATER TANK CORE FUNCTIONS =================
         function openWaterTankModal(editId) {
             if (editId) {
                 var tank = dbWaterTanks.find(function(t) { return t.id === editId; });
@@ -8485,8 +9162,10 @@
             var capUnit = document.getElementById('waterTankCapacityUnit').value;
 
             var submitBtn = document.getElementById('saveWaterTankSubmitBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerText = 'Saving...';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Saving...';
+            }
 
             var tankObj = {
                 type: type,
@@ -8519,10 +9198,15 @@
                 await window.saveWaterTankToFirestore(targetTankId, tankObj);
             }
 
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Save Water Tank';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Save Water Tank';
+            }
+
             closeModal('waterTankModal');
-            switchModule('water');
+            if (activeModule === 'water') {
+                renderWaterTanksAndSumpsTablesOnly();
+            }
             showAppNotification(editId ? 'Water tank updated!' : 'New water tank registered!', 'success');
         }
 
@@ -8536,7 +9220,9 @@
                 if (window.deleteWaterTankFromFirestore) {
                     await window.deleteWaterTankFromFirestore(tankId);
                 }
-                switchModule('water');
+                if (activeModule === 'water') {
+                    renderWaterTanksAndSumpsTablesOnly();
+                }
                 showAppNotification('Water tank deleted.', 'info');
             });
         }
@@ -8666,7 +9352,7 @@
             el.innerHTML = list.map(function(src, idx) {
                 return '<div class="relative inline-block group">' +
                     renderInlineMediaThumbnail(src, 'Water Tank ' + stage.toUpperCase() + ' Media', 'h-16 w-16') +
-                    '<button type="button" onclick="removeTankPhotoPreview(\'' + stage + '\', ' + idx + ')" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] shadow z-20"><i class="fa-solid fa-xmark"></i></button>' +
+                    '<button type="button" onclick="removeTankPhotoPreview('' + stage + '', ' + idx + ')" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] shadow z-20"><i class="fa-solid fa-xmark"></i></button>' +
                 '</div>';
             }).join('');
         }
@@ -8688,11 +9374,14 @@
             }
 
             var submitBtn = document.getElementById('saveCleanReportSubmitBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerText = 'Saving Report...';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Saving Report...';
+            }
 
             var reportObj = {
                 id: 'TCL-' + Date.now(),
+                assetType: 'Tank',
                 tankId: matchedTankId || '',
                 date: date,
                 location: location,
@@ -8713,10 +9402,15 @@
                 await window.saveTankCleaningReportToFirestore(reportObj);
             }
 
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Save Cleaning Report';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Save Cleaning Report';
+            }
+
             closeModal('tankCleaningReportModal');
-            switchModule('water');
+            if (activeModule === 'water') {
+                renderWaterTanksAndSumpsTablesOnly();
+            }
             showAppNotification('Water tank cleaning report saved for ' + location + '!', 'success');
         }
 
@@ -8764,7 +9458,7 @@
                 html += '<div class="flex items-center space-x-3 text-[11px] text-slate-400">';
                 html += '<span>Logged by: <strong class="text-slate-600">' + (log.loggedBy || 'System') + '</strong></span>';
                 if (isAdmin) {
-                    html += '<button type="button" onclick="deleteTankCleaningReport(\'' + log.id + '\', \'' + tank.id + '\')" class="text-red-500 hover:text-red-700 font-semibold"><i class="fa-solid fa-trash-can"></i></button>';
+                    html += '<button type="button" onclick="deleteTankCleaningReport('' + log.id + '', '' + tank.id + '')" class="text-red-500 hover:text-red-700 font-semibold"><i class="fa-solid fa-trash-can"></i></button>';
                 }
                 html += '</div></div>';
 
@@ -8813,7 +9507,7 @@
                 if (window.deleteTankCleaningReportFromFirestore) {
                     await window.deleteTankCleaningReportFromFirestore(reportId);
                 }
-                switchModule('water');
+                renderWaterTanksAndSumpsTablesOnly();
                 var modalEl = document.getElementById('tankHistoryModal');
                 if (modalEl && !modalEl.classList.contains('hidden') && tankId) {
                     openTankHistoryModal(tankId);
@@ -8822,7 +9516,7 @@
             });
         }
 
-       // ================= MODULE 8: PROCUREMENT & VENDOR RATES =================
+        // ================= MODULE 8: PROCUREMENT & VENDOR RATES =================
         var DEFAULT_PROCUREMENT_VENDORS = ['Diversey', 'Raj Traders', 'Anjum Sutterwala'];
         var dbProcurementVendors = DEFAULT_PROCUREMENT_VENDORS.slice();
 
@@ -13090,9 +13784,34 @@
         }
         window.executeNativePwaInstall = executeNativePwaInstall;
 
-        // Check if app is already running standalone to toggle button
+        // Device Detection & Adaptive Formatting
+        function detectDeviceAndApplyFormatting() {
+            var width = window.innerWidth;
+            var userAgent = navigator.userAgent || '';
+            var isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent) || width < 640;
+            var isTablet = (/iPad/i.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) || (width >= 640 && width <= 1024));
+            var isDesktop = !isMobile && !isTablet;
+
+            var root = document.documentElement;
+            root.classList.remove('device-mobile', 'device-tablet', 'device-desktop');
+            if (isMobile) {
+                root.classList.add('device-mobile');
+            } else if (isTablet) {
+                root.classList.add('device-tablet');
+            } else {
+                root.classList.add('device-desktop');
+            }
+        }
+        window.addEventListener('resize', detectDeviceAndApplyFormatting);
+        window.addEventListener('DOMContentLoaded', detectDeviceAndApplyFormatting);
+        detectDeviceAndApplyFormatting();
+
+        // Check if app is already running standalone to toggle install button
         function checkPwaInstallButtonState() {
-            var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            var isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                               window.navigator.standalone === true ||
+                               document.referrer.includes('android-app://') ||
+                               localStorage.getItem('siyanat_pwa_installed') === 'true';
             var installBtn = document.getElementById('pwaInstallBtn');
             if (installBtn) {
                 if (isStandalone) {
@@ -13102,6 +13821,13 @@
                 }
             }
         }
+
+        // Listen for display-mode media query change
+        try {
+            window.matchMedia('(display-mode: standalone)').addEventListener('change', function(evt) {
+                checkPwaInstallButtonState();
+            });
+        } catch (e) {}
 
         // Register Service Worker on window load
         if ('serviceWorker' in navigator) {
@@ -13433,10 +14159,29 @@
                         window.dbWaterTanks = mergeCollectionWithLocal(tanks, window.dbWaterTanks, 'id');
                         saveStateToLocalBackup();
                         if (window.activeModule === "water") {
-                            window.switchModule("water");
+                            window.renderWaterTanksAndSumpsTablesOnly ? window.renderWaterTanksAndSumpsTablesOnly() : window.switchModule("water");
                         }
                     },
                     (err) => handleSnapshotError("water_tanks", err)
+                )
+            );
+
+            // 8B. Sync Sumps Collection (sumps)
+            activeUnsubscribers.push(
+                onSnapshot(
+                    collection(db, "sumps"),
+                    (snapshot) => {
+                        const sumps = [];
+                        snapshot.forEach((docSnap) => {
+                            sumps.push({ id: docSnap.id, ...docSnap.data() });
+                        });
+                        window.dbSumps = mergeCollectionWithLocal(sumps, window.dbSumps, 'id');
+                        saveStateToLocalBackup();
+                        if (window.activeModule === "water") {
+                            window.renderWaterTanksAndSumpsTablesOnly ? window.renderWaterTanksAndSumpsTablesOnly() : window.switchModule("water");
+                        }
+                    },
+                    (err) => handleSnapshotError("sumps", err)
                 )
             );
 
@@ -14152,7 +14897,7 @@
                     scope: scopeObj,
                     updatedAt: new Date().toISOString(),
                     updatedBy: window.currentUser ? window.currentUser.email : "System"
-                }, { merge: true });
+                });
             } catch (err) {
                 handleWriteError("settings/scope_of_work", err);
             }
@@ -14326,6 +15071,26 @@
                 await deleteDoc(doc(db, "water_tanks", tankId));
             } catch (err) {
                 handleWriteError("water_tanks", err);
+            }
+        };
+
+        window.saveSumpToFirestore = async function(editId, sumpObj) {
+            saveStateToLocalBackup();
+            try {
+                const fallbackSmp = { id: "SMP-" + Date.now() }; const targetId = editId || sumpObj.id || fallbackSmp.id;
+                sumpObj.id = targetId;
+                await setDoc(doc(db, "sumps", targetId), sumpObj, { merge: true });
+            } catch (err) {
+                handleWriteError("sumps", err);
+            }
+        };
+
+        window.deleteSumpFromFirestore = async function(sumpId) {
+            saveStateToLocalBackup();
+            try {
+                await deleteDoc(doc(db, "sumps", sumpId));
+            } catch (err) {
+                handleWriteError("sumps", err);
             }
         };
 
@@ -14626,6 +15391,9 @@
                 }
                 if (window.dbWaterTanks && window.dbWaterTanks.length > 0) {
                     await window.batchSaveCollectionToFirestore('water_tanks', window.dbWaterTanks);
+                }
+                if (window.dbSumps && window.dbSumps.length > 0) {
+                    await window.batchSaveCollectionToFirestore('sumps', window.dbSumps);
                 }
                 if (window.dbTankCleaningLogs && window.dbTankCleaningLogs.length > 0) {
                     await window.batchSaveCollectionToFirestore('tank_cleaning_logs', window.dbTankCleaningLogs);
