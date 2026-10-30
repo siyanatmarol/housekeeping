@@ -3933,12 +3933,6 @@
                 if (categorySet.indexOf(i.category) === -1) categorySet.push(i.category);
             });
 
-            var filteredItems = dbData.inventory.filter(function(item) {
-                var matchesSearch = item.name.toLowerCase().indexOf(searchSearchTerm.toLowerCase()) !== -1 || item.code.toLowerCase().indexOf(searchSearchTerm.toLowerCase()) !== -1;
-                var matchesCategory = selectedCategoryFilter === 'All' || item.category === selectedCategoryFilter;
-                return matchesSearch && matchesCategory;
-            });
-
             var visibleAreas = isAdmin ? ALL_AREAS : currentUser.areas;
 
             var html = '<div class="space-y-6">';
@@ -3947,7 +3941,7 @@
             // Search Input & Transactions Archive Button
             html += '<div class="flex items-center space-x-2.5 w-full sm:w-auto flex-1">';
             html += '<div class="relative w-full sm:w-72"><i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
-            html += '<input type="text" placeholder="Search Item Name or Code..." value="' + searchSearchTerm + '" oninput="handleInvSearch(this.value)" class="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"></div>';
+            html += '<input type="text" id="inventorySearchInput" placeholder="Search Item Name or Code..." value="' + searchSearchTerm + '" oninput="handleInvSearch(this.value)" class="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"></div>';
             html += '<button type="button" onclick="openInvArchiveModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition whitespace-nowrap flex items-center space-x-1.5 shadow-2xs"><i class="fa-solid fa-clock-rotate-left text-blue-600"></i><span>Transactions Archive</span></button>';
             html += '</div>';
 
@@ -3968,8 +3962,32 @@
             html += '<th class="py-2.5 px-1.5 whitespace-nowrap">Unit</th>';
             if (isAdmin || isExec) html += '<th class="py-3 px-1 text-center bg-blue-50 text-blue-800 border-l border-slate-200 w-[60px] text-[10px] leading-tight">Main Store</th>';
             visibleAreas.forEach(function(a) { html += '<th class="py-3 px-1 text-center bg-slate-50 text-slate-800 border-l border-slate-200 w-[68px] text-[10px] leading-tight">' + a + '</th>'; });
-            html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
+            html += '</tr></thead><tbody id="inventoryTableBody" class="divide-y divide-slate-100 text-slate-700"></tbody></table></div></div></div>';
+            container.innerHTML = html;
+            renderInventoryTableRowsOnly();
+        }
 
+        function renderInventoryTableRowsOnly() {
+            var tbody = document.getElementById('inventoryTableBody');
+            if (!tbody) return;
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role && currentUser.role.indexOf('Executive') === 0;
+            var visibleAreas = isAdmin ? ALL_AREAS : (currentUser && currentUser.areas ? currentUser.areas : []);
+            var q = (searchSearchTerm || '').toLowerCase().trim();
+
+            var filteredItems = dbData.inventory.filter(function(item) {
+                var matchesSearch = !q || (item.name && item.name.toLowerCase().indexOf(q) !== -1) || (item.code && item.code.toLowerCase().indexOf(q) !== -1);
+                var matchesCategory = selectedCategoryFilter === 'All' || item.category === selectedCategoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            if (filteredItems.length === 0) {
+                var colSpan = 4 + ((isAdmin || isExec) ? 1 : 0) + visibleAreas.length;
+                tbody.innerHTML = '<tr><td colspan="' + colSpan + '" class="p-6 text-center text-slate-400 italic text-xs">No inventory items match your search filter.</td></tr>';
+                return;
+            }
+
+            var html = '';
             filteredItems.forEach(function(item) {
                 html += '<tr class="hover:bg-slate-50 transition">';
                 html += '<td class="py-2.5 px-3 sticky left-0 z-10 bg-white border-r border-slate-200 shadow-sm font-semibold text-slate-900 leading-snug"><div class="font-bold text-slate-900 text-xs sm:text-sm">' + item.name + '</div><div class="text-[10px] text-slate-400 font-mono sm:hidden">' + item.code + ' &bull; ' + (item.unit || '') + '</div></td>';
@@ -3985,12 +4003,25 @@
                 html += '</tr>';
             });
 
-            html += '</tbody></table></div></div></div>';
-            container.innerHTML = html;
+            tbody.innerHTML = html;
         }
         
-        function handleInvSearch(val) { searchSearchTerm = val; switchModule('inventory'); }
-        function handleInvCategoryFilter(val) { selectedCategoryFilter = val; switchModule('inventory'); }
+        function handleInvSearch(val) {
+            searchSearchTerm = val;
+            if (document.getElementById('inventoryTableBody')) {
+                renderInventoryTableRowsOnly();
+            } else {
+                switchModule('inventory');
+            }
+        }
+        function handleInvCategoryFilter(val) {
+            selectedCategoryFilter = val;
+            if (document.getElementById('inventoryTableBody')) {
+                renderInventoryTableRowsOnly();
+            } else {
+                switchModule('inventory');
+            }
+        }
 
         function openOpeningStockModal() { renderOpeningStockTable(); openModal('openingStockModal'); }
 
@@ -6096,7 +6127,7 @@
             html += '</div>';
             html += '<div class="relative w-full sm:w-64">';
             html += '<i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
-            html += '<input type="text" placeholder="Filter tasks or sub-areas..." value="' + (dwrFormState.taskSearchFilter || '') + '" oninput="handleDwrTaskFilterInput(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500">';
+            html += '<input type="text" id="dwrTaskSearchInput" placeholder="Filter tasks or sub-areas..." value="' + (dwrFormState.taskSearchFilter || '') + '" oninput="handleDwrTaskFilterInput(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500">';
             html += '</div></div>';
 
             if (subAreaNames.length === 0) {
@@ -6233,6 +6264,11 @@
         function handleDwrTaskFilterInput(val) {
             dwrFormState.taskSearchFilter = val;
             renderAddDwrPageView(document.getElementById('moduleContainer'));
+            var inp = document.getElementById('dwrTaskSearchInput');
+            if (inp) {
+                inp.focus();
+                try { inp.setSelectionRange(val.length, val.length); } catch (e) {}
+            }
         }
 
         function handleDwrTaskCheckboxToggle(subArea, taskName, isChecked) {
@@ -8206,7 +8242,7 @@
                 // Filter & Search Bar for Crates
                 html += '<div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
                 html += '<div class="relative w-full sm:w-64"><i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
-                html += '<input type="text" placeholder="Search Crate (e.g. C-01)..." value="' + compostCrateSearch + '" oninput="handleCompostCrateSearch(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>';
+                html += '<input type="text" id="compostCrateSearchInput" placeholder="Search Crate (e.g. C-01)..." value="' + compostCrateSearch + '" oninput="handleCompostCrateSearch(this.value)" class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>';
                 html += '<div class="flex items-center space-x-2">';
                 html += '<span class="text-xs text-slate-500 font-semibold">Show:</span>';
                 ['All', 'Active', 'Empty'].forEach(function(st) {
@@ -8488,6 +8524,11 @@
         function handleCompostCrateSearch(val) {
             compostCrateSearch = val;
             switchModule('compost');
+            var inp = document.getElementById('compostCrateSearchInput');
+            if (inp) {
+                inp.focus();
+                try { inp.setSelectionRange(val.length, val.length); } catch (e) {}
+            }
         }
 
         function setCompostCrateFilterStatus(status) {
@@ -8798,7 +8839,7 @@
         }
 
         
-        // ================= WATER TANKS DISTRIBUTION MAP (UG -> OH PIPING NETWORK) =================
+        // ================= WATER TANKS DISTRIBUTION MAP (UG -> OH -> BUILDINGS PIPING NETWORK) =================
         var isWaterMapMobileRotated = false;
 
         function openWaterTanksMapModal() {
@@ -8821,9 +8862,9 @@
                 if (btnTxt) btnTxt.innerText = 'Normal Scroll';
                 host.style.transform = 'rotate(90deg) translateY(-100%)';
                 host.style.transformOrigin = 'top left';
-                host.style.width = '1360px';
-                host.style.height = '840px';
-                host.style.marginBottom = '520px';
+                host.style.width = '1500px';
+                host.style.height = '980px';
+                host.style.marginBottom = '560px';
             } else {
                 if (btnTxt) btnTxt.innerText = 'Landscape View';
                 host.style.transform = '';
@@ -8834,161 +8875,328 @@
             }
         }
 
-        function findMatchingTankFromDb(keywords, category, waterType, fallbackCap) {
-            var list = dbWaterTanks || [];
-            var matched = list.find(function(t) {
-                var catOk = !category || (t.category && t.category.toLowerCase() === category.toLowerCase());
-                var typeOk = !waterType || (t.type && t.type.toLowerCase() === waterType.toLowerCase());
-                if (!catOk || !typeOk) return false;
-                var text = ((t.location || '') + ' ' + (t.providingWaterTo || '')).toLowerCase();
-                return keywords.some(function(kw) { return text.indexOf(kw.toLowerCase()) !== -1; });
+        function getSortedMasterWaterTanksList() {
+            return (dbWaterTanks || []).slice().sort(function(a, b) {
+                var catOrderA = (a.category === 'Underground') ? 0 : 1;
+                var catOrderB = (b.category === 'Underground') ? 0 : 1;
+                if (catOrderA !== catOrderB) return catOrderA - catOrderB;
+                var locA = (a.location || '').trim();
+                var locB = (b.location || '').trim();
+                var locCmp = locA.localeCompare(locB, undefined, { numeric: true, sensitivity: 'base' });
+                if (locCmp !== 0) return locCmp;
+                return (a.type || '').localeCompare(b.type || '');
             });
+        }
+
+        function resolveWaterTankFromTableByCode(wtCode, defaultType, defaultCat, defaultCapNote, defaultLocLabel) {
+            var cleanTarget = String(wtCode || '').toUpperCase().trim();
+            var list = dbWaterTanks || [];
+
+            // 1. Direct match on tankCode or id
+            var matched = list.find(function(t) {
+                var tc = String(t.tankCode || '').toUpperCase().trim();
+                var tid = String(t.id || '').toUpperCase().trim();
+                return tc === cleanTarget || tid === cleanTarget;
+            });
+
+            // 2. Fallback: Match by 1-based position in the Water Tanks Master Table
+            if (!matched) {
+                var numMatch = cleanTarget.match(/WT-0*(\d+)/i);
+                if (numMatch) {
+                    var idx = parseInt(numMatch[1], 10) - 1;
+                    var sortedAll = getSortedMasterWaterTanksList();
+                    if (idx >= 0 && idx < sortedAll.length) {
+                        matched = sortedAll[idx];
+                    }
+                }
+            }
+
             if (matched) {
                 var cap = matched.capacity || ((matched.capacityValue || '') + ' ' + (matched.capacityUnit || 'Ltr')).trim();
+                if (!cap && defaultCapNote) cap = defaultCapNote;
                 var logs = getTankRecentCleanings(matched);
                 return {
                     id: matched.id,
-                    cap: cap || fallbackCap || 'Registered',
-                    lastCleaned: logs.length > 0 ? logs[0].date : 'No log yet',
-                    location: matched.location
+                    wtCode: matched.tankCode || cleanTarget,
+                    location: matched.location || defaultLocLabel || cleanTarget,
+                    providingWaterTo: matched.providingWaterTo || '-',
+                    type: matched.type || defaultType || 'Domestic',
+                    category: matched.category || defaultCat || 'Overhead',
+                    cap: cap || 'Registered',
+                    lastCleaned: logs.length > 0 ? logs[0].date : 'No log yet'
                 };
             }
+
             return {
                 id: '',
-                cap: fallbackCap || 'Active Supply',
-                lastCleaned: 'Tap to link',
-                location: keywords[0] || 'Tank'
+                wtCode: cleanTarget,
+                location: defaultLocLabel || cleanTarget,
+                providingWaterTo: '-',
+                type: defaultType || 'Domestic',
+                category: defaultCat || 'Overhead',
+                cap: defaultCapNote || 'Active Supply',
+                lastCleaned: 'Tap to Link'
             };
         }
 
-        function handleMapTankNodeClick(tankId, defaultLoc, defaultType, defaultCat) {
+        function truncMapText(str, maxLen) {
+            var s = String(str || '-').trim();
+            if (!s) return '-';
+            return s.length > maxLen ? (s.substring(0, maxLen - 1) + '…') : s;
+        }
+
+        function splitMapTextTwoLines(str, maxPerLine) {
+            var s = String(str || '-').trim();
+            if (!s) return ['-', ''];
+            if (s.length <= maxPerLine) return [s, ''];
+            var words = s.split(/\s+/);
+            var line1 = '';
+            var line2 = '';
+            for (var i = 0; i < words.length; i++) {
+                if ((line1 + ' ' + words[i]).trim().length <= maxPerLine) {
+                    line1 = (line1 + ' ' + words[i]).trim();
+                } else {
+                    line2 = words.slice(i).join(' ');
+                    break;
+                }
+            }
+            if (!line1) {
+                line1 = s.substring(0, maxPerLine);
+                line2 = s.substring(maxPerLine);
+            }
+            if (line2.length > maxPerLine) {
+                line2 = line2.substring(0, maxPerLine - 1) + '…';
+            }
+            return [line1, line2];
+        }
+
+        function handleMapTankNodeClick(tankId, wtCode, defaultType, defaultCat) {
             if (tankId) {
                 openTankHistoryModal(tankId);
+                return;
+            }
+            var resolved = resolveWaterTankFromTableByCode(wtCode, defaultType, defaultCat, '', '');
+            if (resolved && resolved.id) {
+                openTankHistoryModal(resolved.id);
             } else {
-                // Find any tank matching location or open Add Water Tank modal pre-filled
-                var found = (dbWaterTanks || []).find(function(t) {
-                    return t.location && t.location.toLowerCase().indexOf(defaultLoc.toLowerCase()) !== -1;
-                });
-                if (found) {
-                    openTankHistoryModal(found.id);
-                } else {
-                    showAppNotification('Tip: Register "' + defaultLoc + '" in Add Water Tank to link live cleaning logs.', 'info');
-                    openWaterTankModal();
-                    var locInp = document.getElementById('waterTankLocation');
-                    var typeInp = document.getElementById('waterTankType');
-                    var catInp = document.getElementById('waterTankCategory');
-                    if (locInp) locInp.value = defaultLoc;
-                    if (typeInp && defaultType) typeInp.value = defaultType;
-                    if (catInp && defaultCat) catInp.value = defaultCat;
-                }
+                showAppNotification('Tank ' + wtCode + ' is not found in the table yet. Opening Add Water Tank form.', 'info');
+                openWaterTankModal();
+                var typeInp = document.getElementById('waterTankType');
+                var catInp = document.getElementById('waterTankCategory');
+                if (typeInp && defaultType) typeInp.value = defaultType;
+                if (catInp && defaultCat) catInp.value = defaultCat;
             }
         }
 
-        function buildSvgOverheadTankNode(x, y, w, h, title, subtitle, waterType, tankMeta, defaultLoc) {
-            var isDom = waterType === 'Domestic';
-            var strokeCol = isDom ? '#38bdf8' : '#fbbf24';
-            var headerGrad = isDom ? 'url(#domHeaderGrad)' : 'url(#flushHeaderGrad)';
-            var waterFill = isDom ? 'url(#domWaterGrad)' : 'url(#flushWaterGrad)';
-            var badgeBg = isDom ? '#0284c7' : '#d97706';
-            var typeLabel = isDom ? 'DOMESTIC OH' : 'FLUSHING OH';
-            var safeId = (tankMeta && tankMeta.id) ? tankMeta.id : '';
-            var safeLoc = (defaultLoc || title).replace(/'/g, "\\'");
+        // Renders a Campus Building Pictogram at the top of the schematic with:
+        // - Building Name written prominently ABOVE the building pictogram
+        // - Architectural building facade with illuminated windows & roof water inlet manifold
+        // - Supply source tags (Domestic WT & Flushing WT) inside the base
+        function buildSvgCampusBuildingNode(cx, topY, name, domLabel, flushLabel, bldgTheme) {
+            var w = 114;
+            var x = Math.round(cx - w / 2);
+            var nameBoxY = topY;
+            var bldgY = topY + 26;
+            var bldgH = 92;
 
-            var cylW = 54;
-            var cylH = 66;
-            var cylX = x + Math.round((w - cylW) / 2);
-            var cylY = y + 34;
+            var accentCol = bldgTheme === 'teal' ? '#2dd4bf' : (bldgTheme === 'indigo' ? '#818cf8' : '#38bdf8');
+            var roofCol = bldgTheme === 'teal' ? '#115e59' : (bldgTheme === 'indigo' ? '#312e81' : '#0c4a6e');
 
-            var s = '<g class="cursor-pointer transition opacity-95 hover:opacity-100" onclick="handleMapTankNodeClick(\'' + safeId + '\', \'' + safeLoc + '\', \'' + waterType + '\', \'Overhead\')">';
-            // Card Frame
-            s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="12" fill="#0f172a" stroke="' + strokeCol + '" stroke-width="1.8" filter="url(#dropShadow)"/>';
-            // Card Top Banner
-            s += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (w - 2) + '" height="24" rx="11" fill="' + headerGrad + '"/>';
-            s += '<text x="' + (x + w / 2) + '" y="' + (y + 16) + '" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="800" font-family="Inter, sans-serif">' + title + '</text>';
+            var s = '<g>';
 
-            // 3D Tank Graphic (Cylinder + Water Level + Roof Dome + Ladder)
-            // Tank shadow base
-            s += '<ellipse cx="' + (cylX + cylW / 2) + '" cy="' + (cylY + cylH) + '" rx="' + (cylW / 2 + 4) + '" ry="6" fill="#020617" opacity="0.7"/>';
-            // Tank outer shell
-            s += '<rect x="' + cylX + '" y="' + cylY + '" width="' + cylW + '" height="' + cylH + '" rx="6" fill="#1e293b" stroke="' + strokeCol + '" stroke-width="1.5"/>';
-            // Water fill inside tank (75% full)
-            var waterH = Math.round(cylH * 0.72);
-            var waterY = cylY + cylH - waterH;
-            s += '<rect x="' + (cylX + 2) + '" y="' + waterY + '" width="' + (cylW - 4) + '" height="' + (waterH - 2) + '" rx="4" fill="' + waterFill + '"/>';
-            // Water surface meniscus wave
-            s += '<ellipse cx="' + (cylX + cylW / 2) + '" cy="' + waterY + '" rx="' + (cylW / 2 - 2) + '" ry="4" fill="' + strokeCol + '" opacity="0.55"/>';
-            // Tank Top Dome & Manhole Cover
-            s += '<ellipse cx="' + (cylX + cylW / 2) + '" cy="' + cylY + '" rx="' + (cylW / 2) + '" ry="5" fill="#334155" stroke="' + strokeCol + '" stroke-width="1.5"/>';
-            s += '<rect x="' + (cylX + cylW / 2 - 8) + '" y="' + (cylY - 5) + '" width="16" height="4" rx="2" fill="' + strokeCol + '"/>';
-            // Tank Rib Lines & Level Gauge
-            s += '<line x1="' + cylX + '" y1="' + (cylY + 22) + '" x2="' + (cylX + cylW) + '" y2="' + (cylY + 22) + '" stroke="#475569" stroke-width="0.8" stroke-dasharray="2,2"/>';
-            s += '<line x1="' + cylX + '" y1="' + (cylY + 44) + '" x2="' + (cylX + cylW) + '" y2="' + (cylY + 44) + '" stroke="#475569" stroke-width="0.8" stroke-dasharray="2,2"/>';
+            // 1. Building Name Banner ABOVE the Building Pictogram
+            s += '<rect x="' + (x - 4) + '" y="' + nameBoxY + '" width="' + (w + 8) + '" height="22" rx="6" fill="#0f172a" stroke="' + accentCol + '" stroke-width="1.5" filter="url(#dropShadow)"/>';
+            s += '<text x="' + cx + '" y="' + (nameBoxY + 14.5) + '" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="900" font-family="Inter, sans-serif">' + name + '</text>';
 
-            // Capacity Text Written Directly on the Tank Body
-            var capStr = (tankMeta && tankMeta.cap) ? tankMeta.cap : 'Active';
-            s += '<rect x="' + (x + 6) + '" y="' + (cylY + 24) + '" width="' + (w - 12) + '" height="18" rx="4" fill="#020617" opacity="0.82" stroke="' + strokeCol + '" stroke-width="0.8"/>';
-            s += '<text x="' + (x + w / 2) + '" y="' + (cylY + 36) + '" text-anchor="middle" fill="#ffffff" font-size="8.5" font-weight="800" font-family="monospace">' + capStr + '</text>';
+            // 2. Building Pictogram Graphic (Roof pediment + Tower Facade + Windows + Entrance)
+            var picW = 86;
+            var picX = Math.round(cx - picW / 2);
+            // Roof tier
+            s += '<rect x="' + (picX + 8) + '" y="' + bldgY + '" width="' + (picW - 16) + '" height="7" rx="2" fill="' + roofCol + '" stroke="' + accentCol + '" stroke-width="1.2"/>';
+            // Main Building Body
+            s += '<rect x="' + picX + '" y="' + (bldgY + 6) + '" width="' + picW + '" height="' + (bldgH - 6) + '" rx="6" fill="#1e293b" stroke="' + accentCol + '" stroke-width="1.8" filter="url(#dropShadow)"/>';
 
-            // Subtitle / Type Badge at bottom of card
-            s += '<rect x="' + (x + 8) + '" y="' + (y + h - 34) + '" width="' + (w - 16) + '" height="15" rx="4" fill="' + badgeBg + '"/>';
-            s += '<text x="' + (x + w / 2) + '" y="' + (y + h - 24) + '" text-anchor="middle" fill="#ffffff" font-size="8" font-weight="700" font-family="Inter, sans-serif">' + (subtitle || typeLabel) + '</text>';
+            // Architectural Windows Grid (3 rows x 4 columns)
+            var winStartX = picX + 10;
+            var winStartY = bldgY + 14;
+            for (var r = 0; r < 2; r++) {
+                for (var c = 0; c < 4; c++) {
+                    var wx = winStartX + c * 18;
+                    var wy = winStartY + r * 14;
+                    var isLit = (r + c) % 2 === 0;
+                    s += '<rect x="' + wx + '" y="' + wy + '" width="12" height="9" rx="1.5" fill="' + (isLit ? '#38bdf8' : '#334155') + '" fill-opacity="' + (isLit ? '0.45' : '0.7') + '" stroke="#475569" stroke-width="0.8"/>';
+                }
+            }
 
-            // Last Cleaned Footer
-            var cleanTxt = (tankMeta && tankMeta.lastCleaned) ? ('Cleaned: ' + tankMeta.lastCleaned) : 'Click for History';
-            s += '<text x="' + (x + w / 2) + '" y="' + (y + h - 7) + '" text-anchor="middle" fill="#94a3b8" font-size="7.5" font-weight="600" font-family="Inter, sans-serif">' + cleanTxt + '</text>';
+            // Source Supply Pills on Lower Facade of Building
+            if (domLabel && flushLabel) {
+                // Receives BOTH Domestic & Flushing
+                s += '<rect x="' + (picX + 5) + '" y="' + (bldgY + 44) + '" width="' + (picW - 10) + '" height="16" rx="4" fill="#0284c7"/>';
+                s += '<text x="' + cx + '" y="' + (bldgY + 55) + '" text-anchor="middle" fill="#ffffff" font-size="7.5" font-weight="800" font-family="monospace">DOM: ' + domLabel + '</text>';
 
-            // Pipe Inlet Nozzle at bottom center of card
-            s += '<circle cx="' + (x + w / 2) + '" cy="' + (y + h) + '" r="4.5" fill="' + strokeCol + '" stroke="#0f172a" stroke-width="1.5"/>';
+                s += '<rect x="' + (picX + 5) + '" y="' + (bldgY + 63) + '" width="' + (picW - 10) + '" height="16" rx="4" fill="#d97706"/>';
+                s += '<text x="' + cx + '" y="' + (bldgY + 74) + '" text-anchor="middle" fill="#ffffff" font-size="7.5" font-weight="800" font-family="monospace">FLUSH: ' + flushLabel + '</text>';
+
+                // Dual Pipe Inlet Nozzles at bottom of building (cx - 12 for Domestic, cx + 12 for Flushing)
+                s += '<circle cx="' + (cx - 12) + '" cy="' + (bldgY + bldgH) + '" r="4.5" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5"/>';
+                s += '<circle cx="' + (cx + 12) + '" cy="' + (bldgY + bldgH) + '" r="4.5" fill="#fbbf24" stroke="#0f172a" stroke-width="1.5"/>';
+            } else {
+                // Receives Domestic only (Khaimat or Najmi)
+                var pillBg = bldgTheme === 'teal' ? '#0d9488' : '#0284c7';
+                s += '<rect x="' + (picX + 5) + '" y="' + (bldgY + 46) + '" width="' + (picW - 10) + '" height="18" rx="4" fill="' + pillBg + '"/>';
+                s += '<text x="' + cx + '" y="' + (bldgY + 58) + '" text-anchor="middle" fill="#ffffff" font-size="8" font-weight="800" font-family="monospace">DOM: ' + domLabel + '</text>';
+
+                s += '<rect x="' + (picX + 10) + '" y="' + (bldgY + 67) + '" width="' + (picW - 20) + '" height="13" rx="3" fill="#0f172a"/>';
+                s += '<text x="' + cx + '" y="' + (bldgY + 76) + '" text-anchor="middle" fill="#94a3b8" font-size="7" font-weight="700" font-family="Inter, sans-serif">Direct Supply</text>';
+
+                // Single Pipe Inlet Nozzle at bottom center of building (cx)
+                s += '<circle cx="' + cx + '" cy="' + (bldgY + bldgH) + '" r="5" fill="' + accentCol + '" stroke="#0f172a" stroke-width="1.5"/>';
+            }
+
             s += '</g>';
             return s;
         }
 
-        function buildSvgUndergroundTankNode(x, y, w, h, title, supplySummary, waterType, tankMeta, defaultLoc) {
-            var isDom = waterType === 'Domestic';
+        // Renders an Overhead Tank Node (NO "Provides Water To" box above it; top nozzle sends pipe up to Buildings;
+        // Capacity is written right in the middle of the tank; Location & Type are written in the bottom of the tank card)
+        function buildSvgOverheadTankNodeClean(x, y, w, h, tankMeta, isQuadTank) {
+            var isDom = (tankMeta.type || 'Domestic').toLowerCase() === 'domestic';
+            var strokeCol = isDom ? '#38bdf8' : '#fbbf24';
+            var waterFill = isDom ? 'url(#domWaterGrad)' : 'url(#flushWaterGrad)';
+            var badgeBg = isDom ? '#0284c7' : '#d97706';
+            var safeId = tankMeta.id || '';
+            var safeCode = (tankMeta.wtCode || 'WT').replace(/'/g, "\\'");
+            var cx = x + Math.round(w / 2);
+
+            var s = '<g class="cursor-pointer transition opacity-95 hover:opacity-100" onclick="handleMapTankNodeClick(\'' + safeId + '\', \'' + safeCode + '\', \'' + tankMeta.type + '\', \'Overhead\')">';
+
+            // Card Outer Frame
+            s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="14" fill="#0f172a" stroke="' + strokeCol + '" stroke-width="2" filter="url(#dropShadow)"/>';
+
+            // Top Outlet Nozzle (connects pipe upwards to buildings)
+            s += '<rect x="' + (cx - 10) + '" y="' + (y - 5) + '" width="20" height="6" rx="2" fill="' + strokeCol + '"/>';
+            s += '<circle cx="' + cx + '" cy="' + y + '" r="4.5" fill="#ffffff" stroke="' + strokeCol + '" stroke-width="2"/>';
+
+            // Top Tank Code Pill (WT-XX)
+            s += '<rect x="' + (x + 12) + '" y="' + (y + 8) + '" width="' + (w - 24) + '" height="20" rx="6" fill="#020617" stroke="' + strokeCol + '" stroke-width="1"/>';
+            s += '<text x="' + cx + '" y="' + (y + 21.5) + '" text-anchor="middle" fill="' + strokeCol + '" font-size="10.5" font-weight="900" font-family="monospace">' + tankMeta.wtCode + (isQuadTank ? ' (4 TANKS)' : ' (OVERHEAD)') + '</text>';
+
+            // Tank Graphic with Capacity Written in the Middle of the Tank
+            var cylY = y + 35;
+            var cylH = 74;
+
+            if (isQuadTank) {
+                var miniW = 34;
+                var gap = 7;
+                var totalQuadW = (miniW * 4) + (gap * 3);
+                var startX = x + Math.round((w - totalQuadW) / 2);
+                for (var q = 0; q < 4; q++) {
+                    var mx = startX + q * (miniW + gap);
+                    s += '<rect x="' + mx + '" y="' + cylY + '" width="' + miniW + '" height="' + cylH + '" rx="5" fill="#1e293b" stroke="' + strokeCol + '" stroke-width="1.5"/>';
+                    var mwH = Math.round(cylH * 0.76);
+                    var mwY = cylY + cylH - mwH;
+                    s += '<rect x="' + (mx + 2) + '" y="' + mwY + '" width="' + (miniW - 4) + '" height="' + (mwH - 2) + '" rx="3" fill="' + waterFill + '"/>';
+                    s += '<ellipse cx="' + (mx + miniW / 2) + '" cy="' + cylY + '" rx="' + (miniW / 2) + '" ry="4" fill="#334155" stroke="' + strokeCol + '" stroke-width="1.2"/>';
+                    s += '<text x="' + (mx + miniW / 2) + '" y="' + (cylY + 15) + '" text-anchor="middle" fill="#bae6fd" font-size="7.5" font-weight="800" font-family="monospace">#' + (q + 1) + '</text>';
+                }
+                // Capacity Centered in Middle of the 4 Tanks
+                s += '<rect x="' + (x + 10) + '" y="' + (cylY + 23) + '" width="' + (w - 20) + '" height="30" rx="6" fill="#020617" opacity="0.9" stroke="#ffffff" stroke-width="1"/>';
+                s += '<text x="' + cx + '" y="' + (cylY + 36) + '" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="900" font-family="monospace">4 x 10,000 Ltrs</text>';
+                s += '<text x="' + cx + '" y="' + (cylY + 48) + '" text-anchor="middle" fill="#38bdf8" font-size="8" font-weight="800" font-family="monospace">Total: 40,000 Ltrs</text>';
+            } else {
+                var cylW = 86;
+                var cylX = x + Math.round((w - cylW) / 2);
+                s += '<ellipse cx="' + (cylX + cylW / 2) + '" cy="' + (cylY + cylH) + '" rx="' + (cylW / 2 + 5) + '" ry="6" fill="#020617" opacity="0.7"/>';
+                s += '<rect x="' + cylX + '" y="' + cylY + '" width="' + cylW + '" height="' + cylH + '" rx="8" fill="#1e293b" stroke="' + strokeCol + '" stroke-width="1.8"/>';
+                var waterH = Math.round(cylH * 0.76);
+                var waterY = cylY + cylH - waterH;
+                s += '<rect x="' + (cylX + 2) + '" y="' + waterY + '" width="' + (cylW - 4) + '" height="' + (waterH - 2) + '" rx="6" fill="' + waterFill + '"/>';
+                s += '<ellipse cx="' + (cylX + cylW / 2) + '" cy="' + waterY + '" rx="' + (cylW / 2 - 2) + '" ry="4.5" fill="' + strokeCol + '" opacity="0.55"/>';
+                s += '<ellipse cx="' + (cylX + cylW / 2) + '" cy="' + cylY + '" rx="' + (cylW / 2) + '" ry="5.5" fill="#334155" stroke="' + strokeCol + '" stroke-width="1.5"/>';
+
+                // Capacity Written Right in the Middle of the Tank Graphic
+                s += '<rect x="' + (cylX + 6) + '" y="' + (cylY + 23) + '" width="' + (cylW - 12) + '" height="28" rx="6" fill="#020617" opacity="0.88" stroke="#ffffff" stroke-width="0.9"/>';
+                s += '<text x="' + cx + '" y="' + (cylY + 41) + '" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="900" font-family="monospace">' + truncMapText(tankMeta.cap, 14) + '</text>';
+            }
+
+            // Bottom Section of Tank Card: Tank Location & Type (from Water Tanks Table)
+            var botY = y + 116;
+            s += '<rect x="' + (x + 6) + '" y="' + botY + '" width="' + (w - 12) + '" height="58" rx="9" fill="#1e293b" stroke="#334155" stroke-width="1"/>';
+            var locLines = splitMapTextTwoLines(tankMeta.location, isQuadTank ? 28 : 19);
+            if (locLines[1]) {
+                s += '<text x="' + cx + '" y="' + (botY + 13) + '" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="800" font-family="Inter, sans-serif">' + locLines[0] + '</text>';
+                s += '<text x="' + cx + '" y="' + (botY + 24) + '" text-anchor="middle" fill="#cbd5e1" font-size="8" font-weight="700" font-family="Inter, sans-serif">' + locLines[1] + '</text>';
+            } else {
+                s += '<text x="' + cx + '" y="' + (botY + 18) + '" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="800" font-family="Inter, sans-serif">' + locLines[0] + '</text>';
+            }
+
+            // Type Badge
+            var typeStr = (tankMeta.type || 'Domestic').toUpperCase() + ' OH';
+            s += '<rect x="' + (x + 12) + '" y="' + (botY + 29) + '" width="' + (w - 24) + '" height="14" rx="4" fill="' + badgeBg + '"/>';
+            s += '<text x="' + cx + '" y="' + (botY + 39) + '" text-anchor="middle" fill="#ffffff" font-size="7.5" font-weight="800" font-family="Inter, sans-serif">' + typeStr + '</text>';
+
+            // Last Cleaned Date
+            s += '<text x="' + cx + '" y="' + (botY + 53) + '" text-anchor="middle" fill="#94a3b8" font-size="7.5" font-weight="600" font-family="Inter, sans-serif">Cleaned: ' + tankMeta.lastCleaned + '</text>';
+
+            // Bottom Inlet Nozzle (receives pipe from UG Tank)
+            s += '<circle cx="' + cx + '" cy="' + (y + h) + '" r="5" fill="' + strokeCol + '" stroke="#0f172a" stroke-width="1.8"/>';
+            s += '</g>';
+            return s;
+        }
+
+        // Renders an Underground Tank Node (NO "Provides Water To" box above it;
+        // Capacity is written right in the middle of the tank graphic;
+        // Tank Location & Type are written in the bottom of the tank card)
+        function buildSvgUndergroundTankNodeClean(x, y, w, h, tankMeta, fedOhSummary) {
+            var isDom = (tankMeta.type || 'Domestic').toLowerCase() === 'domestic';
             var strokeCol = isDom ? '#38bdf8' : '#fbbf24';
             var waterFill = isDom ? 'url(#domWaterGrad)' : 'url(#flushWaterGrad)';
             var badgeBg = isDom ? '#0369a1' : '#b45309';
-            var safeId = (tankMeta && tankMeta.id) ? tankMeta.id : '';
-            var safeLoc = (defaultLoc || title).replace(/'/g, "\\'");
+            var safeId = tankMeta.id || '';
+            var safeCode = (tankMeta.wtCode || 'WT').replace(/'/g, "\\'");
+            var cx = x + Math.round(w / 2);
 
-            var s = '<g class="cursor-pointer transition opacity-95 hover:opacity-100" onclick="handleMapTankNodeClick(\'' + safeId + '\', \'' + safeLoc + '\', \'' + waterType + '\', \'Underground\')">';
-            // Underground Concrete Vault Outer Structure
-            s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="14" fill="#090d16" stroke="#475569" stroke-width="3" filter="url(#dropShadow)"/>';
-            // Inner Chamber Liner
-            s += '<rect x="' + (x + 6) + '" y="' + (y + 8) + '" width="' + (w - 12) + '" height="' + (h - 14) + '" rx="10" fill="#0f172a" stroke="' + strokeCol + '" stroke-width="2"/>';
+            var s = '<g class="cursor-pointer transition opacity-95 hover:opacity-100" onclick="handleMapTankNodeClick(\'' + safeId + '\', \'' + safeCode + '\', \'' + tankMeta.type + '\', \'Underground\')">';
 
-            // Underground Water Reservoir Fill (bottom 68% of chamber)
-            var resH = Math.round((h - 18) * 0.68);
-            var resY = y + h - 8 - resH;
-            s += '<rect x="' + (x + 8) + '" y="' + resY + '" width="' + (w - 16) + '" height="' + resH + '" rx="8" fill="' + waterFill + '"/>';
-            // Water surface line
-            s += '<line x1="' + (x + 8) + '" y1="' + resY + '" x2="' + (x + w - 8) + '" y2="' + resY + '" stroke="' + strokeCol + '" stroke-width="2" stroke-opacity="0.8"/>';
+            // Outer Card Frame
+            s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="16" fill="#090d16" stroke="' + strokeCol + '" stroke-width="2.2" filter="url(#dropShadow)"/>';
 
-            // Submersible Pump Icon & Riser Pipe Graphic inside UG Tank
-            var pumpX = x + w / 2;
-            s += '<line x1="' + pumpX + '" y1="' + y + '" x2="' + pumpX + '" y2="' + (y + h - 22) + '" stroke="' + strokeCol + '" stroke-width="4" stroke-dasharray="3,2"/>';
-            s += '<rect x="' + (pumpX - 18) + '" y="' + (y + h - 28) + '" width="36" height="14" rx="4" fill="#334155" stroke="' + strokeCol + '" stroke-width="1.5"/>';
+            // Top Outlet Flange / Pump Riser Nozzle
+            s += '<rect x="' + (cx - 16) + '" y="' + (y - 6) + '" width="32" height="8" rx="3" fill="' + strokeCol + '"/>';
+            s += '<circle cx="' + cx + '" cy="' + y + '" r="6" fill="#ffffff" stroke="' + strokeCol + '" stroke-width="2.5"/>';
 
-            // Top Outlet Flange / Valve on Roof of UG Tank
-            s += '<rect x="' + (pumpX - 14) + '" y="' + (y - 6) + '" width="28" height="8" rx="3" fill="' + strokeCol + '"/>';
-            s += '<circle cx="' + pumpX + '" cy="' + y + '" r="6" fill="#ffffff" stroke="' + strokeCol + '" stroke-width="2.5"/>';
+            // Top WT Code Header Pill
+            s += '<rect x="' + (x + 16) + '" y="' + (y + 10) + '" width="' + (w - 32) + '" height="22" rx="6" fill="#020617" stroke="' + strokeCol + '" stroke-width="1"/>';
+            s += '<text x="' + cx + '" y="' + (y + 24.5) + '" text-anchor="middle" fill="' + strokeCol + '" font-size="11" font-weight="900" font-family="monospace">' + tankMeta.wtCode + ' — UNDERGROUND TANK (' + fedOhSummary + ')</text>';
 
-            // UG Tank Title Header Pill
-            s += '<rect x="' + (x + 14) + '" y="' + (y + 14) + '" width="' + (w - 28) + '" height="24" rx="6" fill="#020617" opacity="0.9" stroke="' + strokeCol + '" stroke-width="1"/>';
-            s += '<text x="' + (x + w / 2) + '" y="' + (y + 30) + '" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="800" font-family="Inter, sans-serif">' + title + '</text>';
+            // Underground Reservoir Chamber Graphic
+            var resX = x + 16;
+            var resY = y + 38;
+            var resW = w - 32;
+            var resH = 74;
+            s += '<rect x="' + resX + '" y="' + resY + '" width="' + resW + '" height="' + resH + '" rx="10" fill="#0f172a" stroke="#475569" stroke-width="2"/>';
+            var fillH = Math.round(resH * 0.76);
+            var fillY = resY + resH - fillH;
+            s += '<rect x="' + (resX + 2) + '" y="' + fillY + '" width="' + (resW - 4) + '" height="' + (fillH - 2) + '" rx="8" fill="' + waterFill + '"/>';
+            s += '<line x1="' + (resX + 2) + '" y1="' + fillY + '" x2="' + (resX + resW - 2) + '" y2="' + fillY + '" stroke="' + strokeCol + '" stroke-width="2" stroke-opacity="0.85"/>';
 
-            // Capacity Badge Written on Tank Image
-            var capText = (tankMeta && tankMeta.cap) ? ('CAPACITY: ' + tankMeta.cap) : 'CAPACITY: REGISTERED';
-            s += '<rect x="' + (x + 22) + '" y="' + (y + 44) + '" width="' + (w - 44) + '" height="22" rx="6" fill="' + badgeBg + '" stroke="#ffffff" stroke-width="0.8"/>';
-            s += '<text x="' + (x + w / 2) + '" y="' + (y + 59) + '" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="800" font-family="monospace">' + capText + '</text>';
+            // Submersible Pump Riser Line inside UG Tank
+            s += '<line x1="' + cx + '" y1="' + resY + '" x2="' + cx + '" y2="' + (resY + resH - 8) + '" stroke="' + strokeCol + '" stroke-width="3.5" stroke-dasharray="3,2"/>';
 
-            // Supply Destination Tag
-            s += '<rect x="' + (x + 12) + '" y="' + (y + 72) + '" width="' + (w - 24) + '" height="20" rx="5" fill="#020617" opacity="0.82"/>';
-            s += '<text x="' + (x + w / 2) + '" y="' + (y + 85) + '" text-anchor="middle" fill="#e2e8f0" font-size="8.5" font-weight="700" font-family="Inter, sans-serif">Supplies: ' + supplySummary + '</text>';
+            // CAPACITY WRITTEN RIGHT IN THE MIDDLE OF THE UG TANK GRAPHIC
+            s += '<rect x="' + (resX + 26) + '" y="' + (resY + 20) + '" width="' + (resW - 52) + '" height="34" rx="8" fill="#020617" opacity="0.92" stroke="#ffffff" stroke-width="1.2"/>';
+            s += '<text x="' + cx + '" y="' + (resY + 41) + '" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="900" font-family="monospace">' + truncMapText(tankMeta.cap, 24) + '</text>';
 
-            // Last Cleaned Date
-            var clText = (tankMeta && tankMeta.lastCleaned) ? ('Last Cleaned: ' + tankMeta.lastCleaned + ' (Click for History)') : 'Click to View / Log Cleaning';
-            s += '<text x="' + (x + w / 2) + '" y="' + (y + h - 13) + '" text-anchor="middle" fill="#bae6fd" font-size="8" font-weight="700" font-family="Inter, sans-serif">' + clText + '</text>';
+            // Bottom Section of Tank Card: Tank Location & Type (from Water Tanks Table)
+            var botY = y + 118;
+            s += '<rect x="' + (x + 12) + '" y="' + botY + '" width="' + (w - 24) + '" height="58" rx="9" fill="#1e293b" stroke="#334155" stroke-width="1"/>';
+            s += '<text x="' + cx + '" y="' + (botY + 17) + '" text-anchor="middle" fill="#ffffff" font-size="10.5" font-weight="800" font-family="Inter, sans-serif">' + truncMapText(tankMeta.location, 36) + '</text>';
+
+            var ugTypeStr = (tankMeta.type || 'Domestic').toUpperCase() + ' UNDERGROUND TANK';
+            s += '<rect x="' + (x + 32) + '" y="' + (botY + 24) + '" width="' + (w - 64) + '" height="16" rx="4" fill="' + badgeBg + '"/>';
+            s += '<text x="' + cx + '" y="' + (botY + 35) + '" text-anchor="middle" fill="#ffffff" font-size="8.5" font-weight="800" font-family="Inter, sans-serif">' + ugTypeStr + '</text>';
+
+            s += '<text x="' + cx + '" y="' + (botY + 51) + '" text-anchor="middle" fill="#bae6fd" font-size="8" font-weight="700" font-family="Inter, sans-serif">Last Cleaned: ' + tankMeta.lastCleaned + ' (Tap for History)</text>';
 
             s += '</g>';
             return s;
@@ -8998,33 +9206,28 @@
             var host = document.getElementById('waterTanksMapCanvasHost');
             if (!host) return;
 
-            // Resolve live capacities & cleaning dates from dbWaterTanks where available
-            // Underground Tanks (4)
-            var ugPumpDom = findMatchingTankFromDb(['pump room', 'main ug', 'aljamea', 'phase 1'], 'Underground', 'Domestic', 'Main Domestic UG');
-            var ugPumpFlush = findMatchingTankFromDb(['pump room', 'stp', 'flushing ug', 'main'], 'Underground', 'Flushing', 'Main Flushing UG');
-            var ugHostelDom = findMatchingTankFromDb(['hostel', 'boys hostel'], 'Underground', 'Domestic', 'Hostel Domestic UG');
-            var ugNajmiDom = findMatchingTankFromDb(['najmi'], 'Underground', 'Domestic', 'Najmi UG Tank');
+            // Pull all 13 Water Tanks from the Water Tanks Table (WT-01 through WT-13)
+            var wt01 = resolveWaterTankFromTableByCode('WT-01', 'Domestic', 'Underground', '', 'Pump Room UG (Domestic)');
+            var wt02 = resolveWaterTankFromTableByCode('WT-02', 'Domestic', 'Underground', '', 'Hostel Block UG (Domestic)');
+            var wt03 = resolveWaterTankFromTableByCode('WT-03', 'Flushing', 'Underground', '', 'Pump Room UG (Flushing)');
+            var wt04 = resolveWaterTankFromTableByCode('WT-04', 'Domestic', 'Underground', '', 'Najmi Bldg UG (Domestic)');
 
-            // Overhead Tanks - Area 1: Aljamea Premises (5 Domestic + 2 Flushing)
-            var ohAdminDom = findMatchingTankFromDb(['admin terrace', 'admin phase', 'admin'], 'Overhead', 'Domestic', 'Domestic OH');
-            var ohNorthDom = findMatchingTankFromDb(['northside', 'north side', 'north'], 'Overhead', 'Domestic', 'Domestic OH');
-            var ohQasrDom = findMatchingTankFromDb(['qasr'], 'Overhead', 'Domestic', 'Domestic OH');
-            var ohKhaimatDom = findMatchingTankFromDb(['khaimat', 'religious', 'masjid'], 'Overhead', 'Domestic', 'Domestic OH');
-            var ohMawaidDom = findMatchingTankFromDb(['mawaid', 'dining', 'kitchen'], 'Overhead', 'Domestic', 'Domestic OH');
+            var wt05 = resolveWaterTankFromTableByCode('WT-05', 'Domestic', 'Overhead', '', 'Admin Terrace OH');
+            var wt07 = resolveWaterTankFromTableByCode('WT-07', 'Domestic', 'Overhead', '', 'Mawaid OH');
+            var wt10 = resolveWaterTankFromTableByCode('WT-10', 'Domestic', 'Overhead', '', 'Khaimat OH');
+            var wt12 = resolveWaterTankFromTableByCode('WT-12', 'Domestic', 'Overhead', '', 'Qasr Mubarak OH');
 
-            var ohAdminFlush = findMatchingTankFromDb(['admin terrace', 'admin phase', 'admin'], 'Overhead', 'Flushing', 'Flushing OH');
-            var ohQasrFlush = findMatchingTankFromDb(['qasr'], 'Overhead', 'Flushing', 'Flushing OH');
+            var wt06 = resolveWaterTankFromTableByCode('WT-06', 'Flushing', 'Overhead', '', 'Admin Terrace Flushing OH');
+            var wt13 = resolveWaterTankFromTableByCode('WT-13', 'Flushing', 'Overhead', '', 'Qasr Mubarak Flushing OH');
 
-            // Overhead Tanks - Area 2: Hostel Block (1 Domestic + 1 Flushing)
-            var ohHostelDom = findMatchingTankFromDb(['hostel'], 'Overhead', 'Domestic', 'Hostel Dom OH');
-            var ohHostelFlush = findMatchingTankFromDb(['hostel'], 'Overhead', 'Flushing', 'Hostel Flush OH');
+            var wt08 = resolveWaterTankFromTableByCode('WT-08', 'Domestic', 'Overhead', '', 'Hostel Block Domestic OH');
+            var wt09 = resolveWaterTankFromTableByCode('WT-09', 'Flushing', 'Overhead', '', 'Hostel Block Flushing OH');
 
-            // Overhead Tanks - Area 3: Najmi Building (4 Tanks of 10,000 Ltr each)
-            var ohNajmi = findMatchingTankFromDb(['najmi'], 'Overhead', 'Domestic', '10,000 Ltr');
+            var wt11 = resolveWaterTankFromTableByCode('WT-11', 'Domestic', 'Overhead', '4 x 10,000 Ltrs', 'Najmi Bldg OH');
 
-            var svg = '<svg viewBox="0 0 1380 860" class="w-full h-auto select-none" xmlns="http://www.w3.org/2000/svg">';
+            var svg = '<svg viewBox="0 0 1500 980" class="w-full h-auto select-none" xmlns="http://www.w3.org/2000/svg">';
 
-            // Definitions: Gradients, Glows & Animated Pipe Flow CSS
+            // Gradients, Shadows & Animated Flow CSS
             svg += '<defs>';
             svg += '<linearGradient id="domHeaderGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#0284c7"/><stop offset="100%" stop-color="#0369a1"/></linearGradient>';
             svg += '<linearGradient id="flushHeaderGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d97706"/><stop offset="100%" stop-color="#b45309"/></linearGradient>';
@@ -9037,181 +9240,201 @@
             svg += '</style>';
             svg += '</defs>';
 
-            // Background Grid Canvas
-            svg += '<rect x="0" y="0" width="1380" height="860" rx="16" fill="#020617"/>';
+            // Main Blueprint Dark Background
+            svg += '<rect x="0" y="0" width="1500" height="980" rx="18" fill="#020617"/>';
 
-            // ================= TOP ZONE: 3 MAIN CAMPUS AREAS (OVERHEAD TANKS) =================
-            // Area 1 Box: ALJAMEA PREMISES (x: 16..796, y: 16..370)
-            svg += '<rect x="16" y="16" width="780" height="360" rx="16" fill="#0f172a" fill-opacity="0.65" stroke="#1e293b" stroke-width="2"/>';
-            svg += '<rect x="16" y="16" width="780" height="34" rx="14" fill="#1e293b"/>';
-            svg += '<text x="406" y="38" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.8">1. ALJAMEA PREMISES — OVERHEAD TANKS (DOMESTIC &amp; FLUSHING)</text>';
+            // ================= TIER 1 BACKGROUND: CAMPUS BUILDINGS ZONE (TOP) =================
+            svg += '<rect x="16" y="10" width="1468" height="156" rx="14" fill="#0f172a" fill-opacity="0.55" stroke="#1e293b" stroke-width="1.5"/>';
+            svg += '<text x="32" y="28" fill="#94a3b8" font-size="10" font-weight="800" font-family="Inter, sans-serif" letter-spacing="1">CAMPUS BUILDINGS &amp; PREMISES (EACH BUILDING UNIFIED — RECEIVING DOMESTIC &amp; FLUSHING LINES)</text>';
 
-            // Area 2 Box: HOSTEL BLOCK (x: 812..1062, y: 16..370)
-            svg += '<rect x="812" y="16" width="250" height="360" rx="16" fill="#0f172a" fill-opacity="0.65" stroke="#1e293b" stroke-width="2"/>';
-            svg += '<rect x="812" y="16" width="250" height="34" rx="14" fill="#1e293b"/>';
-            svg += '<text x="937" y="38" text-anchor="middle" fill="#a5b4fc" font-size="13" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.8">2. HOSTEL BLOCK — OVERHEAD</text>';
+            // ================= TIER 2 BACKGROUND: OVERHEAD TANKS ZONE (MIDDLE) =================
+            svg += '<rect x="16" y="310" width="1468" height="310" rx="16" fill="#090d16" fill-opacity="0.6" stroke="#1e293b" stroke-width="1.5"/>';
 
-            // Area 3 Box: NAJMI BUILDING (x: 1078..1364, y: 16..370)
-            svg += '<rect x="1078" y="16" width="286" height="360" rx="16" fill="#0f172a" fill-opacity="0.65" stroke="#1e293b" stroke-width="2"/>';
-            svg += '<rect x="1078" y="16" width="286" height="34" rx="14" fill="#1e293b"/>';
-            svg += '<text x="1221" y="38" text-anchor="middle" fill="#5eead4" font-size="13" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.8">3. NAJMI BUILDING — OVERHEAD</text>';
+            // ================= TIER 3 BACKGROUND: UNDERGROUND TANKS ZONE (BOTTOM) =================
+            svg += '<line x1="16" y1="736" x2="1484" y2="736" stroke="#334155" stroke-width="2" stroke-dasharray="8,6"/>';
+            svg += '<rect x="550" y="724" width="400" height="24" rx="12" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>';
+            svg += '<text x="750" y="740" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="800" font-family="Inter, sans-serif" letter-spacing="1">GROUND LEVEL / PUMPING RISER PIPELINES (UG &rarr; OH)</text>';
 
-            // ================= GROUND LEVEL DIVIDER & UNDERGROUND RESERVOIR ZONE =================
-            svg += '<line x1="16" y1="595" x2="1364" y2="595" stroke="#334155" stroke-width="2" stroke-dasharray="8,6"/>';
-            svg += '<rect x="520" y="583" width="340" height="24" rx="12" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>';
-            svg += '<text x="690" y="599" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="800" font-family="Inter, sans-serif" letter-spacing="1">GROUND LEVEL / PUMPING DISTRIBUTION MANIFOLD</text>';
+            svg += '<rect x="16" y="756" width="1468" height="212" rx="16" fill="#090d16" stroke="#334155" stroke-width="2"/>';
 
-            svg += '<rect x="16" y="618" width="1348" height="226" rx="18" fill="#090d16" stroke="#334155" stroke-width="2"/>';
-            svg += '<text x="40" y="642" fill="#cbd5e1" font-size="12" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.8">UNDERGROUND WATER TANKS (SOURCE RESERVOIRS &amp; PUMPING STATIONS)</text>';
+            // ================= PIPING LAYER A: OVERHEAD TANKS (y=340) UP TO BUILDINGS (y=154) =================
+            var bldgBotY = 154;
+            var ohTopY = 340;
 
-            // ================= PIPING NETWORK LINES (DRAWN BEHIND TANKS FOR CLEAN TERMINATION) =================
-            // 1) PUMP ROOM UG DOMESTIC (x=175, y=660) -> Supplies Aljamea Premises Overhead Domestic (5 tanks: centers x=80, 186, 292, 398, 504; bottom y=214)
-            var ug1X = 175, ug1Y = 660;
-            var domBusY = 445;
-            // Main Riser from Pump Room UG Domestic up to Domestic Manifold Bus
-            svg += '<path d="M ' + ug1X + ' ' + ug1Y + ' L ' + ug1X + ' ' + domBusY + '" stroke="#0284c7" stroke-width="7" fill="none" stroke-linecap="round"/>';
-            svg += '<path d="M ' + ug1X + ' ' + ug1Y + ' L ' + ug1X + ' ' + domBusY + '" stroke="#bae6fd" stroke-width="3" fill="none" class="pipe-flow-anim"/>';
-            // Horizontal Manifold Bus spanning x=80 to x=504 at y=445
-            svg += '<path d="M 80 ' + domBusY + ' L 504 ' + domBusY + '" stroke="#0284c7" stroke-width="6" fill="none" stroke-linecap="round"/>';
-            svg += '<path d="M 80 ' + domBusY + ' L 504 ' + domBusY + '" stroke="#bae6fd" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
-            // 5 Vertical Feeders up to Admin Terrace (80), Northside Terrace (186), Qasr (292), Khaimat (398), Mawaid (504)
-            [80, 186, 292, 398, 504].forEach(function(tx) {
-                svg += '<path d="M ' + tx + ' ' + domBusY + ' L ' + tx + ' 214" stroke="#0284c7" stroke-width="4.5" fill="none"/>';
-                svg += '<path d="M ' + tx + ' ' + domBusY + ' L ' + tx + ' 214" stroke="#bae6fd" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
-                svg += '<circle cx="' + tx + '" cy="' + domBusY + '" r="5" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5"/>';
+            // 1. WT-05 (cx=86) -> Domestic (Blue) to Admin Bldg (113-12=101), Religious Block (255-12=243), Mahad Bldg (397-12=385)
+            var busWt05Y = 232;
+            svg += '<path d="M 86 ' + ohTopY + ' L 86 ' + busWt05Y + ' L 385 ' + busWt05Y + '" stroke="#0284c7" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path d="M 86 ' + ohTopY + ' L 86 ' + busWt05Y + ' L 385 ' + busWt05Y + '" stroke="#bae6fd" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+            [101, 243, 385].forEach(function(bx) {
+                svg += '<path d="M ' + bx + ' ' + busWt05Y + ' L ' + bx + ' ' + bldgBotY + '" stroke="#0284c7" stroke-width="4" fill="none"/>';
+                svg += '<path d="M ' + bx + ' ' + busWt05Y + ' L ' + bx + ' ' + bldgBotY + '" stroke="#bae6fd" stroke-width="1.8" fill="none" class="pipe-flow-anim"/>';
+                svg += '<circle cx="' + bx + '" cy="' + busWt05Y + '" r="4" fill="#38bdf8" stroke="#0f172a" stroke-width="1.2"/>';
             });
-            // Pipe Label Pill on Domestic Bus
-            svg += '<rect x="195" y="433" width="250" height="20" rx="6" fill="#0c4a6e" stroke="#38bdf8" stroke-width="1"/>';
-            svg += '<text x="320" y="446" text-anchor="middle" fill="#e0f2fe" font-size="8.5" font-weight="800" font-family="Inter, sans-serif">PUMP ROOM DOMESTIC MAIN LINE &rarr; 5 ALJAMEA OH TANKS</text>';
 
-            // 3) PUMP ROOM UG FLUSHING (x=515, y=660) -> Supplies Aljamea OH Flushing (Admin Terrace x=626, Qasr x=734) AND Hostel OH Flushing (x=996)
-            var ug2X = 515, ug2Y = 660;
-            var flushBusY = 505;
-            // Main Riser from Pump Room UG Flushing up to Flushing Manifold Bus (y=505)
-            svg += '<path d="M ' + ug2X + ' ' + ug2Y + ' L ' + ug2X + ' ' + flushBusY + '" stroke="#d97706" stroke-width="7" fill="none" stroke-linecap="round"/>';
-            svg += '<path d="M ' + ug2X + ' ' + ug2Y + ' L ' + ug2X + ' ' + flushBusY + '" stroke="#fef3c7" stroke-width="3" fill="none" class="pipe-flow-anim"/>';
-            // Horizontal Flushing Manifold Bus from x=515 across to x=996 (Hostel Flushing OH)
-            svg += '<path d="M ' + ug2X + ' ' + flushBusY + ' L 996 ' + flushBusY + '" stroke="#d97706" stroke-width="6" fill="none" stroke-linecap="round"/>';
-            svg += '<path d="M ' + ug2X + ' ' + flushBusY + ' L 996 ' + flushBusY + '" stroke="#fef3c7" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
-            // Vertical Feeders up to Admin Terrace Flushing (626), Qasr Flushing (734), and Hostel Block Flushing (996)
-            [626, 734, 996].forEach(function(fx) {
-                svg += '<path d="M ' + fx + ' ' + flushBusY + ' L ' + fx + ' 214" stroke="#d97706" stroke-width="4.5" fill="none"/>';
-                svg += '<path d="M ' + fx + ' ' + flushBusY + ' L ' + fx + ' 214" stroke="#fef3c7" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
-                svg += '<circle cx="' + fx + '" cy="' + flushBusY + '" r="5" fill="#fbbf24" stroke="#0f172a" stroke-width="1.5"/>';
+            // 2. WT-07 (cx=220) -> Domestic (Blue) to Mawaid Bldg (539-12=527)
+            var busWt07Y = 266;
+            svg += '<path d="M 220 ' + ohTopY + ' L 220 ' + busWt07Y + ' L 527 ' + busWt07Y + ' L 527 ' + bldgBotY + '" stroke="#0284c7" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path d="M 220 ' + ohTopY + ' L 220 ' + busWt07Y + ' L 527 ' + busWt07Y + ' L 527 ' + bldgBotY + '" stroke="#bae6fd" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+            svg += '<circle cx="527" cy="' + busWt07Y + '" r="4" fill="#38bdf8" stroke="#0f172a" stroke-width="1.2"/>';
+
+            // 3. WT-10 (cx=354) -> Domestic (Blue) to Khaimat Premises (681)
+            var busWt10Y = 286;
+            svg += '<path d="M 354 ' + ohTopY + ' L 354 ' + busWt10Y + ' L 681 ' + busWt10Y + ' L 681 ' + bldgBotY + '" stroke="#0284c7" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path d="M 354 ' + ohTopY + ' L 354 ' + busWt10Y + ' L 681 ' + busWt10Y + ' L 681 ' + bldgBotY + '" stroke="#bae6fd" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+            svg += '<circle cx="681" cy="' + busWt10Y + '" r="4" fill="#38bdf8" stroke="#0f172a" stroke-width="1.2"/>';
+
+            // 4. WT-12 (cx=488) -> Domestic (Blue) to Qasr Mubarak (823-12=811)
+            var busWt12Y = 248;
+            svg += '<path d="M 488 ' + ohTopY + ' L 488 ' + busWt12Y + ' L 811 ' + busWt12Y + ' L 811 ' + bldgBotY + '" stroke="#0284c7" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path d="M 488 ' + ohTopY + ' L 488 ' + busWt12Y + ' L 811 ' + busWt12Y + ' L 811 ' + bldgBotY + '" stroke="#bae6fd" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+            svg += '<circle cx="811" cy="' + busWt12Y + '" r="4" fill="#38bdf8" stroke="#0f172a" stroke-width="1.2"/>';
+
+            // 5. WT-06 (cx=646) -> Flushing (Amber) to Admin Bldg (113+12=125), Religious Block (255+12=267), Mahad Bldg (397+12=409), Mawaid Bldg (539+12=551)
+            var busWt06Y = 196;
+            svg += '<path d="M 646 ' + ohTopY + ' L 646 ' + busWt06Y + ' L 125 ' + busWt06Y + '" stroke="#d97706" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path d="M 646 ' + ohTopY + ' L 646 ' + busWt06Y + ' L 125 ' + busWt06Y + '" stroke="#fef3c7" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+            [125, 267, 409, 551].forEach(function(bx) {
+                svg += '<path d="M ' + bx + ' ' + busWt06Y + ' L ' + bx + ' ' + bldgBotY + '" stroke="#d97706" stroke-width="4" fill="none"/>';
+                svg += '<path d="M ' + bx + ' ' + busWt06Y + ' L ' + bx + ' ' + bldgBotY + '" stroke="#fef3c7" stroke-width="1.8" fill="none" class="pipe-flow-anim"/>';
+                svg += '<circle cx="' + bx + '" cy="' + busWt06Y + '" r="4" fill="#fbbf24" stroke="#0f172a" stroke-width="1.2"/>';
             });
-            // Pipe Label Pill on Flushing Bus
-            svg += '<rect x="550" y="493" width="310" height="20" rx="6" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>';
-            svg += '<text x="705" y="506" text-anchor="middle" fill="#fef3c7" font-size="8.5" font-weight="800" font-family="Inter, sans-serif">PUMP ROOM FLUSHING LINE &rarr; ADMIN, QASR &amp; HOSTEL FLUSHING OH</text>';
 
-            // 2) HOSTEL BLOCK UG DOMESTIC (x=876, y=660) -> Supplies Hostel Block Overhead Domestic (x=876, bottom y=214)
-            var ug3X = 876, ug3Y = 660;
-            svg += '<path d="M ' + ug3X + ' ' + ug3Y + ' L ' + ug3X + ' 214" stroke="#0284c7" stroke-width="6.5" fill="none" stroke-linecap="round"/>';
-            svg += '<path d="M ' + ug3X + ' ' + ug3Y + ' L ' + ug3X + ' 214" stroke="#bae6fd" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
-            svg += '<rect x="795" y="410" width="162" height="20" rx="6" fill="#0c4a6e" stroke="#38bdf8" stroke-width="1"/>';
-            svg += '<text x="876" y="423" text-anchor="middle" fill="#e0f2fe" font-size="8.5" font-weight="800" font-family="Inter, sans-serif">HOSTEL DOMESTIC RISER</text>';
+            // 6. WT-13 (cx=782) -> Flushing (Amber) to Qasr Mubarak (823+12=835)
+            var busWt13Y = 214;
+            svg += '<path d="M 782 ' + ohTopY + ' L 782 ' + busWt13Y + ' L 835 ' + busWt13Y + ' L 835 ' + bldgBotY + '" stroke="#d97706" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path d="M 782 ' + ohTopY + ' L 782 ' + busWt13Y + ' L 835 ' + busWt13Y + ' L 835 ' + bldgBotY + '" stroke="#fef3c7" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+            svg += '<circle cx="835" cy="' + busWt13Y + '" r="4" fill="#fbbf24" stroke="#0f172a" stroke-width="1.2"/>';
 
-            // 4) NAJMI UG (x=1221, y=660) -> Supplies 4 Najmi Overhead Tanks of 10,000 Ltr each
-            // Top Row Najmi Tanks (Tank 1 x=1154, Tank 2 x=1288, bottom y=198) & Bottom Row Najmi Tanks (Tank 3 x=1154, Tank 4 x=1288, bottom y=354)
-            var ug4X = 1221, ug4Y = 660;
-            var najmiBus1Y = 445;
-            var najmiBus2Y = 212;
-            // Main Riser from Najmi UG up to y=212
-            svg += '<path d="M ' + ug4X + ' ' + ug4Y + ' L ' + ug4X + ' ' + najmiBus2Y + '" stroke="#0d9488" stroke-width="6.5" fill="none" stroke-linecap="round"/>';
-            svg += '<path d="M ' + ug4X + ' ' + ug4Y + ' L ' + ug4X + ' ' + najmiBus2Y + '" stroke="#99f6e4" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
-            // Branch to Tank 3 & Tank 4 at y=445 -> up to 354
-            svg += '<path d="M 1154 ' + najmiBus1Y + ' L 1288 ' + najmiBus1Y + '" stroke="#0d9488" stroke-width="5" fill="none"/>';
-            svg += '<path d="M 1154 ' + najmiBus1Y + ' L 1154 354" stroke="#0d9488" stroke-width="4.5" fill="none"/>';
-            svg += '<path d="M 1288 ' + najmiBus1Y + ' L 1288 354" stroke="#0d9488" stroke-width="4.5" fill="none"/>';
-            svg += '<path d="M 1154 ' + najmiBus1Y + ' L 1154 354" stroke="#99f6e4" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
-            svg += '<path d="M 1288 ' + najmiBus1Y + ' L 1288 354" stroke="#99f6e4" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
-            // Branch to Tank 1 & Tank 2 at y=212 -> up to 198
-            svg += '<path d="M 1154 ' + najmiBus2Y + ' L 1288 ' + najmiBus2Y + '" stroke="#0d9488" stroke-width="5" fill="none"/>';
-            svg += '<path d="M 1154 ' + najmiBus2Y + ' L 1154 198" stroke="#0d9488" stroke-width="4.5" fill="none"/>';
-            svg += '<path d="M 1288 ' + najmiBus2Y + ' L 1288 198" stroke="#0d9488" stroke-width="4.5" fill="none"/>';
-            svg += '<rect x="1105" y="458" width="232" height="20" rx="6" fill="#115e59" stroke="#2dd4bf" stroke-width="1"/>';
-            svg += '<text x="1221" y="471" text-anchor="middle" fill="#ccfbf1" font-size="8.5" font-weight="800" font-family="Inter, sans-serif">NAJMI MAIN RISER &rarr; 4 x 10,000 LTR OH TANKS</text>';
+            // 7. WT-08 (cx=946) -> Domestic (Blue) to Boys Hostel (965-12=953), Faculty Bldg (1107-12=1095), Girls Hostel (1249-12=1237)
+            var busWt08Y = 236;
+            svg += '<path d="M 946 ' + ohTopY + ' L 946 ' + busWt08Y + ' L 1237 ' + busWt08Y + '" stroke="#0284c7" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path d="M 946 ' + ohTopY + ' L 946 ' + busWt08Y + ' L 1237 ' + busWt08Y + '" stroke="#bae6fd" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+            [953, 1095, 1237].forEach(function(bx) {
+                svg += '<path d="M ' + bx + ' ' + busWt08Y + ' L ' + bx + ' ' + bldgBotY + '" stroke="#0284c7" stroke-width="4" fill="none"/>';
+                svg += '<path d="M ' + bx + ' ' + busWt08Y + ' L ' + bx + ' ' + bldgBotY + '" stroke="#bae6fd" stroke-width="1.8" fill="none" class="pipe-flow-anim"/>';
+                svg += '<circle cx="' + bx + '" cy="' + busWt08Y + '" r="4" fill="#38bdf8" stroke="#0f172a" stroke-width="1.2"/>';
+            });
 
-            // ================= OVERHEAD TANK NODES (TOP) =================
-            // Area 1: Aljamea Premises - 5 Domestic Overhead Tanks
-            svg += buildSvgOverheadTankNode(32, 64, 96, 150, 'Admin Terrace', 'DOMESTIC OH', 'Domestic', ohAdminDom, 'Admin Terrace');
-            svg += buildSvgOverheadTankNode(138, 64, 96, 150, 'Northside Terr.', 'DOMESTIC OH', 'Domestic', ohNorthDom, 'Northside Terrace');
-            svg += buildSvgOverheadTankNode(244, 64, 96, 150, 'Qasr', 'DOMESTIC OH', 'Domestic', ohQasrDom, 'Qasr');
-            svg += buildSvgOverheadTankNode(350, 64, 96, 150, 'Khaimat', 'DOMESTIC OH', 'Domestic', ohKhaimatDom, 'Khaimat');
-            svg += buildSvgOverheadTankNode(456, 64, 96, 150, 'Mawaid', 'DOMESTIC OH', 'Domestic', ohMawaidDom, 'Mawaid');
+            // 8. WT-09 (cx=1092) -> Flushing (Amber) to Boys Hostel (965+12=977), Faculty Bldg (1107+12=1119), Girls Hostel (1249+12=1261)
+            var busWt09Y = 196;
+            svg += '<path d="M 1092 ' + ohTopY + ' L 1092 ' + busWt09Y + '" stroke="#d97706" stroke-width="5" fill="none"/>';
+            svg += '<path d="M 977 ' + busWt09Y + ' L 1261 ' + busWt09Y + '" stroke="#d97706" stroke-width="5" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M 977 ' + busWt09Y + ' L 1261 ' + busWt09Y + '" stroke="#fef3c7" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+            [977, 1119, 1261].forEach(function(bx) {
+                svg += '<path d="M ' + bx + ' ' + busWt09Y + ' L ' + bx + ' ' + bldgBotY + '" stroke="#d97706" stroke-width="4" fill="none"/>';
+                svg += '<path d="M ' + bx + ' ' + busWt09Y + ' L ' + bx + ' ' + bldgBotY + '" stroke="#fef3c7" stroke-width="1.8" fill="none" class="pipe-flow-anim"/>';
+                svg += '<circle cx="' + bx + '" cy="' + busWt09Y + '" r="4" fill="#fbbf24" stroke="#0f172a" stroke-width="1.2"/>';
+            });
 
-            // Area 1: Aljamea Premises - 2 Flushing Overhead Tanks
-            svg += buildSvgOverheadTankNode(578, 64, 96, 150, 'Admin Terrace', 'FLUSHING OH', 'Flushing', ohAdminFlush, 'Admin Terrace');
-            svg += buildSvgOverheadTankNode(686, 64, 96, 150, 'Qasr', 'FLUSHING OH', 'Flushing', ohQasrFlush, 'Qasr');
+            // 9. WT-11 (cx=1340) -> Domestic (Teal/Blue) straight up to Najmi Bldg (cx=1391)
+            var busWt11Y = 236;
+            svg += '<path d="M 1340 ' + ohTopY + ' L 1340 ' + busWt11Y + ' L 1391 ' + busWt11Y + ' L 1391 ' + bldgBotY + '" stroke="#0d9488" stroke-width="5.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path d="M 1340 ' + ohTopY + ' L 1340 ' + busWt11Y + ' L 1391 ' + busWt11Y + ' L 1391 ' + bldgBotY + '" stroke="#99f6e4" stroke-width="2.2" fill="none" class="pipe-flow-anim"/>';
+            svg += '<circle cx="1391" cy="' + busWt11Y + '" r="4.5" fill="#2dd4bf" stroke="#0f172a" stroke-width="1.2"/>';
 
-            // Area 1 Summary Banner inside box
-            svg += '<rect x="32" y="236" width="520" height="44" rx="8" fill="#0c4a6e" fill-opacity="0.45" stroke="#0284c7" stroke-width="1"/>';
-            svg += '<text x="292" y="254" text-anchor="middle" fill="#bae6fd" font-size="9.5" font-weight="700" font-family="Inter, sans-serif">Aljamea Domestic Overhead Network (5 Tanks)</text>';
-            svg += '<text x="292" y="270" text-anchor="middle" fill="#7dd3fc" font-size="8.5" font-family="Inter, sans-serif">Fed by: Pump Room UG Domestic Tank</text>';
+            // ================= PIPING LAYER B: UNDERGROUND TANKS (y=772) UP TO OVERHEAD TANKS (y=520) =================
+            // Note: Pipes pass vertically behind the Group Heading Banners (y=542..588) just like in the user screenshot!
+            var ohBotY = 520;
+            var ugTopY = 772;
 
-            svg += '<rect x="578" y="236" width="204" height="44" rx="8" fill="#78350f" fill-opacity="0.45" stroke="#d97706" stroke-width="1"/>';
-            svg += '<text x="680" y="254" text-anchor="middle" fill="#fde68a" font-size="9.5" font-weight="700" font-family="Inter, sans-serif">Aljamea Flushing OH (2 Tanks)</text>';
-            svg += '<text x="680" y="270" text-anchor="middle" fill="#fcd34d" font-size="8.5" font-family="Inter, sans-serif">Fed by: Pump Room UG Flushing</text>';
+            // 1) WT-01 UG (Domestic) (cx=195) -> sends water to WT-05 (86), WT-07 (220), WT-10 (354), WT-12 (488)
+            var ug1X = 195;
+            var ugBus1Y = 640;
+            svg += '<path d="M ' + ug1X + ' ' + ugTopY + ' L ' + ug1X + ' ' + ugBus1Y + '" stroke="#0284c7" stroke-width="7" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M ' + ug1X + ' ' + ugTopY + ' L ' + ug1X + ' ' + ugBus1Y + '" stroke="#bae6fd" stroke-width="3" fill="none" class="pipe-flow-anim"/>';
+            svg += '<path d="M 86 ' + ugBus1Y + ' L 488 ' + ugBus1Y + '" stroke="#0284c7" stroke-width="6" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M 86 ' + ugBus1Y + ' L 488 ' + ugBus1Y + '" stroke="#bae6fd" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
+            [86, 220, 354, 488].forEach(function(tx) {
+                svg += '<path d="M ' + tx + ' ' + ugBus1Y + ' L ' + tx + ' ' + ohBotY + '" stroke="#0284c7" stroke-width="5" fill="none"/>';
+                svg += '<path d="M ' + tx + ' ' + ugBus1Y + ' L ' + tx + ' ' + ohBotY + '" stroke="#bae6fd" stroke-width="2.2" fill="none" class="pipe-flow-anim"/>';
+                svg += '<circle cx="' + tx + '" cy="' + ugBus1Y + '" r="5" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5"/>';
+            });
 
-            // Area 2: Hostel Block - 1 Domestic OH + 1 Flushing OH
-            svg += buildSvgOverheadTankNode(826, 64, 100, 150, 'Hostel Block', 'DOMESTIC OH', 'Domestic', ohHostelDom, 'Boys Hostel');
-            svg += buildSvgOverheadTankNode(946, 64, 100, 150, 'Hostel Block', 'FLUSHING OH', 'Flushing', ohHostelFlush, 'Boys Hostel');
+            // 2) WT-02 UG (Domestic) (cx=555) -> sends water to WT-08 (cx=946)
+            var ug2X = 555;
+            var ugBus2Y = 696;
+            svg += '<path d="M ' + ug2X + ' ' + ugTopY + ' L ' + ug2X + ' ' + ugBus2Y + ' L 946 ' + ugBus2Y + ' L 946 ' + ohBotY + '" stroke="#0284c7" stroke-width="6.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path d="M ' + ug2X + ' ' + ugTopY + ' L ' + ug2X + ' ' + ugBus2Y + ' L 946 ' + ugBus2Y + ' L 946 ' + ohBotY + '" stroke="#bae6fd" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
+            svg += '<circle cx="946" cy="' + ugBus2Y + '" r="5" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5"/>';
 
-            svg += '<rect x="826" y="236" width="220" height="44" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>';
-            svg += '<text x="936" y="254" text-anchor="middle" fill="#e2e8f0" font-size="9" font-weight="700" font-family="Inter, sans-serif">Hostel Overhead (Dom + Flush)</text>';
-            svg += '<text x="936" y="270" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter, sans-serif">Dom &larr; Hostel UG | Flush &larr; Pump Room UG</text>';
+            // 3) WT-03 UG (Flushing) (cx=915) -> sends water to WT-06 (646), WT-13 (782), WT-09 (1092)
+            var ug3X = 915;
+            var ugBus3Y = 665;
+            svg += '<path d="M ' + ug3X + ' ' + ugTopY + ' L ' + ug3X + ' ' + ugBus3Y + '" stroke="#d97706" stroke-width="7" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M ' + ug3X + ' ' + ugTopY + ' L ' + ug3X + ' ' + ugBus3Y + '" stroke="#fef3c7" stroke-width="3" fill="none" class="pipe-flow-anim"/>';
+            svg += '<path d="M 646 ' + ugBus3Y + ' L 1092 ' + ugBus3Y + '" stroke="#d97706" stroke-width="6" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M 646 ' + ugBus3Y + ' L 1092 ' + ugBus3Y + '" stroke="#fef3c7" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
+            [646, 782, 1092].forEach(function(fx) {
+                svg += '<path d="M ' + fx + ' ' + ugBus3Y + ' L ' + fx + ' ' + ohBotY + '" stroke="#d97706" stroke-width="5" fill="none"/>';
+                svg += '<path d="M ' + fx + ' ' + ugBus3Y + ' L ' + fx + ' ' + ohBotY + '" stroke="#fef3c7" stroke-width="2.2" fill="none" class="pipe-flow-anim"/>';
+                svg += '<circle cx="' + fx + '" cy="' + ugBus3Y + '" r="5" fill="#fbbf24" stroke="#0f172a" stroke-width="1.5"/>';
+            });
 
-            // Area 3: Najmi Building - 4 Overhead Tanks of 10,000 Ltr each (2x2 Grid)
-            var najmiMetaFixed = { id: ohNajmi.id, cap: '10,000 Ltr', lastCleaned: ohNajmi.lastCleaned };
-            svg += buildSvgOverheadTankNode(1098, 58, 112, 140, 'Najmi OH Tank #1', '10,000 LTR', 'Domestic', najmiMetaFixed, 'Najmi Bldg');
-            svg += buildSvgOverheadTankNode(1232, 58, 112, 140, 'Najmi OH Tank #2', '10,000 LTR', 'Domestic', najmiMetaFixed, 'Najmi Bldg');
-            svg += buildSvgOverheadTankNode(1098, 214, 112, 140, 'Najmi OH Tank #3', '10,000 LTR', 'Domestic', najmiMetaFixed, 'Najmi Bldg');
-            svg += buildSvgOverheadTankNode(1232, 214, 112, 140, 'Najmi OH Tank #4', '10,000 LTR', 'Domestic', najmiMetaFixed, 'Najmi Bldg');
+            // 4) WT-04 UG (Domestic) (cx=1285) -> sends water to WT-11 (cx=1340, 4 tanks of 10,000 ltrs each)
+            var ug4X = 1285;
+            var ugBus4Y = 650;
+            svg += '<path d="M ' + ug4X + ' ' + ugTopY + ' L ' + ug4X + ' ' + ugBus4Y + ' L 1340 ' + ugBus4Y + ' L 1340 ' + ohBotY + '" stroke="#0d9488" stroke-width="6.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+            svg += '<path d="M ' + ug4X + ' ' + ugTopY + ' L ' + ug4X + ' ' + ugBus4Y + ' L 1340 ' + ugBus4Y + ' L 1340 ' + ohBotY + '" stroke="#99f6e4" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
+            svg += '<circle cx="1340" cy="' + ugBus4Y + '" r="5" fill="#2dd4bf" stroke="#0f172a" stroke-width="1.5"/>';
 
-            // ================= UNDERGROUND TANK NODES (BOTTOM) =================
-            // UG Tank 1: Pump Room UG Domestic
-            svg += buildSvgUndergroundTankNode(
-                36, 660, 290, 165,
-                '1. Pump Room UG (Domestic)',
-                'Aljamea OH (Admin, North, Qasr, Khaimat, Mawaid)',
-                'Domestic',
-                ugPumpDom,
-                'Pump Room Domestic UG'
-            );
+            // ================= GROUP HEADING BANNERS UNDER OVERHEAD TANKS (EXACT SCREENSHOT STYLE) =================
+            // Placed at y=542..588 so vertical pipes run smoothly behind them!
+            // Banner 1: Aljamea Domestic Overhead Network (4 Tanks: WT-05, WT-07, WT-10, WT-12)
+            svg += '<rect x="24" y="542" width="526" height="46" rx="10" fill="#0c4a6e" fill-opacity="0.82" stroke="#0284c7" stroke-width="1.5" filter="url(#dropShadow)"/>';
+            svg += '<text x="287" y="561" text-anchor="middle" fill="#e0f2fe" font-size="10.5" font-weight="800" font-family="Inter, sans-serif">Aljamea Domestic Overhead Network (4 Tanks: WT-05, WT-07, WT-10, WT-12)</text>';
+            svg += '<text x="287" y="577" text-anchor="middle" fill="#7dd3fc" font-size="9" font-weight="600" font-family="Inter, sans-serif">Fed by: WT-01 Underground Domestic Tank</text>';
 
-            // UG Tank 2: Pump Room UG Flushing
-            svg += buildSvgUndergroundTankNode(
-                366, 660, 300, 165,
-                '2. Pump Room UG (Flushing)',
-                'Aljamea Flush (Admin & Qasr) + Hostel Flush OH',
-                'Flushing',
-                ugPumpFlush,
-                'Pump Room Flushing UG'
-            );
+            // Banner 2: Aljamea Flushing OH (2 Tanks: WT-06, WT-13)
+            svg += '<rect x="580" y="542" width="268" height="46" rx="10" fill="#78350f" fill-opacity="0.82" stroke="#d97706" stroke-width="1.5" filter="url(#dropShadow)"/>';
+            svg += '<text x="714" y="561" text-anchor="middle" fill="#fef3c7" font-size="10.5" font-weight="800" font-family="Inter, sans-serif">Aljamea Flushing OH (2 Tanks: WT-06, WT-13)</text>';
+            svg += '<text x="714" y="577" text-anchor="middle" fill="#fcd34d" font-size="9" font-weight="600" font-family="Inter, sans-serif">Fed by: WT-03 Underground Flushing Tank</text>';
 
-            // UG Tank 3: Hostel Block UG Domestic
-            svg += buildSvgUndergroundTankNode(
-                716, 660, 310, 165,
-                '3. Hostel Block UG (Domestic)',
-                'Hostel Block Overhead Domestic Tank',
-                'Domestic',
-                ugHostelDom,
-                'Boys Hostel'
-            );
+            // Banner 3: Hostel Overhead (Dom + Flush: WT-08, WT-09)
+            svg += '<rect x="878" y="542" width="280" height="46" rx="10" fill="#1e293b" fill-opacity="0.9" stroke="#475569" stroke-width="1.5" filter="url(#dropShadow)"/>';
+            svg += '<text x="1018" y="561" text-anchor="middle" fill="#f8fafc" font-size="10.5" font-weight="800" font-family="Inter, sans-serif">Hostel Overhead (Dom WT-08 + Flush WT-09)</text>';
+            svg += '<text x="1018" y="577" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="600" font-family="Inter, sans-serif">Dom &larr; WT-02 UG | Flush &larr; WT-03 UG</text>';
 
-            // UG Tank 4: Najmi Building UG
-            var ugNajmiDisplayMeta = {
-                id: ugNajmiDom.id,
-                cap: (ugNajmiDom.cap && ugNajmiDom.cap !== 'Najmi UG Tank') ? ugNajmiDom.cap : 'Feeds 4x10,000L OH',
-                lastCleaned: ugNajmiDom.lastCleaned
-            };
-            svg += buildSvgUndergroundTankNode(
-                1066, 660, 282, 165,
-                '4. Najmi Building UG Tank',
-                'Najmi Overhead (4 Tanks x 10,000 Ltr each)',
-                'Domestic',
-                ugNajmiDisplayMeta,
-                'Najmi Bldg'
-            );
+            // Banner 4: Najmi Overhead (WT-11: 4 x 10,000 Ltr)
+            svg += '<rect x="1195" y="542" width="275" height="46" rx="10" fill="#115e59" fill-opacity="0.82" stroke="#14b8a6" stroke-width="1.5" filter="url(#dropShadow)"/>';
+            svg += '<text x="1332" y="561" text-anchor="middle" fill="#ccfbf1" font-size="10.5" font-weight="800" font-family="Inter, sans-serif">Najmi Overhead (WT-11: 4 x 10,000 Ltrs)</text>';
+            svg += '<text x="1332" y="577" text-anchor="middle" fill="#5eead4" font-size="9" font-weight="600" font-family="Inter, sans-serif">Fed by: WT-04 Underground Domestic Tank</text>';
+
+            // ================= TIER 1 NODES: 10 UNIFIED CAMPUS BUILDINGS (TOP) =================
+            // Each building appears ONCE, receiving Domestic & Flushing pipes from its respective Overhead Tanks
+            svg += buildSvgCampusBuildingNode(113,  36, 'Admin Bldg',       'WT-05', 'WT-06', 'blue');
+            svg += buildSvgCampusBuildingNode(255,  36, 'Religious Block',  'WT-05', 'WT-06', 'blue');
+            svg += buildSvgCampusBuildingNode(397,  36, 'Mahad Bldg',       'WT-05', 'WT-06', 'blue');
+            svg += buildSvgCampusBuildingNode(539,  36, 'Mawaid Bldg',      'WT-07', 'WT-06', 'blue');
+            svg += buildSvgCampusBuildingNode(681,  36, 'Khaimat Premises', 'WT-10', '',      'blue');
+            svg += buildSvgCampusBuildingNode(823,  36, 'Qasr Mubarak',     'WT-12', 'WT-13', 'blue');
+            svg += buildSvgCampusBuildingNode(965,  36, 'Boys Hostel',      'WT-08', 'WT-09', 'indigo');
+            svg += buildSvgCampusBuildingNode(1107, 36, 'Faculty Bldg',     'WT-08', 'WT-09', 'indigo');
+            svg += buildSvgCampusBuildingNode(1249, 36, 'Girls Hostel',     'WT-08', 'WT-09', 'indigo');
+            svg += buildSvgCampusBuildingNode(1391, 36, 'Najmi Bldg',       'WT-11 (4x10kL)', '', 'teal');
+
+            // ================= TIER 2 NODES: 9 OVERHEAD TANK NODES (MIDDLE, y=340, h=180) =================
+            // Aljamea Domestic OH (WT-05, WT-07, WT-10, WT-12)
+            svg += buildSvgOverheadTankNodeClean(24,  340, 124, 180, wt05, false); // cx=86
+            svg += buildSvgOverheadTankNodeClean(158, 340, 124, 180, wt07, false); // cx=220
+            svg += buildSvgOverheadTankNodeClean(292, 340, 124, 180, wt10, false); // cx=354
+            svg += buildSvgOverheadTankNodeClean(426, 340, 124, 180, wt12, false); // cx=488
+
+            // Aljamea Flushing OH (WT-06, WT-13)
+            svg += buildSvgOverheadTankNodeClean(584, 340, 124, 180, wt06, false); // cx=646
+            svg += buildSvgOverheadTankNodeClean(720, 340, 124, 180, wt13, false); // cx=782
+
+            // Hostel Overhead (WT-08 Domestic, WT-09 Flushing)
+            svg += buildSvgOverheadTankNodeClean(882,  340, 128, 180, wt08, false); // cx=946
+            svg += buildSvgOverheadTankNodeClean(1028, 340, 128, 180, wt09, false); // cx=1092
+
+            // Najmi Overhead (WT-11: 4 tanks of 10,000 Ltrs each)
+            svg += buildSvgOverheadTankNodeClean(1240, 340, 200, 180, wt11, true);  // cx=1340
+
+            // ================= TIER 3 NODES: 4 UNDERGROUND TANK NODES (BOTTOM, y=772, h=184) =================
+            svg += buildSvgUndergroundTankNodeClean(30,   772, 330, 184, wt01, 'Feeds WT-05, WT-07, WT-10, WT-12'); // cx=195
+            svg += buildSvgUndergroundTankNodeClean(390,  772, 330, 184, wt02, 'Feeds WT-08');                     // cx=555
+            svg += buildSvgUndergroundTankNodeClean(750,  772, 330, 184, wt03, 'Feeds WT-06, WT-13, WT-09');       // cx=915
+            svg += buildSvgUndergroundTankNodeClean(1110, 772, 350, 184, wt04, 'Feeds WT-11 (4x10kL)');            // cx=1285
 
             svg += '</svg>';
             host.innerHTML = svg;
