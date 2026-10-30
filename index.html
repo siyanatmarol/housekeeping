@@ -1143,18 +1143,22 @@
         <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-4 border border-slate-100 flex flex-col items-center">
             <div class="w-full flex justify-between items-center mb-3 pb-2 border-b border-slate-100 gap-2">
                 <span id="photoPreviewCaption" class="text-xs font-bold text-slate-800 truncate">Media Preview</span>
-                <div class="flex items-center space-x-2 flex-shrink-0 flex-wrap gap-1">
-                    <button id="videoPlayerToggleBtn" type="button" onclick="toggleVideoPlayerEngine()" class="hidden text-xs font-semibold px-2 py-1 rounded-lg border border-slate-300 bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center space-x-1" title="Switch between Native Mobile Player and Drive Player">
-                        <i class="fa-solid fa-sliders text-indigo-600"></i>
-                        <span id="videoPlayerToggleText">Drive Player</span>
+                <div class="flex items-center space-x-1.5 flex-shrink-0 flex-wrap gap-1">
+                    <button id="videoAspectToggleBtn" type="button" onclick="toggleVideoAspectRatio()" class="hidden text-xs font-semibold px-2.5 py-1 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 transition flex items-center space-x-1" title="Toggle Video Frame between Landscape (16:9) and Portrait (9:16)">
+                        <i class="fa-solid fa-arrows-rotate text-indigo-600"></i>
+                        <span id="videoAspectToggleText">Portrait Mode (9:16)</span>
                     </button>
-                    <a id="photoPreviewDownloadLink" href="#" download target="_blank" rel="noopener noreferrer" class="hidden text-xs font-semibold text-emerald-700 hover:text-emerald-900 flex items-center space-x-1 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition">
-                        <i class="fa-solid fa-download"></i>
-                        <span>Download / Play</span>
+                    <a id="photoPreviewFullPlayerBtn" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-xs font-bold text-sky-800 bg-sky-100 hover:bg-sky-200 border border-sky-300 px-2.5 py-1 rounded-lg transition flex items-center space-x-1 shadow-2xs" title="Open in Clean Full Screen Player">
+                        <i class="fa-solid fa-expand text-sky-700"></i>
+                        <span>Full Screen</span>
                     </a>
-                    <a id="photoPreviewDriveLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition">
+                    <a id="photoPreviewDownloadLink" href="#" download target="_blank" rel="noopener noreferrer" class="hidden text-xs font-semibold text-emerald-800 hover:text-emerald-900 flex items-center space-x-1 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-300 transition" title="Open directly in your phone gallery / video player">
+                        <i class="fa-solid fa-circle-play text-emerald-600"></i>
+                        <span>Play in Phone App</span>
+                    </a>
+                    <a id="photoPreviewDriveLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-xs font-semibold text-blue-700 hover:text-blue-900 flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg border border-blue-200 transition">
                         <i class="fa-brands fa-google-drive"></i>
-                        <span>Open in Drive</span>
+                        <span>Drive</span>
                     </a>
                     <button type="button" onclick="closeMediaPreviewModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
                 </div>
@@ -1165,10 +1169,10 @@
                     <strong class="font-semibold text-amber-900">Google Drive Video Processing:</strong> Newly uploaded videos take 5–15 minutes for Google Drive to transcode for browser streaming. If you see "still being processed", click <strong>Open in Drive</strong> or <strong>Download / Play Video</strong> above to view it immediately.
                 </div>
             </div>
-            <div id="mediaViewerContainer" class="w-full flex items-center justify-center bg-slate-950 rounded-xl overflow-hidden relative shadow-inner" style="max-height: 75vh; min-height: 200px;">
-                <img id="photoPreviewImage" src="" onerror="handlePreviewModalImgError(this)" class="hidden max-h-[75vh] max-w-full w-auto object-contain">
-                <video id="videoPreviewPlayer" playsinline controls preload="metadata" class="hidden w-full max-h-[75vh] object-contain bg-black"></video>
-                <iframe id="docPreviewFrame" src="about:blank" allow="autoplay; fullscreen" class="hidden w-full rounded-xl border-0 bg-slate-900" style="max-height: 75vh; min-height: 240px;"></iframe>
+            <div id="mediaViewerContainer" class="w-full flex items-center justify-center bg-black rounded-xl overflow-hidden relative shadow-inner transition-all duration-300" style="max-height: 78vh; min-height: 240px;">
+                <img id="photoPreviewImage" src="" onerror="handlePreviewModalImgError(this)" class="hidden max-h-[78vh] max-w-full w-auto object-contain">
+                <video id="videoPreviewPlayer" playsinline controls preload="metadata" class="hidden w-full max-h-[78vh] object-contain bg-black"></video>
+                <iframe id="docPreviewFrame" src="about:blank" allow="autoplay; fullscreen" class="hidden w-full rounded-xl border-0 bg-black transition-all duration-300" style="max-height: 78vh; min-height: 240px; aspect-ratio: 16/9; width: 100%;"></iframe>
             </div>
         </div>
     </div>
@@ -2811,7 +2815,7 @@
 
         var currentActiveVideoSrc = '';
         var currentActiveVideoDriveId = '';
-        var currentVideoPlayerMode = 'native'; // 'native' or 'drive'
+        var currentVideoAspectMode = '16:9'; // '16:9' (landscape) or '9:16' (portrait)
 
         function expandPhotoModal(src, caption) {
             var resolved = resolveMediaUrl(src);
@@ -2822,12 +2826,15 @@
             var capEl = document.getElementById('photoPreviewCaption');
             var driveLinkEl = document.getElementById('photoPreviewDriveLink');
             var downloadLinkEl = document.getElementById('photoPreviewDownloadLink');
-            var toggleBtn = document.getElementById('videoPlayerToggleBtn');
+            var fullPlayerBtn = document.getElementById('photoPreviewFullPlayerBtn');
+            var aspectToggleBtn = document.getElementById('videoAspectToggleBtn');
             var noticeEl = document.getElementById('videoProcessingNotice');
 
             if (capEl) capEl.innerText = caption || 'Media View';
             if (noticeEl) noticeEl.classList.add('hidden');
-            if (toggleBtn) toggleBtn.classList.add('hidden');
+            if (fullPlayerBtn) fullPlayerBtn.classList.add('hidden');
+            if (aspectToggleBtn) aspectToggleBtn.classList.add('hidden');
+
             if (imgEl) {
                 imgEl.classList.add('hidden');
                 imgEl.setAttribute('data-fallback-step', '0');
@@ -2840,7 +2847,7 @@
             var dId = extractGoogleDriveFileId(src);
             currentActiveVideoSrc = src || '';
             currentActiveVideoDriveId = dId || '';
-            currentVideoPlayerMode = 'native';
+            currentVideoAspectMode = '16:9';
 
             if (driveLinkEl) {
                 if (dId) {
@@ -2868,26 +2875,31 @@
                     }
                 }
 
-                if (toggleBtn && dId) {
-                    toggleBtn.classList.remove('hidden');
-                    updateVideoToggleBtnLabel();
+                if (fullPlayerBtn && dId) {
+                    fullPlayerBtn.href = 'https://drive.google.com/file/d/' + dId + '/view';
+                    fullPlayerBtn.classList.remove('hidden');
                 }
 
-                // Primary video strategy: Native HTML5 <video> with object-contain.
-                // This eliminates mid-screen floating controls, letterbox cutoffs,
-                // and perfectly fits both horizontal (16:9) and portrait (9:16) videos on mobile screens.
-                var directStreamUrl = (dId && resolved.indexOf('data:') !== 0)
-                    ? ('https://drive.google.com/uc?export=download&id=' + dId)
-                    : resolved;
+                if (aspectToggleBtn && dId) {
+                    aspectToggleBtn.classList.remove('hidden');
+                    updateVideoAspectToggleLabel();
+                }
 
-                vidEl.src = directStreamUrl;
-                vidEl.classList.remove('hidden');
-
-                // If direct streaming endpoint encounters an error, automatically fall back to responsive Drive player
-                vidEl.onerror = function() {
-                    console.warn('HTML5 direct video playback encountered an error; falling back to Drive preview player.');
-                    switchToDrivePlayer();
-                };
+                // If this is a local base64/blob video recorded or uploaded in this session,
+                // play natively via HTML5 <video> without any Drive overhead!
+                if (resolved.indexOf('data:video') === 0 || resolved.indexOf('blob:') === 0) {
+                    vidEl.src = resolved;
+                    vidEl.classList.remove('hidden');
+                } else if (dId) {
+                    // For Google Drive videos, load responsive Drive embedded viewer
+                    // Default to 16:9 landscape aspect ratio. User can toggle to 9:16 portrait anytime.
+                    applyVideoContainerAspect('16:9');
+                    docEl.src = 'https://drive.google.com/file/d/' + dId + '/preview';
+                    docEl.classList.remove('hidden');
+                } else {
+                    vidEl.src = resolved;
+                    vidEl.classList.remove('hidden');
+                }
             } else {
                 if (downloadLinkEl) downloadLinkEl.classList.add('hidden');
                 if (mType === 'document' && docEl) {
@@ -2903,52 +2915,42 @@
             openModal('photoPreviewModal');
         }
 
-        function toggleVideoPlayerEngine() {
-            if (currentVideoPlayerMode === 'native') {
-                switchToDrivePlayer();
+        function toggleVideoAspectRatio() {
+            if (currentVideoAspectMode === '16:9') {
+                currentVideoAspectMode = '9:16';
             } else {
-                switchToNativePlayer();
+                currentVideoAspectMode = '16:9';
             }
+            applyVideoContainerAspect(currentVideoAspectMode);
+            updateVideoAspectToggleLabel();
         }
 
-        function switchToDrivePlayer() {
-            var vidEl = document.getElementById('videoPreviewPlayer');
+        function applyVideoContainerAspect(mode) {
             var docEl = document.getElementById('docPreviewFrame');
-            var noticeEl = document.getElementById('videoProcessingNotice');
-            if (vidEl) { vidEl.pause(); vidEl.classList.add('hidden'); }
-            if (docEl && currentActiveVideoDriveId) {
-                currentVideoPlayerMode = 'drive';
-                // Use a responsive aspect ratio for video iframe so it does not force tall 72vh letterbox
+            var container = document.getElementById('mediaViewerContainer');
+            if (!docEl) return;
+            if (mode === '9:16') {
+                // Portrait mode: give full height so vertical videos are NOT cut off
+                docEl.style.aspectRatio = '';
+                docEl.style.height = '72vh';
+                docEl.style.width = '100%';
+                if (container) container.style.maxHeight = '78vh';
+            } else {
+                // Landscape mode: 16:9 ratio so horizontal videos fit without large top/bottom black void
                 docEl.style.aspectRatio = '16/9';
                 docEl.style.height = 'auto';
-                docEl.src = 'https://drive.google.com/file/d/' + currentActiveVideoDriveId + '/preview';
-                docEl.classList.remove('hidden');
-                if (noticeEl) noticeEl.classList.remove('hidden');
-                updateVideoToggleBtnLabel();
+                docEl.style.width = '100%';
+                if (container) container.style.maxHeight = '60vh';
             }
         }
 
-        function switchToNativePlayer() {
-            var vidEl = document.getElementById('videoPreviewPlayer');
-            var docEl = document.getElementById('docPreviewFrame');
-            var noticeEl = document.getElementById('videoProcessingNotice');
-            if (docEl) { docEl.classList.add('hidden'); docEl.src = 'about:blank'; }
-            if (noticeEl) noticeEl.classList.add('hidden');
-            if (vidEl && currentActiveVideoDriveId) {
-                currentVideoPlayerMode = 'native';
-                vidEl.src = 'https://drive.google.com/uc?export=download&id=' + currentActiveVideoDriveId;
-                vidEl.classList.remove('hidden');
-                updateVideoToggleBtnLabel();
-            }
-        }
-
-        function updateVideoToggleBtnLabel() {
-            var textEl = document.getElementById('videoPlayerToggleText');
+        function updateVideoAspectToggleLabel() {
+            var textEl = document.getElementById('videoAspectToggleText');
             if (!textEl) return;
-            if (currentVideoPlayerMode === 'native') {
-                textEl.innerText = 'Drive Player';
+            if (currentVideoAspectMode === '16:9') {
+                textEl.innerText = 'Portrait (9:16)';
             } else {
-                textEl.innerText = 'Native Player';
+                textEl.innerText = 'Landscape (16:9)';
             }
         }
 
@@ -2959,8 +2961,10 @@
             if (docEl) { docEl.src = 'about:blank'; }
             var noticeEl = document.getElementById('videoProcessingNotice');
             if (noticeEl) noticeEl.classList.add('hidden');
-            var toggleBtn = document.getElementById('videoPlayerToggleBtn');
-            if (toggleBtn) toggleBtn.classList.add('hidden');
+            var fullPlayerBtn = document.getElementById('photoPreviewFullPlayerBtn');
+            if (fullPlayerBtn) fullPlayerBtn.classList.add('hidden');
+            var aspectToggleBtn = document.getElementById('videoAspectToggleBtn');
+            if (aspectToggleBtn) aspectToggleBtn.classList.add('hidden');
             closeModal('photoPreviewModal');
         }
 
@@ -6472,7 +6476,9 @@
                     html += '<span class="font-extrabold text-xs truncate" title="' + subArea + '">' + subArea + '</span>';
                     html += '<span class="text-[10px] font-mono bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded">' + tasks.length + '</span>';
                     html += '</div>';
-                    html += '<div class="flex items-center space-x-1.5 flex-shrink-0">';
+                    html += '<div class="flex items-center space-x-1 flex-shrink-0">';
+                    html += '<button type="button" onclick="moveDwrSubArea(\'' + safeArea + '\', ' + sIdx + ', -1)" ' + (sIdx === 0 ? 'disabled class="text-slate-600 p-1 cursor-not-allowed opacity-30"' : 'class="text-slate-300 hover:text-white p-1 rounded hover:bg-slate-800 transition"') + ' title="Move Sub-Area Earlier (Show First)"><i class="fa-solid fa-arrow-left text-[11px]"></i></button>';
+                    html += '<button type="button" onclick="moveDwrSubArea(\'' + safeArea + '\', ' + sIdx + ', 1)" ' + (sIdx === subAreaNames.length - 1 ? 'disabled class="text-slate-600 p-1 cursor-not-allowed opacity-30"' : 'class="text-slate-300 hover:text-white p-1 rounded hover:bg-slate-800 transition"') + ' title="Move Sub-Area Later"><i class="fa-solid fa-arrow-right text-[11px]"></i></button>';
                     html += '<button type="button" onclick="promptCloneDwrSubArea(\'' + safeArea + '\', \'' + safeSub + '\')" class="text-emerald-400 hover:text-emerald-200 p-1 rounded hover:bg-slate-800 transition" title="Clone Sub-Area (Duplicate with Tasks)"><i class="fa-solid fa-copy text-[11px]"></i></button>';
                     html += '<button type="button" onclick="promptRenameDwrSubArea(\'' + safeArea + '\', \'' + safeSub + '\')" class="text-slate-300 hover:text-white p-1 rounded hover:bg-slate-800 transition" title="Rename Sub-Area"><i class="fa-solid fa-pen text-[11px]"></i></button>';
                     html += '<button type="button" onclick="deleteDwrSubArea(\'' + safeArea + '\', \'' + safeSub + '\')" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-slate-800 transition" title="Delete Sub-Area"><i class="fa-solid fa-trash-can text-[11px]"></i></button>';
@@ -6487,6 +6493,8 @@
                             html += '<div class="pt-1.5 first:pt-0 flex items-center justify-between gap-2 group">';
                             html += '<span class="text-xs text-slate-800 font-medium leading-snug break-words flex-1">' + taskName + '</span>';
                             html += '<div class="flex items-center space-x-1 flex-shrink-0">';
+                            html += '<button type="button" onclick="moveDwrTask(\'' + safeArea + '\', \'' + safeSub + '\', ' + tIdx + ', -1)" ' + (tIdx === 0 ? 'disabled class="text-slate-300 p-1 cursor-not-allowed opacity-30"' : 'class="text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 p-1 rounded text-[10px] transition"') + ' title="Move Task Up"><i class="fa-solid fa-arrow-up"></i></button>';
+                            html += '<button type="button" onclick="moveDwrTask(\'' + safeArea + '\', \'' + safeSub + '\', ' + tIdx + ', 1)" ' + (tIdx === tasks.length - 1 ? 'disabled class="text-slate-300 p-1 cursor-not-allowed opacity-30"' : 'class="text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 p-1 rounded text-[10px] transition"') + ' title="Move Task Down"><i class="fa-solid fa-arrow-down"></i></button>';
                             html += '<button type="button" onclick="promptEditDwrTask(\'' + safeArea + '\', \'' + safeSub + '\', ' + tIdx + ')" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 p-1 rounded text-[10px] transition" title="Edit Task"><i class="fa-solid fa-pen"></i></button>';
                             html += '<button type="button" onclick="deleteDwrTask(\'' + safeArea + '\', \'' + safeSub + '\', ' + tIdx + ')" class="text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 p-1 rounded text-[10px] transition" title="Delete Task"><i class="fa-solid fa-xmark"></i></button>';
                             html += '</div></div>';
@@ -6506,6 +6514,51 @@
 
             html += '</div></div>';
             container.innerHTML = html;
+        }
+
+        
+        async function moveDwrSubArea(areaName, index, direction) {
+            var canon = ensureAreaExistsInScope(areaName);
+            var subMap = dbScopeOfWork[canon] || {};
+            var keys = Object.keys(subMap);
+            var targetIdx = index + direction;
+            if (targetIdx < 0 || targetIdx >= keys.length) return;
+
+            var temp = keys[index];
+            keys[index] = keys[targetIdx];
+            keys[targetIdx] = temp;
+
+            var newOrderedMap = {};
+            keys.forEach(function(k) {
+                newOrderedMap[k] = subMap[k];
+            });
+            dbScopeOfWork[canon] = newOrderedMap;
+
+            saveStateToLocalBackup();
+            if (window.syncModifiedScopeOfWork) {
+                await syncModifiedScopeOfWork();
+            }
+            renderManageDwrFormPageView(document.getElementById('cleaningSubPageContainer'));
+            showAppNotification('Sub-Area order reshuffled!', 'success');
+        }
+
+        async function moveDwrTask(areaName, subAreaName, taskIndex, direction) {
+            var canon = ensureAreaExistsInScope(areaName);
+            if (!dbScopeOfWork[canon] || !Array.isArray(dbScopeOfWork[canon][subAreaName])) return;
+            var tasks = dbScopeOfWork[canon][subAreaName];
+            var targetIdx = taskIndex + direction;
+            if (targetIdx < 0 || targetIdx >= tasks.length) return;
+
+            var temp = tasks[taskIndex];
+            tasks[taskIndex] = tasks[targetIdx];
+            tasks[targetIdx] = temp;
+
+            saveStateToLocalBackup();
+            if (window.syncModifiedScopeOfWork) {
+                await syncModifiedScopeOfWork();
+            }
+            renderManageDwrFormPageView(document.getElementById('cleaningSubPageContainer'));
+            showAppNotification('Task order reshuffled!', 'success');
         }
 
         function ensureAreaExistsInScope(areaName) {
@@ -11465,14 +11518,64 @@
         }
 
         // ----------------- SECTION 4: AUTOMATED PDF GENERATION & MULTI-VENDOR ZIP EXPORT -----------------
+        
+        var AL_JAMEA_SIGNATURE_BASE64 = "data:image/png;base64,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";
+
+        function getAutoPoSerialNumber(targetDate, targetId, sequenceIndex) {
+            var dateClean = (targetDate || "").split("T")[0];
+            var sameDateOrders = (dbProcurements || []).filter(function(o) {
+                return (o.date || "").split("T")[0] === dateClean;
+            });
+            var sameDateReqs = (dbProcurementRequests || []).filter(function(r) {
+                return (r.date || "").split("T")[0] === dateClean && r.status === "Approved";
+            });
+            var combinedList = [];
+            sameDateOrders.forEach(function(o) { combinedList.push({ id: o.id, time: o.createdAt || o.date }); });
+            sameDateReqs.forEach(function(r) { combinedList.push({ id: r.id, time: r.createdAt || r.date }); });
+            combinedList.sort(function(a, b) {
+                return String(a.time || a.id).localeCompare(String(b.time || b.id));
+            });
+            var idx = -1;
+            for (var i = 0; i < combinedList.length; i++) {
+                if (combinedList[i].id === targetId) {
+                    idx = i;
+                    break;
+                }
+            }
+            var baseSerial = idx !== -1 ? (idx + 1) : 1;
+            if (sequenceIndex && sequenceIndex > 1) {
+                baseSerial = baseSerial + (sequenceIndex - 1);
+            }
+            return String(baseSerial).padStart(3, "0");
+        }
+
+        function getAutoMrNumber(req) {
+            var mrDate = (req.date || new Date().toISOString().split("T")[0]).trim();
+            var sameDateReqs = (dbProcurementRequests || []).filter(function(r) {
+                return (r.date || "").split("T")[0] === mrDate;
+            });
+            sameDateReqs.sort(function(a, b) {
+                return String(a.createdAt || a.id).localeCompare(String(b.createdAt || b.id));
+            });
+            var idx = -1;
+            for (var i = 0; i < sameDateReqs.length; i++) {
+                if (sameDateReqs[i].id === req.id || sameDateReqs[i].id === req.requestId) {
+                    idx = i;
+                    break;
+                }
+            }
+            var serial = idx !== -1 ? (idx + 1) : 1;
+            return "MR-" + mrDate + "-" + String(serial).padStart(3, "0");
+        }
+
         function buildSingleVendorPurchaseOrderJsPDF(req, vendorGroup, poSequenceIndex) {
             var jsPDF = window.jspdf.jsPDF;
             var doc = new jsPDF('p', 'pt', 'a4');
             var pageWidth = doc.internal.pageSize.getWidth();
 
-            var reqIdClean = (req.requestId || req.id || 'REQ').replace(/^REQ-/, '');
-            var dateCompact = (req.date || new Date().toISOString().split('T')[0]).replace(/-/g, '');
-            var poNumber = 'PO-' + dateCompact + '-' + reqIdClean.substring(0, 6).toUpperCase() + (poSequenceIndex ? ('-V' + poSequenceIndex) : '');
+            var poDate = (req.date || new Date().toISOString().split('T')[0]).trim();
+            var serialNo = getAutoPoSerialNumber(poDate, req.id || req.requestId, poSequenceIndex);
+            var poNumber = 'PO-' + poDate + '-' + serialNo;
 
             // 1. Document Header (Centered, bold top banner)
             doc.setFillColor(0, 77, 61);
@@ -11494,8 +11597,12 @@
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(51, 65, 85);
-            doc.text('PO Date: ' + (req.date || new Date().toISOString().split('T')[0]), 40, 114);
-            doc.text('Material Request Ref: ' + (req.requestId || req.id || '-') + ' (' + (req.area || req.department || req.requestedRole || 'Housekeeping') + ')', pageWidth - 40, 114, { align: 'right' });
+            doc.text('PO Date: ' + poDate, 40, 114);
+            if (!req.isDirectPo && (req.items || req.approvedDetails)) {
+                var mrNum = getAutoMrNumber(req);
+                var areaLabel = req.area || req.department || req.requestedRole || 'Housekeeping';
+                doc.text('Material Request Ref: ' + mrNum + ' (' + areaLabel + ')', pageWidth - 40, 114, { align: 'right' });
+            }
 
             // 2. Top Info Section (Two-Column Layout)
             var boxTopY = 124;
@@ -11638,12 +11745,21 @@
             doc.text('Final Grand Total:', summaryBoxX + 12, finalY + 62);
             doc.text('Rs. ' + finalGrandTotal.toFixed(2), summaryBoxX + summaryBoxWidth - 12, finalY + 62, { align: 'right' });
 
-            // Authorized Signatory line on Bottom Left
+            // Authorized Signatory line on Bottom Left with Real Signature
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8.5);
             doc.setTextColor(100, 116, 139);
-            doc.text('For Aljamea-tus-Saifiyah (Mumbai Campus)', 40, finalY + 22);
-            doc.text('Authorized Signatory — Facilities Management', 40, finalY + 62);
+            doc.text('For Aljamea-tus-Saifiyah (Mumbai Campus)', 40, finalY + 18);
+            if (AL_JAMEA_SIGNATURE_BASE64) {
+                try {
+                    var sigH = 38;
+                    var sigW = Math.round(sigH * (66 / 140)); // ~ 18 pt
+                    doc.addImage(AL_JAMEA_SIGNATURE_BASE64, 'PNG', 45, finalY + 22, sigW, sigH);
+                } catch (e) {
+                    console.warn('Signatory image embed failed:', e);
+                }
+            }
+            doc.text('Authorized Signatory — Facilities Management', 40, finalY + 68);
 
             return {
                 doc: doc,
@@ -12539,9 +12655,11 @@
                 })
             };
             var pseudoReq = {
+                id: ord.id,
                 requestId: ord.id,
                 date: ord.date,
-                area: 'Main Store'
+                area: 'Main Store',
+                isDirectPo: true
             };
             var poRes = buildSingleVendorPurchaseOrderJsPDF(pseudoReq, vendorGroup, 1);
             var safeDate = (ord.date || new Date().toISOString().split('T')[0]).trim();
