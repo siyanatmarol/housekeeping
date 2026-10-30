@@ -1682,6 +1682,63 @@
         </div>
     </div>
 
+    <!-- MODULE 7: WATER TANKS DISTRIBUTION MAP MODAL -->
+    <div id="waterTanksMapModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[65] hidden flex items-center justify-center p-1.5 sm:p-4">
+        <div class="bg-slate-900 text-white rounded-2xl shadow-2xl max-w-[98vw] 2xl:max-w-[1560px] w-full max-h-[96vh] flex flex-col border border-slate-700 overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-4 py-3 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-400 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-diagram-project"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2">
+                            <span>Campus Water Tanks Distribution Map (Underground &rarr; Overhead Piping Network)</span>
+                        </h3>
+                        <p class="text-[11px] text-slate-400">Click any tank on the map to inspect its live capacity, cleaning history, or log a new report.</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <!-- Legend Badges -->
+                    <div class="hidden md:flex items-center space-x-2 mr-2 text-[11px]">
+                        <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-sky-950/90 border border-sky-500/50 text-sky-300 font-semibold">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-400 animate-pulse"></span>
+                            <span>Domestic Water Pipe &amp; Tank</span>
+                        </span>
+                        <span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-950/90 border border-amber-500/50 text-amber-300 font-semibold">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                            <span>Flushing Water Pipe &amp; Tank</span>
+                        </span>
+                    </div>
+                    <button type="button" onclick="toggleWaterMapMobileRotate()" class="sm:hidden bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-400/40 text-[11px] font-bold px-2.5 py-1.5 rounded-lg flex items-center space-x-1" title="Rotate or scroll landscape map on mobile">
+                        <i class="fa-solid fa-mobile-screen-button rotate-90"></i>
+                        <span id="waterMapRotateBtnText">Landscape View</span>
+                    </button>
+                    <button type="button" onclick="closeModal('waterTanksMapModal')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                        <span>Close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Hint Bar -->
+            <div class="sm:hidden px-3 py-1.5 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between text-[10px] text-sky-200">
+                <span><i class="fa-solid fa-arrows-left-right mr-1 text-sky-400"></i>Swipe horizontally &amp; vertically to pan the full landscape piping map, or tap <strong>Landscape View</strong>.</span>
+                <div class="flex items-center space-x-2 flex-shrink-0 ml-2">
+                    <span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-sky-400 mr-1"></span>Dom</span>
+                    <span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-amber-400 mr-1"></span>Flush</span>
+                </div>
+            </div>
+
+            <!-- Scrollable Landscape Schematic Canvas Container -->
+            <div id="waterTanksMapScrollViewport" class="flex-1 overflow-auto custom-scrollbar bg-slate-950 p-2 sm:p-4 relative">
+                <div id="waterTanksMapCanvasHost" class="min-w-[1260px] min-h-[760px] mx-auto flex items-center justify-center">
+                    <!-- Populated dynamically by renderWaterTanksDistributionMap() -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- CLOUD DATABASE & FM.MAROL GOOGLE DRIVE CONFIGURATION MODAL -->
     <div id="driveConfigModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
@@ -5242,7 +5299,7 @@
             return [ALL_AREAS[0]];
         }
 
-        function getScopeSubAreasForArea(areaName) {
+        function getRawScopeSubAreasObject(areaName) {
             if (!areaName || !dbScopeOfWork) return {};
             if (dbScopeOfWork[areaName] && typeof dbScopeOfWork[areaName] === 'object') {
                 return dbScopeOfWork[areaName];
@@ -5262,6 +5319,37 @@
                 }
             }
             return {};
+        }
+
+        function getOrderedSubAreaKeys(areaName) {
+            var rawMap = getRawScopeSubAreasObject(areaName);
+            if (!rawMap || typeof rawMap !== 'object') return [];
+            var allKeys = Object.keys(rawMap).filter(function(k) {
+                return k !== '__subAreaOrder' && Array.isArray(rawMap[k]);
+            });
+            var savedOrder = Array.isArray(rawMap.__subAreaOrder) ? rawMap.__subAreaOrder : [];
+            var ordered = [];
+            savedOrder.forEach(function(k) {
+                if (allKeys.indexOf(k) !== -1 && ordered.indexOf(k) === -1) {
+                    ordered.push(k);
+                }
+            });
+            allKeys.forEach(function(k) {
+                if (ordered.indexOf(k) === -1) {
+                    ordered.push(k);
+                }
+            });
+            return ordered;
+        }
+
+        function getScopeSubAreasForArea(areaName) {
+            var rawMap = getRawScopeSubAreasObject(areaName);
+            var orderedKeys = getOrderedSubAreaKeys(areaName);
+            var cleanOrderedMap = {};
+            orderedKeys.forEach(function(k) {
+                cleanOrderedMap[k] = Array.isArray(rawMap[k]) ? rawMap[k] : [];
+            });
+            return cleanOrderedMap;
         }
 
         function buildTaskKey(subArea, taskName) {
@@ -6519,33 +6607,34 @@
         
         async function moveDwrSubArea(areaName, index, direction) {
             var canon = ensureAreaExistsInScope(areaName);
-            var subMap = dbScopeOfWork[canon] || {};
-            var keys = Object.keys(subMap);
+            var orderedKeys = getOrderedSubAreaKeys(canon);
             var targetIdx = index + direction;
-            if (targetIdx < 0 || targetIdx >= keys.length) return;
+            if (targetIdx < 0 || targetIdx >= orderedKeys.length) return;
 
-            var temp = keys[index];
-            keys[index] = keys[targetIdx];
-            keys[targetIdx] = temp;
+            var temp = orderedKeys[index];
+            orderedKeys[index] = orderedKeys[targetIdx];
+            orderedKeys[targetIdx] = temp;
 
-            var newOrderedMap = {};
-            keys.forEach(function(k) {
-                newOrderedMap[k] = subMap[k];
+            var currentRaw = getRawScopeSubAreasObject(canon);
+            var newOrderedMap = { __subAreaOrder: orderedKeys.slice() };
+            orderedKeys.forEach(function(k) {
+                newOrderedMap[k] = Array.isArray(currentRaw[k]) ? currentRaw[k].slice() : [];
             });
             dbScopeOfWork[canon] = newOrderedMap;
 
             saveStateToLocalBackup();
+            renderManageDwrFormPageView(document.getElementById('moduleContainer'));
             if (window.syncModifiedScopeOfWork) {
                 await syncModifiedScopeOfWork();
             }
-            renderManageDwrFormPageView(document.getElementById('cleaningSubPageContainer'));
-            showAppNotification('Sub-Area order reshuffled!', 'success');
+            showAppNotification('Sub-Area order reshuffled & saved!', 'success');
         }
 
         async function moveDwrTask(areaName, subAreaName, taskIndex, direction) {
             var canon = ensureAreaExistsInScope(areaName);
-            if (!dbScopeOfWork[canon] || !Array.isArray(dbScopeOfWork[canon][subAreaName])) return;
-            var tasks = dbScopeOfWork[canon][subAreaName];
+            var currentRaw = getRawScopeSubAreasObject(canon);
+            if (!currentRaw || !Array.isArray(currentRaw[subAreaName])) return;
+            var tasks = currentRaw[subAreaName];
             var targetIdx = taskIndex + direction;
             if (targetIdx < 0 || targetIdx >= tasks.length) return;
 
@@ -6553,12 +6642,15 @@
             tasks[taskIndex] = tasks[targetIdx];
             tasks[targetIdx] = temp;
 
+            dbScopeOfWork[canon] = currentRaw;
+            dbScopeOfWork[canon].__subAreaOrder = getOrderedSubAreaKeys(canon);
+
             saveStateToLocalBackup();
+            renderManageDwrFormPageView(document.getElementById('moduleContainer'));
             if (window.syncModifiedScopeOfWork) {
                 await syncModifiedScopeOfWork();
             }
-            renderManageDwrFormPageView(document.getElementById('cleaningSubPageContainer'));
-            showAppNotification('Task order reshuffled!', 'success');
+            showAppNotification('Task order reshuffled & saved!', 'success');
         }
 
         function ensureAreaExistsInScope(areaName) {
@@ -6571,6 +6663,16 @@
         }
 
         async function syncModifiedScopeOfWork() {
+            Object.keys(dbScopeOfWork || {}).forEach(function(areaKey) {
+                if (dbScopeOfWork[areaKey] && typeof dbScopeOfWork[areaKey] === 'object') {
+                    var ordered = getOrderedSubAreaKeys(areaKey);
+                    var rebuilt = { __subAreaOrder: ordered };
+                    ordered.forEach(function(sk) {
+                        rebuilt[sk] = Array.isArray(dbScopeOfWork[areaKey][sk]) ? dbScopeOfWork[areaKey][sk] : [];
+                    });
+                    dbScopeOfWork[areaKey] = rebuilt;
+                }
+            });
             if (dbScopeOfWork['Mahad Bldg']) {
                 dbScopeOfWork['Mahad al Zahra'] = JSON.parse(JSON.stringify(dbScopeOfWork['Mahad Bldg']));
             }
@@ -6621,7 +6723,10 @@
                 showAppNotification('Sub-Area "' + subName + '" already exists in ' + canon + '.', 'error');
                 return;
             }
+            var orderedKeys = getOrderedSubAreaKeys(canon);
             dbScopeOfWork[canon][subName] = [];
+            if (orderedKeys.indexOf(subName) === -1) orderedKeys.push(subName);
+            dbScopeOfWork[canon].__subAreaOrder = orderedKeys;
             inp.value = '';
             await syncModifiedScopeOfWork();
             renderManageDwrFormPageView(document.getElementById('moduleContainer'));
@@ -6633,14 +6738,13 @@
                 if (!newVal || !newVal.trim() || newVal.trim() === oldSubName) return;
                 var newSub = newVal.trim();
                 var canon = ensureAreaExistsInScope(areaName);
-                var currentMap = dbScopeOfWork[canon] || {};
-                var rebuilt = {};
-                Object.keys(currentMap).forEach(function(k) {
-                    if (k === oldSubName) {
-                        rebuilt[newSub] = currentMap[oldSubName];
-                    } else {
-                        rebuilt[k] = currentMap[k];
-                    }
+                var orderedKeys = getOrderedSubAreaKeys(canon);
+                var currentMap = getRawScopeSubAreasObject(canon) || {};
+                var newOrder = orderedKeys.map(function(k) { return k === oldSubName ? newSub : k; });
+                var rebuilt = { __subAreaOrder: newOrder };
+                newOrder.forEach(function(k) {
+                    var srcKey = (k === newSub) ? oldSubName : k;
+                    rebuilt[k] = Array.isArray(currentMap[srcKey]) ? currentMap[srcKey] : [];
                 });
                 dbScopeOfWork[canon] = rebuilt;
                 await syncModifiedScopeOfWork();
@@ -6661,6 +6765,9 @@
                     if (normalizeAreaAlias(k).toLowerCase() === norm || k.toLowerCase() === norm) {
                         if (dbScopeOfWork[k] && typeof dbScopeOfWork[k] === 'object') {
                             delete dbScopeOfWork[k][subName];
+                            if (Array.isArray(dbScopeOfWork[k].__subAreaOrder)) {
+                                dbScopeOfWork[k].__subAreaOrder = dbScopeOfWork[k].__subAreaOrder.filter(function(item) { return item !== subName; });
+                            }
                         }
                     }
                 });
@@ -6682,8 +6789,11 @@
                     showAppNotification('Sub-Area "' + cleanSub + '" already exists in ' + canon + '.', 'error');
                     return;
                 }
+                var orderedKeys = getOrderedSubAreaKeys(canon);
                 if (!dbScopeOfWork[canon]) dbScopeOfWork[canon] = {};
                 dbScopeOfWork[canon][cleanSub] = existingTasks.slice();
+                if (orderedKeys.indexOf(cleanSub) === -1) orderedKeys.push(cleanSub);
+                dbScopeOfWork[canon].__subAreaOrder = orderedKeys;
                 await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Cloned Sub-Area "' + cleanSub + '" with ' + existingTasks.length + ' tasks!', 'success');
@@ -8687,6 +8797,426 @@
             });
         }
 
+        
+        // ================= WATER TANKS DISTRIBUTION MAP (UG -> OH PIPING NETWORK) =================
+        var isWaterMapMobileRotated = false;
+
+        function openWaterTanksMapModal() {
+            isWaterMapMobileRotated = false;
+            var btnTxt = document.getElementById('waterMapRotateBtnText');
+            if (btnTxt) btnTxt.innerText = 'Landscape View';
+            renderWaterTanksDistributionMap();
+            openModal('waterTanksMapModal');
+            if (screen && screen.orientation && typeof screen.orientation.lock === 'function' && window.innerWidth < 768) {
+                screen.orientation.lock('landscape').catch(function() {});
+            }
+        }
+
+        function toggleWaterMapMobileRotate() {
+            isWaterMapMobileRotated = !isWaterMapMobileRotated;
+            var host = document.getElementById('waterTanksMapCanvasHost');
+            var btnTxt = document.getElementById('waterMapRotateBtnText');
+            if (!host) return;
+            if (isWaterMapMobileRotated) {
+                if (btnTxt) btnTxt.innerText = 'Normal Scroll';
+                host.style.transform = 'rotate(90deg) translateY(-100%)';
+                host.style.transformOrigin = 'top left';
+                host.style.width = '1360px';
+                host.style.height = '840px';
+                host.style.marginBottom = '520px';
+            } else {
+                if (btnTxt) btnTxt.innerText = 'Landscape View';
+                host.style.transform = '';
+                host.style.transformOrigin = '';
+                host.style.width = '';
+                host.style.height = '';
+                host.style.marginBottom = '';
+            }
+        }
+
+        function findMatchingTankFromDb(keywords, category, waterType, fallbackCap) {
+            var list = dbWaterTanks || [];
+            var matched = list.find(function(t) {
+                var catOk = !category || (t.category && t.category.toLowerCase() === category.toLowerCase());
+                var typeOk = !waterType || (t.type && t.type.toLowerCase() === waterType.toLowerCase());
+                if (!catOk || !typeOk) return false;
+                var text = ((t.location || '') + ' ' + (t.providingWaterTo || '')).toLowerCase();
+                return keywords.some(function(kw) { return text.indexOf(kw.toLowerCase()) !== -1; });
+            });
+            if (matched) {
+                var cap = matched.capacity || ((matched.capacityValue || '') + ' ' + (matched.capacityUnit || 'Ltr')).trim();
+                var logs = getTankRecentCleanings(matched);
+                return {
+                    id: matched.id,
+                    cap: cap || fallbackCap || 'Registered',
+                    lastCleaned: logs.length > 0 ? logs[0].date : 'No log yet',
+                    location: matched.location
+                };
+            }
+            return {
+                id: '',
+                cap: fallbackCap || 'Active Supply',
+                lastCleaned: 'Tap to link',
+                location: keywords[0] || 'Tank'
+            };
+        }
+
+        function handleMapTankNodeClick(tankId, defaultLoc, defaultType, defaultCat) {
+            if (tankId) {
+                openTankHistoryModal(tankId);
+            } else {
+                // Find any tank matching location or open Add Water Tank modal pre-filled
+                var found = (dbWaterTanks || []).find(function(t) {
+                    return t.location && t.location.toLowerCase().indexOf(defaultLoc.toLowerCase()) !== -1;
+                });
+                if (found) {
+                    openTankHistoryModal(found.id);
+                } else {
+                    showAppNotification('Tip: Register "' + defaultLoc + '" in Add Water Tank to link live cleaning logs.', 'info');
+                    openWaterTankModal();
+                    var locInp = document.getElementById('waterTankLocation');
+                    var typeInp = document.getElementById('waterTankType');
+                    var catInp = document.getElementById('waterTankCategory');
+                    if (locInp) locInp.value = defaultLoc;
+                    if (typeInp && defaultType) typeInp.value = defaultType;
+                    if (catInp && defaultCat) catInp.value = defaultCat;
+                }
+            }
+        }
+
+        function buildSvgOverheadTankNode(x, y, w, h, title, subtitle, waterType, tankMeta, defaultLoc) {
+            var isDom = waterType === 'Domestic';
+            var strokeCol = isDom ? '#38bdf8' : '#fbbf24';
+            var headerGrad = isDom ? 'url(#domHeaderGrad)' : 'url(#flushHeaderGrad)';
+            var waterFill = isDom ? 'url(#domWaterGrad)' : 'url(#flushWaterGrad)';
+            var badgeBg = isDom ? '#0284c7' : '#d97706';
+            var typeLabel = isDom ? 'DOMESTIC OH' : 'FLUSHING OH';
+            var safeId = (tankMeta && tankMeta.id) ? tankMeta.id : '';
+            var safeLoc = (defaultLoc || title).replace(/'/g, "\\'");
+
+            var cylW = 54;
+            var cylH = 66;
+            var cylX = x + Math.round((w - cylW) / 2);
+            var cylY = y + 34;
+
+            var s = '<g class="cursor-pointer transition opacity-95 hover:opacity-100" onclick="handleMapTankNodeClick(\'' + safeId + '\', \'' + safeLoc + '\', \'' + waterType + '\', \'Overhead\')">';
+            // Card Frame
+            s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="12" fill="#0f172a" stroke="' + strokeCol + '" stroke-width="1.8" filter="url(#dropShadow)"/>';
+            // Card Top Banner
+            s += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (w - 2) + '" height="24" rx="11" fill="' + headerGrad + '"/>';
+            s += '<text x="' + (x + w / 2) + '" y="' + (y + 16) + '" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="800" font-family="Inter, sans-serif">' + title + '</text>';
+
+            // 3D Tank Graphic (Cylinder + Water Level + Roof Dome + Ladder)
+            // Tank shadow base
+            s += '<ellipse cx="' + (cylX + cylW / 2) + '" cy="' + (cylY + cylH) + '" rx="' + (cylW / 2 + 4) + '" ry="6" fill="#020617" opacity="0.7"/>';
+            // Tank outer shell
+            s += '<rect x="' + cylX + '" y="' + cylY + '" width="' + cylW + '" height="' + cylH + '" rx="6" fill="#1e293b" stroke="' + strokeCol + '" stroke-width="1.5"/>';
+            // Water fill inside tank (75% full)
+            var waterH = Math.round(cylH * 0.72);
+            var waterY = cylY + cylH - waterH;
+            s += '<rect x="' + (cylX + 2) + '" y="' + waterY + '" width="' + (cylW - 4) + '" height="' + (waterH - 2) + '" rx="4" fill="' + waterFill + '"/>';
+            // Water surface meniscus wave
+            s += '<ellipse cx="' + (cylX + cylW / 2) + '" cy="' + waterY + '" rx="' + (cylW / 2 - 2) + '" ry="4" fill="' + strokeCol + '" opacity="0.55"/>';
+            // Tank Top Dome & Manhole Cover
+            s += '<ellipse cx="' + (cylX + cylW / 2) + '" cy="' + cylY + '" rx="' + (cylW / 2) + '" ry="5" fill="#334155" stroke="' + strokeCol + '" stroke-width="1.5"/>';
+            s += '<rect x="' + (cylX + cylW / 2 - 8) + '" y="' + (cylY - 5) + '" width="16" height="4" rx="2" fill="' + strokeCol + '"/>';
+            // Tank Rib Lines & Level Gauge
+            s += '<line x1="' + cylX + '" y1="' + (cylY + 22) + '" x2="' + (cylX + cylW) + '" y2="' + (cylY + 22) + '" stroke="#475569" stroke-width="0.8" stroke-dasharray="2,2"/>';
+            s += '<line x1="' + cylX + '" y1="' + (cylY + 44) + '" x2="' + (cylX + cylW) + '" y2="' + (cylY + 44) + '" stroke="#475569" stroke-width="0.8" stroke-dasharray="2,2"/>';
+
+            // Capacity Text Written Directly on the Tank Body
+            var capStr = (tankMeta && tankMeta.cap) ? tankMeta.cap : 'Active';
+            s += '<rect x="' + (x + 6) + '" y="' + (cylY + 24) + '" width="' + (w - 12) + '" height="18" rx="4" fill="#020617" opacity="0.82" stroke="' + strokeCol + '" stroke-width="0.8"/>';
+            s += '<text x="' + (x + w / 2) + '" y="' + (cylY + 36) + '" text-anchor="middle" fill="#ffffff" font-size="8.5" font-weight="800" font-family="monospace">' + capStr + '</text>';
+
+            // Subtitle / Type Badge at bottom of card
+            s += '<rect x="' + (x + 8) + '" y="' + (y + h - 34) + '" width="' + (w - 16) + '" height="15" rx="4" fill="' + badgeBg + '"/>';
+            s += '<text x="' + (x + w / 2) + '" y="' + (y + h - 24) + '" text-anchor="middle" fill="#ffffff" font-size="8" font-weight="700" font-family="Inter, sans-serif">' + (subtitle || typeLabel) + '</text>';
+
+            // Last Cleaned Footer
+            var cleanTxt = (tankMeta && tankMeta.lastCleaned) ? ('Cleaned: ' + tankMeta.lastCleaned) : 'Click for History';
+            s += '<text x="' + (x + w / 2) + '" y="' + (y + h - 7) + '" text-anchor="middle" fill="#94a3b8" font-size="7.5" font-weight="600" font-family="Inter, sans-serif">' + cleanTxt + '</text>';
+
+            // Pipe Inlet Nozzle at bottom center of card
+            s += '<circle cx="' + (x + w / 2) + '" cy="' + (y + h) + '" r="4.5" fill="' + strokeCol + '" stroke="#0f172a" stroke-width="1.5"/>';
+            s += '</g>';
+            return s;
+        }
+
+        function buildSvgUndergroundTankNode(x, y, w, h, title, supplySummary, waterType, tankMeta, defaultLoc) {
+            var isDom = waterType === 'Domestic';
+            var strokeCol = isDom ? '#38bdf8' : '#fbbf24';
+            var waterFill = isDom ? 'url(#domWaterGrad)' : 'url(#flushWaterGrad)';
+            var badgeBg = isDom ? '#0369a1' : '#b45309';
+            var safeId = (tankMeta && tankMeta.id) ? tankMeta.id : '';
+            var safeLoc = (defaultLoc || title).replace(/'/g, "\\'");
+
+            var s = '<g class="cursor-pointer transition opacity-95 hover:opacity-100" onclick="handleMapTankNodeClick(\'' + safeId + '\', \'' + safeLoc + '\', \'' + waterType + '\', \'Underground\')">';
+            // Underground Concrete Vault Outer Structure
+            s += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="14" fill="#090d16" stroke="#475569" stroke-width="3" filter="url(#dropShadow)"/>';
+            // Inner Chamber Liner
+            s += '<rect x="' + (x + 6) + '" y="' + (y + 8) + '" width="' + (w - 12) + '" height="' + (h - 14) + '" rx="10" fill="#0f172a" stroke="' + strokeCol + '" stroke-width="2"/>';
+
+            // Underground Water Reservoir Fill (bottom 68% of chamber)
+            var resH = Math.round((h - 18) * 0.68);
+            var resY = y + h - 8 - resH;
+            s += '<rect x="' + (x + 8) + '" y="' + resY + '" width="' + (w - 16) + '" height="' + resH + '" rx="8" fill="' + waterFill + '"/>';
+            // Water surface line
+            s += '<line x1="' + (x + 8) + '" y1="' + resY + '" x2="' + (x + w - 8) + '" y2="' + resY + '" stroke="' + strokeCol + '" stroke-width="2" stroke-opacity="0.8"/>';
+
+            // Submersible Pump Icon & Riser Pipe Graphic inside UG Tank
+            var pumpX = x + w / 2;
+            s += '<line x1="' + pumpX + '" y1="' + y + '" x2="' + pumpX + '" y2="' + (y + h - 22) + '" stroke="' + strokeCol + '" stroke-width="4" stroke-dasharray="3,2"/>';
+            s += '<rect x="' + (pumpX - 18) + '" y="' + (y + h - 28) + '" width="36" height="14" rx="4" fill="#334155" stroke="' + strokeCol + '" stroke-width="1.5"/>';
+
+            // Top Outlet Flange / Valve on Roof of UG Tank
+            s += '<rect x="' + (pumpX - 14) + '" y="' + (y - 6) + '" width="28" height="8" rx="3" fill="' + strokeCol + '"/>';
+            s += '<circle cx="' + pumpX + '" cy="' + y + '" r="6" fill="#ffffff" stroke="' + strokeCol + '" stroke-width="2.5"/>';
+
+            // UG Tank Title Header Pill
+            s += '<rect x="' + (x + 14) + '" y="' + (y + 14) + '" width="' + (w - 28) + '" height="24" rx="6" fill="#020617" opacity="0.9" stroke="' + strokeCol + '" stroke-width="1"/>';
+            s += '<text x="' + (x + w / 2) + '" y="' + (y + 30) + '" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="800" font-family="Inter, sans-serif">' + title + '</text>';
+
+            // Capacity Badge Written on Tank Image
+            var capText = (tankMeta && tankMeta.cap) ? ('CAPACITY: ' + tankMeta.cap) : 'CAPACITY: REGISTERED';
+            s += '<rect x="' + (x + 22) + '" y="' + (y + 44) + '" width="' + (w - 44) + '" height="22" rx="6" fill="' + badgeBg + '" stroke="#ffffff" stroke-width="0.8"/>';
+            s += '<text x="' + (x + w / 2) + '" y="' + (y + 59) + '" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="800" font-family="monospace">' + capText + '</text>';
+
+            // Supply Destination Tag
+            s += '<rect x="' + (x + 12) + '" y="' + (y + 72) + '" width="' + (w - 24) + '" height="20" rx="5" fill="#020617" opacity="0.82"/>';
+            s += '<text x="' + (x + w / 2) + '" y="' + (y + 85) + '" text-anchor="middle" fill="#e2e8f0" font-size="8.5" font-weight="700" font-family="Inter, sans-serif">Supplies: ' + supplySummary + '</text>';
+
+            // Last Cleaned Date
+            var clText = (tankMeta && tankMeta.lastCleaned) ? ('Last Cleaned: ' + tankMeta.lastCleaned + ' (Click for History)') : 'Click to View / Log Cleaning';
+            s += '<text x="' + (x + w / 2) + '" y="' + (y + h - 13) + '" text-anchor="middle" fill="#bae6fd" font-size="8" font-weight="700" font-family="Inter, sans-serif">' + clText + '</text>';
+
+            s += '</g>';
+            return s;
+        }
+
+        function renderWaterTanksDistributionMap() {
+            var host = document.getElementById('waterTanksMapCanvasHost');
+            if (!host) return;
+
+            // Resolve live capacities & cleaning dates from dbWaterTanks where available
+            // Underground Tanks (4)
+            var ugPumpDom = findMatchingTankFromDb(['pump room', 'main ug', 'aljamea', 'phase 1'], 'Underground', 'Domestic', 'Main Domestic UG');
+            var ugPumpFlush = findMatchingTankFromDb(['pump room', 'stp', 'flushing ug', 'main'], 'Underground', 'Flushing', 'Main Flushing UG');
+            var ugHostelDom = findMatchingTankFromDb(['hostel', 'boys hostel'], 'Underground', 'Domestic', 'Hostel Domestic UG');
+            var ugNajmiDom = findMatchingTankFromDb(['najmi'], 'Underground', 'Domestic', 'Najmi UG Tank');
+
+            // Overhead Tanks - Area 1: Aljamea Premises (5 Domestic + 2 Flushing)
+            var ohAdminDom = findMatchingTankFromDb(['admin terrace', 'admin phase', 'admin'], 'Overhead', 'Domestic', 'Domestic OH');
+            var ohNorthDom = findMatchingTankFromDb(['northside', 'north side', 'north'], 'Overhead', 'Domestic', 'Domestic OH');
+            var ohQasrDom = findMatchingTankFromDb(['qasr'], 'Overhead', 'Domestic', 'Domestic OH');
+            var ohKhaimatDom = findMatchingTankFromDb(['khaimat', 'religious', 'masjid'], 'Overhead', 'Domestic', 'Domestic OH');
+            var ohMawaidDom = findMatchingTankFromDb(['mawaid', 'dining', 'kitchen'], 'Overhead', 'Domestic', 'Domestic OH');
+
+            var ohAdminFlush = findMatchingTankFromDb(['admin terrace', 'admin phase', 'admin'], 'Overhead', 'Flushing', 'Flushing OH');
+            var ohQasrFlush = findMatchingTankFromDb(['qasr'], 'Overhead', 'Flushing', 'Flushing OH');
+
+            // Overhead Tanks - Area 2: Hostel Block (1 Domestic + 1 Flushing)
+            var ohHostelDom = findMatchingTankFromDb(['hostel'], 'Overhead', 'Domestic', 'Hostel Dom OH');
+            var ohHostelFlush = findMatchingTankFromDb(['hostel'], 'Overhead', 'Flushing', 'Hostel Flush OH');
+
+            // Overhead Tanks - Area 3: Najmi Building (4 Tanks of 10,000 Ltr each)
+            var ohNajmi = findMatchingTankFromDb(['najmi'], 'Overhead', 'Domestic', '10,000 Ltr');
+
+            var svg = '<svg viewBox="0 0 1380 860" class="w-full h-auto select-none" xmlns="http://www.w3.org/2000/svg">';
+
+            // Definitions: Gradients, Glows & Animated Pipe Flow CSS
+            svg += '<defs>';
+            svg += '<linearGradient id="domHeaderGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#0284c7"/><stop offset="100%" stop-color="#0369a1"/></linearGradient>';
+            svg += '<linearGradient id="flushHeaderGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d97706"/><stop offset="100%" stop-color="#b45309"/></linearGradient>';
+            svg += '<linearGradient id="domWaterGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#38bdf8" stop-opacity="0.85"/><stop offset="100%" stop-color="#0369a1" stop-opacity="0.95"/></linearGradient>';
+            svg += '<linearGradient id="flushWaterGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#fbbf24" stop-opacity="0.85"/><stop offset="100%" stop-color="#b45309" stop-opacity="0.95"/></linearGradient>';
+            svg += '<filter id="dropShadow" x="-5%" y="-5%" width="110%" height="110%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.5"/></filter>';
+            svg += '<style>';
+            svg += '.pipe-flow-anim { stroke-dasharray: 10 8; animation: waterFlowDash 1.1s linear infinite; }';
+            svg += '@keyframes waterFlowDash { to { stroke-dashoffset: -18; } }';
+            svg += '</style>';
+            svg += '</defs>';
+
+            // Background Grid Canvas
+            svg += '<rect x="0" y="0" width="1380" height="860" rx="16" fill="#020617"/>';
+
+            // ================= TOP ZONE: 3 MAIN CAMPUS AREAS (OVERHEAD TANKS) =================
+            // Area 1 Box: ALJAMEA PREMISES (x: 16..796, y: 16..370)
+            svg += '<rect x="16" y="16" width="780" height="360" rx="16" fill="#0f172a" fill-opacity="0.65" stroke="#1e293b" stroke-width="2"/>';
+            svg += '<rect x="16" y="16" width="780" height="34" rx="14" fill="#1e293b"/>';
+            svg += '<text x="406" y="38" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.8">1. ALJAMEA PREMISES — OVERHEAD TANKS (DOMESTIC &amp; FLUSHING)</text>';
+
+            // Area 2 Box: HOSTEL BLOCK (x: 812..1062, y: 16..370)
+            svg += '<rect x="812" y="16" width="250" height="360" rx="16" fill="#0f172a" fill-opacity="0.65" stroke="#1e293b" stroke-width="2"/>';
+            svg += '<rect x="812" y="16" width="250" height="34" rx="14" fill="#1e293b"/>';
+            svg += '<text x="937" y="38" text-anchor="middle" fill="#a5b4fc" font-size="13" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.8">2. HOSTEL BLOCK — OVERHEAD</text>';
+
+            // Area 3 Box: NAJMI BUILDING (x: 1078..1364, y: 16..370)
+            svg += '<rect x="1078" y="16" width="286" height="360" rx="16" fill="#0f172a" fill-opacity="0.65" stroke="#1e293b" stroke-width="2"/>';
+            svg += '<rect x="1078" y="16" width="286" height="34" rx="14" fill="#1e293b"/>';
+            svg += '<text x="1221" y="38" text-anchor="middle" fill="#5eead4" font-size="13" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.8">3. NAJMI BUILDING — OVERHEAD</text>';
+
+            // ================= GROUND LEVEL DIVIDER & UNDERGROUND RESERVOIR ZONE =================
+            svg += '<line x1="16" y1="595" x2="1364" y2="595" stroke="#334155" stroke-width="2" stroke-dasharray="8,6"/>';
+            svg += '<rect x="520" y="583" width="340" height="24" rx="12" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>';
+            svg += '<text x="690" y="599" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="800" font-family="Inter, sans-serif" letter-spacing="1">GROUND LEVEL / PUMPING DISTRIBUTION MANIFOLD</text>';
+
+            svg += '<rect x="16" y="618" width="1348" height="226" rx="18" fill="#090d16" stroke="#334155" stroke-width="2"/>';
+            svg += '<text x="40" y="642" fill="#cbd5e1" font-size="12" font-weight="800" font-family="Inter, sans-serif" letter-spacing="0.8">UNDERGROUND WATER TANKS (SOURCE RESERVOIRS &amp; PUMPING STATIONS)</text>';
+
+            // ================= PIPING NETWORK LINES (DRAWN BEHIND TANKS FOR CLEAN TERMINATION) =================
+            // 1) PUMP ROOM UG DOMESTIC (x=175, y=660) -> Supplies Aljamea Premises Overhead Domestic (5 tanks: centers x=80, 186, 292, 398, 504; bottom y=214)
+            var ug1X = 175, ug1Y = 660;
+            var domBusY = 445;
+            // Main Riser from Pump Room UG Domestic up to Domestic Manifold Bus
+            svg += '<path d="M ' + ug1X + ' ' + ug1Y + ' L ' + ug1X + ' ' + domBusY + '" stroke="#0284c7" stroke-width="7" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M ' + ug1X + ' ' + ug1Y + ' L ' + ug1X + ' ' + domBusY + '" stroke="#bae6fd" stroke-width="3" fill="none" class="pipe-flow-anim"/>';
+            // Horizontal Manifold Bus spanning x=80 to x=504 at y=445
+            svg += '<path d="M 80 ' + domBusY + ' L 504 ' + domBusY + '" stroke="#0284c7" stroke-width="6" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M 80 ' + domBusY + ' L 504 ' + domBusY + '" stroke="#bae6fd" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
+            // 5 Vertical Feeders up to Admin Terrace (80), Northside Terrace (186), Qasr (292), Khaimat (398), Mawaid (504)
+            [80, 186, 292, 398, 504].forEach(function(tx) {
+                svg += '<path d="M ' + tx + ' ' + domBusY + ' L ' + tx + ' 214" stroke="#0284c7" stroke-width="4.5" fill="none"/>';
+                svg += '<path d="M ' + tx + ' ' + domBusY + ' L ' + tx + ' 214" stroke="#bae6fd" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+                svg += '<circle cx="' + tx + '" cy="' + domBusY + '" r="5" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5"/>';
+            });
+            // Pipe Label Pill on Domestic Bus
+            svg += '<rect x="195" y="433" width="250" height="20" rx="6" fill="#0c4a6e" stroke="#38bdf8" stroke-width="1"/>';
+            svg += '<text x="320" y="446" text-anchor="middle" fill="#e0f2fe" font-size="8.5" font-weight="800" font-family="Inter, sans-serif">PUMP ROOM DOMESTIC MAIN LINE &rarr; 5 ALJAMEA OH TANKS</text>';
+
+            // 3) PUMP ROOM UG FLUSHING (x=515, y=660) -> Supplies Aljamea OH Flushing (Admin Terrace x=626, Qasr x=734) AND Hostel OH Flushing (x=996)
+            var ug2X = 515, ug2Y = 660;
+            var flushBusY = 505;
+            // Main Riser from Pump Room UG Flushing up to Flushing Manifold Bus (y=505)
+            svg += '<path d="M ' + ug2X + ' ' + ug2Y + ' L ' + ug2X + ' ' + flushBusY + '" stroke="#d97706" stroke-width="7" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M ' + ug2X + ' ' + ug2Y + ' L ' + ug2X + ' ' + flushBusY + '" stroke="#fef3c7" stroke-width="3" fill="none" class="pipe-flow-anim"/>';
+            // Horizontal Flushing Manifold Bus from x=515 across to x=996 (Hostel Flushing OH)
+            svg += '<path d="M ' + ug2X + ' ' + flushBusY + ' L 996 ' + flushBusY + '" stroke="#d97706" stroke-width="6" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M ' + ug2X + ' ' + flushBusY + ' L 996 ' + flushBusY + '" stroke="#fef3c7" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
+            // Vertical Feeders up to Admin Terrace Flushing (626), Qasr Flushing (734), and Hostel Block Flushing (996)
+            [626, 734, 996].forEach(function(fx) {
+                svg += '<path d="M ' + fx + ' ' + flushBusY + ' L ' + fx + ' 214" stroke="#d97706" stroke-width="4.5" fill="none"/>';
+                svg += '<path d="M ' + fx + ' ' + flushBusY + ' L ' + fx + ' 214" stroke="#fef3c7" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+                svg += '<circle cx="' + fx + '" cy="' + flushBusY + '" r="5" fill="#fbbf24" stroke="#0f172a" stroke-width="1.5"/>';
+            });
+            // Pipe Label Pill on Flushing Bus
+            svg += '<rect x="550" y="493" width="310" height="20" rx="6" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>';
+            svg += '<text x="705" y="506" text-anchor="middle" fill="#fef3c7" font-size="8.5" font-weight="800" font-family="Inter, sans-serif">PUMP ROOM FLUSHING LINE &rarr; ADMIN, QASR &amp; HOSTEL FLUSHING OH</text>';
+
+            // 2) HOSTEL BLOCK UG DOMESTIC (x=876, y=660) -> Supplies Hostel Block Overhead Domestic (x=876, bottom y=214)
+            var ug3X = 876, ug3Y = 660;
+            svg += '<path d="M ' + ug3X + ' ' + ug3Y + ' L ' + ug3X + ' 214" stroke="#0284c7" stroke-width="6.5" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M ' + ug3X + ' ' + ug3Y + ' L ' + ug3X + ' 214" stroke="#bae6fd" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
+            svg += '<rect x="795" y="410" width="162" height="20" rx="6" fill="#0c4a6e" stroke="#38bdf8" stroke-width="1"/>';
+            svg += '<text x="876" y="423" text-anchor="middle" fill="#e0f2fe" font-size="8.5" font-weight="800" font-family="Inter, sans-serif">HOSTEL DOMESTIC RISER</text>';
+
+            // 4) NAJMI UG (x=1221, y=660) -> Supplies 4 Najmi Overhead Tanks of 10,000 Ltr each
+            // Top Row Najmi Tanks (Tank 1 x=1154, Tank 2 x=1288, bottom y=198) & Bottom Row Najmi Tanks (Tank 3 x=1154, Tank 4 x=1288, bottom y=354)
+            var ug4X = 1221, ug4Y = 660;
+            var najmiBus1Y = 445;
+            var najmiBus2Y = 212;
+            // Main Riser from Najmi UG up to y=212
+            svg += '<path d="M ' + ug4X + ' ' + ug4Y + ' L ' + ug4X + ' ' + najmiBus2Y + '" stroke="#0d9488" stroke-width="6.5" fill="none" stroke-linecap="round"/>';
+            svg += '<path d="M ' + ug4X + ' ' + ug4Y + ' L ' + ug4X + ' ' + najmiBus2Y + '" stroke="#99f6e4" stroke-width="2.5" fill="none" class="pipe-flow-anim"/>';
+            // Branch to Tank 3 & Tank 4 at y=445 -> up to 354
+            svg += '<path d="M 1154 ' + najmiBus1Y + ' L 1288 ' + najmiBus1Y + '" stroke="#0d9488" stroke-width="5" fill="none"/>';
+            svg += '<path d="M 1154 ' + najmiBus1Y + ' L 1154 354" stroke="#0d9488" stroke-width="4.5" fill="none"/>';
+            svg += '<path d="M 1288 ' + najmiBus1Y + ' L 1288 354" stroke="#0d9488" stroke-width="4.5" fill="none"/>';
+            svg += '<path d="M 1154 ' + najmiBus1Y + ' L 1154 354" stroke="#99f6e4" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+            svg += '<path d="M 1288 ' + najmiBus1Y + ' L 1288 354" stroke="#99f6e4" stroke-width="2" fill="none" class="pipe-flow-anim"/>';
+            // Branch to Tank 1 & Tank 2 at y=212 -> up to 198
+            svg += '<path d="M 1154 ' + najmiBus2Y + ' L 1288 ' + najmiBus2Y + '" stroke="#0d9488" stroke-width="5" fill="none"/>';
+            svg += '<path d="M 1154 ' + najmiBus2Y + ' L 1154 198" stroke="#0d9488" stroke-width="4.5" fill="none"/>';
+            svg += '<path d="M 1288 ' + najmiBus2Y + ' L 1288 198" stroke="#0d9488" stroke-width="4.5" fill="none"/>';
+            svg += '<rect x="1105" y="458" width="232" height="20" rx="6" fill="#115e59" stroke="#2dd4bf" stroke-width="1"/>';
+            svg += '<text x="1221" y="471" text-anchor="middle" fill="#ccfbf1" font-size="8.5" font-weight="800" font-family="Inter, sans-serif">NAJMI MAIN RISER &rarr; 4 x 10,000 LTR OH TANKS</text>';
+
+            // ================= OVERHEAD TANK NODES (TOP) =================
+            // Area 1: Aljamea Premises - 5 Domestic Overhead Tanks
+            svg += buildSvgOverheadTankNode(32, 64, 96, 150, 'Admin Terrace', 'DOMESTIC OH', 'Domestic', ohAdminDom, 'Admin Terrace');
+            svg += buildSvgOverheadTankNode(138, 64, 96, 150, 'Northside Terr.', 'DOMESTIC OH', 'Domestic', ohNorthDom, 'Northside Terrace');
+            svg += buildSvgOverheadTankNode(244, 64, 96, 150, 'Qasr', 'DOMESTIC OH', 'Domestic', ohQasrDom, 'Qasr');
+            svg += buildSvgOverheadTankNode(350, 64, 96, 150, 'Khaimat', 'DOMESTIC OH', 'Domestic', ohKhaimatDom, 'Khaimat');
+            svg += buildSvgOverheadTankNode(456, 64, 96, 150, 'Mawaid', 'DOMESTIC OH', 'Domestic', ohMawaidDom, 'Mawaid');
+
+            // Area 1: Aljamea Premises - 2 Flushing Overhead Tanks
+            svg += buildSvgOverheadTankNode(578, 64, 96, 150, 'Admin Terrace', 'FLUSHING OH', 'Flushing', ohAdminFlush, 'Admin Terrace');
+            svg += buildSvgOverheadTankNode(686, 64, 96, 150, 'Qasr', 'FLUSHING OH', 'Flushing', ohQasrFlush, 'Qasr');
+
+            // Area 1 Summary Banner inside box
+            svg += '<rect x="32" y="236" width="520" height="44" rx="8" fill="#0c4a6e" fill-opacity="0.45" stroke="#0284c7" stroke-width="1"/>';
+            svg += '<text x="292" y="254" text-anchor="middle" fill="#bae6fd" font-size="9.5" font-weight="700" font-family="Inter, sans-serif">Aljamea Domestic Overhead Network (5 Tanks)</text>';
+            svg += '<text x="292" y="270" text-anchor="middle" fill="#7dd3fc" font-size="8.5" font-family="Inter, sans-serif">Fed by: Pump Room UG Domestic Tank</text>';
+
+            svg += '<rect x="578" y="236" width="204" height="44" rx="8" fill="#78350f" fill-opacity="0.45" stroke="#d97706" stroke-width="1"/>';
+            svg += '<text x="680" y="254" text-anchor="middle" fill="#fde68a" font-size="9.5" font-weight="700" font-family="Inter, sans-serif">Aljamea Flushing OH (2 Tanks)</text>';
+            svg += '<text x="680" y="270" text-anchor="middle" fill="#fcd34d" font-size="8.5" font-family="Inter, sans-serif">Fed by: Pump Room UG Flushing</text>';
+
+            // Area 2: Hostel Block - 1 Domestic OH + 1 Flushing OH
+            svg += buildSvgOverheadTankNode(826, 64, 100, 150, 'Hostel Block', 'DOMESTIC OH', 'Domestic', ohHostelDom, 'Boys Hostel');
+            svg += buildSvgOverheadTankNode(946, 64, 100, 150, 'Hostel Block', 'FLUSHING OH', 'Flushing', ohHostelFlush, 'Boys Hostel');
+
+            svg += '<rect x="826" y="236" width="220" height="44" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>';
+            svg += '<text x="936" y="254" text-anchor="middle" fill="#e2e8f0" font-size="9" font-weight="700" font-family="Inter, sans-serif">Hostel Overhead (Dom + Flush)</text>';
+            svg += '<text x="936" y="270" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="Inter, sans-serif">Dom &larr; Hostel UG | Flush &larr; Pump Room UG</text>';
+
+            // Area 3: Najmi Building - 4 Overhead Tanks of 10,000 Ltr each (2x2 Grid)
+            var najmiMetaFixed = { id: ohNajmi.id, cap: '10,000 Ltr', lastCleaned: ohNajmi.lastCleaned };
+            svg += buildSvgOverheadTankNode(1098, 58, 112, 140, 'Najmi OH Tank #1', '10,000 LTR', 'Domestic', najmiMetaFixed, 'Najmi Bldg');
+            svg += buildSvgOverheadTankNode(1232, 58, 112, 140, 'Najmi OH Tank #2', '10,000 LTR', 'Domestic', najmiMetaFixed, 'Najmi Bldg');
+            svg += buildSvgOverheadTankNode(1098, 214, 112, 140, 'Najmi OH Tank #3', '10,000 LTR', 'Domestic', najmiMetaFixed, 'Najmi Bldg');
+            svg += buildSvgOverheadTankNode(1232, 214, 112, 140, 'Najmi OH Tank #4', '10,000 LTR', 'Domestic', najmiMetaFixed, 'Najmi Bldg');
+
+            // ================= UNDERGROUND TANK NODES (BOTTOM) =================
+            // UG Tank 1: Pump Room UG Domestic
+            svg += buildSvgUndergroundTankNode(
+                36, 660, 290, 165,
+                '1. Pump Room UG (Domestic)',
+                'Aljamea OH (Admin, North, Qasr, Khaimat, Mawaid)',
+                'Domestic',
+                ugPumpDom,
+                'Pump Room Domestic UG'
+            );
+
+            // UG Tank 2: Pump Room UG Flushing
+            svg += buildSvgUndergroundTankNode(
+                366, 660, 300, 165,
+                '2. Pump Room UG (Flushing)',
+                'Aljamea Flush (Admin & Qasr) + Hostel Flush OH',
+                'Flushing',
+                ugPumpFlush,
+                'Pump Room Flushing UG'
+            );
+
+            // UG Tank 3: Hostel Block UG Domestic
+            svg += buildSvgUndergroundTankNode(
+                716, 660, 310, 165,
+                '3. Hostel Block UG (Domestic)',
+                'Hostel Block Overhead Domestic Tank',
+                'Domestic',
+                ugHostelDom,
+                'Boys Hostel'
+            );
+
+            // UG Tank 4: Najmi Building UG
+            var ugNajmiDisplayMeta = {
+                id: ugNajmiDom.id,
+                cap: (ugNajmiDom.cap && ugNajmiDom.cap !== 'Najmi UG Tank') ? ugNajmiDom.cap : 'Feeds 4x10,000L OH',
+                lastCleaned: ugNajmiDom.lastCleaned
+            };
+            svg += buildSvgUndergroundTankNode(
+                1066, 660, 282, 165,
+                '4. Najmi Building UG Tank',
+                'Najmi Overhead (4 Tanks x 10,000 Ltr each)',
+                'Domestic',
+                ugNajmiDisplayMeta,
+                'Najmi Bldg'
+            );
+
+            svg += '</svg>';
+            host.innerHTML = svg;
+        }
+
         function renderWaterTanksModule(container, actions) {
             var isAdmin = currentUser && currentUser.role === 'Administrator';
             var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
@@ -8706,8 +9236,8 @@
 
             var html = '<div class="space-y-6">';
 
-            // Top KPI Overview Cards (Tanks & Sumps)
-            html += '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">';
+            // Top KPI Overview Cards (Tanks & Sumps + Interactive Water Tanks Map)
+            html += '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">';
             
             // Card 1: Registered Tanks
             html += '<div class="bg-gradient-to-br from-sky-700 to-sky-900 text-white p-3.5 rounded-2xl shadow-sm border border-sky-600 flex items-center justify-between">';
@@ -8730,9 +9260,14 @@
             html += '<div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm sm:text-base"><i class="fa-solid fa-layer-group"></i></div></div>';
 
             // Card 5: Cleaning Reports
-            html += '<div class="col-span-2 sm:col-span-1 bg-white p-3.5 rounded-2xl shadow-sm border border-emerald-200 flex items-center justify-between">';
+            html += '<div class="bg-white p-3.5 rounded-2xl shadow-sm border border-emerald-200 flex items-center justify-between">';
             html += '<div><span class="text-[10px] sm:text-[11px] font-bold uppercase text-slate-400 block">Cleaning Reports</span><div class="text-xl sm:text-2xl font-extrabold text-emerald-700 font-mono mt-0.5">' + dbTankCleaningLogs.length + '</div><span class="text-[10px] text-emerald-600">With photo logs</span></div>';
             html += '<div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base"><i class="fa-solid fa-clipboard-check"></i></div></div>';
+
+            // Card 6: Water Tanks Map (Clickable Popup Card)
+            html += '<div onclick="openWaterTanksMapModal()" class="bg-gradient-to-br from-teal-700 to-emerald-900 hover:from-teal-600 hover:to-emerald-800 text-white p-3.5 rounded-2xl shadow-md border border-teal-500 flex items-center justify-between cursor-pointer transition transform hover:-translate-y-0.5 group" title="Click to open Campus Water Tanks Distribution Map">';
+            html += '<div><span class="text-[10px] sm:text-[11px] font-bold uppercase text-teal-200 block">Water Tanks Map</span><div class="text-sm sm:text-base font-extrabold text-white mt-0.5 flex items-center space-x-1"><span>View Network</span><i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-teal-300 group-hover:translate-x-0.5 transition"></i></div><span class="text-[10px] text-teal-200">UG &rarr; OH Piping</span></div>';
+            html += '<div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-white/15 group-hover:bg-white/25 flex items-center justify-center text-base sm:text-lg transition"><i class="fa-solid fa-diagram-project"></i></div></div>';
             html += '</div>';
 
             // Filter Bar with ID for Search Input
@@ -15115,8 +15650,22 @@
                             if (remoteScope && typeof remoteScope === "object") {
                                 const cleanedScope = {};
                                 Object.keys(remoteScope).forEach((k) => {
-                                    if (k !== "updatedAt" && k !== "updatedBy" && typeof remoteScope[k] === "object") {
-                                        cleanedScope[k] = remoteScope[k];
+                                    if (k !== "updatedAt" && k !== "updatedBy" && remoteScope[k] && typeof remoteScope[k] === "object") {
+                                        const areaObj = remoteScope[k];
+                                        const allSubKeys = Object.keys(areaObj).filter((sk) => sk !== "__subAreaOrder" && Array.isArray(areaObj[sk]));
+                                        const savedOrder = Array.isArray(areaObj.__subAreaOrder) ? areaObj.__subAreaOrder : [];
+                                        const orderedSubKeys = [];
+                                        savedOrder.forEach((sk) => {
+                                            if (allSubKeys.includes(sk) && !orderedSubKeys.includes(sk)) orderedSubKeys.push(sk);
+                                        });
+                                        allSubKeys.forEach((sk) => {
+                                            if (!orderedSubKeys.includes(sk)) orderedSubKeys.push(sk);
+                                        });
+                                        const rebuiltArea = { __subAreaOrder: orderedSubKeys };
+                                        orderedSubKeys.forEach((sk) => {
+                                            rebuiltArea[sk] = areaObj[sk];
+                                        });
+                                        cleanedScope[k] = rebuiltArea;
                                     }
                                 });
                                 window.dbScopeOfWork = cleanedScope;
@@ -15883,7 +16432,7 @@
                     await window.batchSaveCollectionToFirestore('daily_work_reports', window.dbDailyWorkReports);
                 }
                 if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0) {
-                    await setDoc(doc(db, "settings", "scope_of_work"), { scope: window.dbScopeOfWork, updatedAt: new Date().toISOString() }, { merge: true });
+                    await setDoc(doc(db, "settings", "scope_of_work"), { scope: window.dbScopeOfWork, updatedAt: new Date().toISOString() });
                 }
 
                 // 5. Pest Control, Waste, Crates, Water Tanks, Procurement, Machinery
