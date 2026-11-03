@@ -3880,10 +3880,32 @@
             }
         }
 
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        var modalStackCounter = 100;
+        var activeModalStack = [];
+
+        function openModal(id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            activeModalStack = activeModalStack.filter(function(mId) { return mId !== id; });
+            activeModalStack.push(id);
+            modalStackCounter += 10;
+            el.style.zIndex = String(modalStackCounter);
+            el.classList.remove('hidden');
+            var toastContainer = document.getElementById('appToastContainer');
+            if (toastContainer) {
+                toastContainer.style.zIndex = String(modalStackCounter + 100);
+            }
+        }
         function closeModal(id) {
             if (id === 'authModal' && !currentUser) return;
-            document.getElementById(id).classList.add('hidden');
+            var el = document.getElementById(id);
+            if (el) {
+                el.classList.add('hidden');
+            }
+            activeModalStack = activeModalStack.filter(function(mId) { return mId !== id; });
+            if (activeModalStack.length === 0) {
+                modalStackCounter = 100;
+            }
             if (id === 'openingStockModal') {
                 saveStateToLocalBackup();
                 if (activeModule === 'inventory') {
@@ -4775,6 +4797,10 @@
                 }
                 showAppNotification("Archive record successfully updated.", "success");
                 closeModal('editArchiveModal');
+                var arcModal = document.getElementById('invArchiveModal');
+                if (arcModal && !arcModal.classList.contains('hidden')) {
+                    renderInvArchiveModalTable();
+                }
                 switchModule('inventory');
             }
         }
@@ -5180,7 +5206,6 @@
 
             document.getElementById('executiveDetailContent').innerHTML = content;
             document.getElementById('editExecProfileBtn').onclick = function() {
-                closeModal('executiveDetailModal');
                 openHrStaffModalForExec(execRoleKey);
             };
 
@@ -5351,6 +5376,10 @@
                     }
                 }
                 closeModal('hrStaffModal');
+                var execDetModal = document.getElementById('executiveDetailModal');
+                if (execDetModal && !execDetModal.classList.contains('hidden')) {
+                    openExecutiveDetailModal(key);
+                }
                 switchModule('hr');
                 showAppNotification('Executive profile updated and saved!', 'success');
                 return;
@@ -10367,7 +10396,6 @@
 
             document.getElementById('sumpHistoryModalBody').innerHTML = renderSumpChronologicalHistoryHtml(sump, logs);
             document.getElementById('sumpHistoryAddReportBtn').onclick = function() {
-                closeModal('sumpHistoryModal');
                 openSumpCleaningReportModal(sump.id);
             };
 
@@ -11241,7 +11269,7 @@
                                             '<th id="procThSelect" class="p-3 w-16 text-center">Select</th>' +
                                             '<th class="p-3">Item Name</th>' +
                                             '<th id="procThMainStoreQty" class="p-3 text-center bg-blue-50 text-blue-900">Main Store Qty</th>' +
-                                            '<th class="p-3 w-40">Quantity</th>' +
+                                            '<th class="p-3 w-40">Qty Required</th>' +
                                             '<th id="procThRate" class="p-3 w-28 text-right hidden">Rate (₹)</th>' +
                                             '<th id="procThTotal" class="p-3 w-32 text-right hidden">Total (₹)</th>' +
                                         '</tr>' +
@@ -12657,8 +12685,8 @@
             var serialNo = getAutoPoSerialNumber(poDate, req.id || req.requestId, poSequenceIndex);
             var poNumber = 'PO-' + poDate + '-' + serialNo;
 
-            // 1. Document Header (Centered, bold top banner)
-            doc.setFillColor(0, 77, 61);
+            // 1. Document Header (Centered, bold blue top banner)
+            doc.setFillColor(30, 64, 175);
             doc.rect(36, 28, pageWidth - 72, 68, 'F');
 
             doc.setFont('helvetica', 'bold');
@@ -12670,18 +12698,17 @@
             doc.text('Facilities Management - Housekeeping Division', pageWidth / 2, 66, { align: 'center' });
 
             doc.setFontSize(10.5);
-            doc.setTextColor(167, 243, 208);
+            doc.setTextColor(191, 219, 254);
             doc.text('Purchase Order – ' + poNumber, pageWidth / 2, 83, { align: 'center' });
 
-            // Metadata Sub-bar (PO Date & Requisition Ref)
+            // Metadata Sub-bar (PO Date & Requisition Ref - only MR reference number, no areas)
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(51, 65, 85);
             doc.text('PO Date: ' + poDate, 40, 114);
             if (!req.isDirectPo && (req.items || req.approvedDetails)) {
                 var mrNum = getAutoMrNumber(req);
-                var areaLabel = req.area || req.department || req.requestedRole || 'Housekeeping';
-                doc.text('Material Request Ref: ' + mrNum + ' (' + areaLabel + ')', pageWidth - 40, 114, { align: 'right' });
+                doc.text('Material Request Ref: ' + mrNum, pageWidth - 40, 114, { align: 'right' });
             }
 
             // 2. Top Info Section (Two-Column Layout)
@@ -12698,7 +12725,7 @@
 
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9.5);
-            doc.setTextColor(0, 77, 61);
+            doc.setTextColor(30, 64, 175);
             doc.text('VENDOR DETAILS (SUPPLIER):', leftColX + 10, boxTopY + 16);
 
             doc.setFont('helvetica', 'bold');
@@ -12727,7 +12754,7 @@
 
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9.5);
-            doc.setTextColor(0, 77, 61);
+            doc.setTextColor(30, 64, 175);
             doc.text('BILLING & DELIVERY ADDRESS:', rightColX + 10, boxTopY + 16);
 
             doc.setFont('helvetica', 'bold');
@@ -12747,7 +12774,7 @@
             doc.setTextColor(30, 41, 59);
             doc.text('GST - 27AAATD1489N1ZA', rightColX + 10, boxTopY + 90);
 
-            // 3. Itemized Table Columns: Sr. No. | Item Name | Quantity | Rate (₹) | Item Total (₹)
+            // 3. Itemized Table Columns: Sr. No. | Item Name | Quantity | Rate | Item Total
             var tableRows = [];
             var subtotal = 0;
             (vendorGroup.items || []).forEach(function(it, idx) {
@@ -12765,13 +12792,13 @@
             });
 
             doc.autoTable({
-                head: [['Sr. No.', 'Item Name', 'Quantity', 'Rate (₹)', 'Item Total (₹)']],
+                head: [['Sr. No.', 'Item Name', 'Quantity', 'Rate', 'Item Total']],
                 body: tableRows,
                 startY: boxTopY + boxHeight + 16,
                 margin: { left: 36, right: 36 },
                 theme: 'grid',
                 headStyles: {
-                    fillColor: [0, 77, 61],
+                    fillColor: [30, 64, 175],
                     textColor: [255, 255, 255],
                     fontStyle: 'bold',
                     fontSize: 9.5,
@@ -12821,7 +12848,7 @@
 
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(10.5);
-            doc.setTextColor(0, 77, 61);
+            doc.setTextColor(30, 64, 175);
             doc.text('Final Grand Total:', summaryBoxX + 12, finalY + 62);
             doc.text('Rs. ' + finalGrandTotal.toFixed(2), summaryBoxX + summaryBoxWidth - 12, finalY + 62, { align: 'right' });
 
@@ -13342,9 +13369,7 @@
                 if (footerVendorPipe) footerVendorPipe.classList.add('hidden');
                 if (footerVendorWrap) footerVendorWrap.classList.add('hidden');
                 if (grandTotalWrap) grandTotalWrap.classList.add('hidden');
-                if (!isAdmin && thMainStore) {
-                    thMainStore.classList.add('hidden');
-                } else if (thMainStore) {
+                if (thMainStore) {
                     thMainStore.classList.remove('hidden');
                 }
             }
@@ -13413,9 +13438,7 @@
                         html += '<span class="text-[10px] font-mono text-slate-400">' + item.code + ' • ' + (item.category || 'General') + ' (' + (item.unit || 'Nos') + ')</span>';
                         html += '</td>';
 
-                        if (isAdmin) {
-                            html += '<td class="p-3 text-center bg-blue-50/30 font-mono font-bold text-blue-800">' + mainStoreQty + ' <span class="text-[10px] font-normal text-slate-500">' + (item.unit || '') + '</span></td>';
-                        }
+                        html += '<td class="p-3 text-center bg-blue-50/30 font-mono font-bold text-blue-800">' + mainStoreQty + ' <span class="text-[10px] font-normal text-slate-500">' + (item.unit || '') + '</span></td>';
 
                         html += '<td class="p-3">';
                         html += '<input type="number" step="any" min="0" id="procQtyInput_' + item.id + '" ' +
@@ -14319,9 +14342,12 @@
             document.getElementById('breakdownDate').value = brk.date || '';
             document.getElementById('breakdownIssue').value = brk.issue;
             document.getElementById('breakdownPhotoData').value = brk.photo || '';
+            applyMediaPreviewToTargetUI('breakdownPhotoData', brk.photo || '');
             document.getElementById('breakdownFormHeading').innerText = 'Edit Machine Breakdown Issue';
             document.getElementById('saveBreakdownSubmitBtn').innerText = 'Update Breakdown';
             document.getElementById('cancelBreakdownEditBtn').classList.remove('hidden');
+            var headingEl = document.getElementById('breakdownFormHeading');
+            if (headingEl) headingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         function handleSaveBreakdown(e) {
@@ -14393,7 +14419,11 @@
         function openAddRepairBox(breakdownId) {
             cancelRepairForm();
             document.getElementById('repairBreakdownId').value = breakdownId;
-            document.getElementById('addRepairBox').classList.remove('hidden');
+            var box = document.getElementById('addRepairBox');
+            if (box) {
+                box.classList.remove('hidden');
+                box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
         function editRepairLog(brkId, repId) {
@@ -14417,9 +14447,14 @@
             document.getElementById('repairRemarks').value = rep.remarks || '';
             document.getElementById('repairAfterPhotoData').value = rep.afterPhoto || '';
 
+            applyMediaPreviewToTargetUI('repairAfterPhotoData', rep.afterPhoto || '');
             document.getElementById('repairFormHeading').innerText = 'Edit Repair Activity Log';
             document.getElementById('saveRepairSubmitBtn').innerText = 'Update Repair';
-            document.getElementById('addRepairBox').classList.remove('hidden');
+            var box = document.getElementById('addRepairBox');
+            if (box) {
+                box.classList.remove('hidden');
+                box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
         function cancelRepairForm() {
