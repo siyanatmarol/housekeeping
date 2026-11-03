@@ -3880,6 +3880,48 @@
             }
         }
 
+        function formatIndianNumber(val, decimals) {
+            var num = parseFloat(val);
+            if (isNaN(num)) num = 0;
+            var isNeg = num < 0;
+            num = Math.abs(num);
+            var dec = (decimals !== undefined && decimals !== null) ? decimals : 2;
+            var fixedStr = dec > 0 ? num.toFixed(dec) : Math.round(num).toString();
+            var parts = fixedStr.split('.');
+            var intPart = parts[0];
+            var decPart = parts.length > 1 ? '.' + parts[1] : '';
+            if (intPart.length > 3) {
+                var lastThree = intPart.substring(intPart.length - 3);
+                var otherNumbers = intPart.substring(0, intPart.length - 3);
+                intPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+            }
+            return (isNeg ? '-' : '') + intPart + decPart;
+        }
+
+        function formatIndianCurrency(val, forceDecimals) {
+            var num = parseFloat(val);
+            if (isNaN(num)) num = 0;
+            if (forceDecimals !== undefined && forceDecimals !== null) {
+                return formatIndianNumber(num, forceDecimals);
+            }
+            var hasDecimals = Math.abs(num - Math.round(num)) > 0.001;
+            return formatIndianNumber(num, hasDecimals ? 2 : 0);
+        }
+
+        function formatTankCapacityIndian(tank, defaultCapNote) {
+            if (!tank) return defaultCapNote || '-';
+            if (tank.capacityValue !== undefined && tank.capacityValue !== '' && !isNaN(parseFloat(tank.capacityValue))) {
+                return formatIndianCurrency(tank.capacityValue) + ' ' + (tank.capacityUnit || 'Liters');
+            }
+            var capStr = tank.capacity || defaultCapNote || '';
+            if (!capStr) return '-';
+            return String(capStr).replace(/\b\d[\d,]*(?:\.\d+)?\b/g, function(m) {
+                var rawNum = parseFloat(m.replace(/,/g, ''));
+                if (isNaN(rawNum) || rawNum < 1000) return m;
+                return formatIndianCurrency(rawNum);
+            });
+        }
+
         var modalStackCounter = 100;
         var activeModalStack = [];
 
@@ -7909,13 +7951,13 @@
             html += '<div class="grid grid-cols-1 ' + (hideFinancials ? '' : 'sm:grid-cols-2 ') + 'gap-4">';
             html += '<div class="bg-gradient-to-r from-orange-600 to-amber-600 text-white p-5 rounded-2xl shadow-md border border-orange-500 flex items-center justify-between">';
             html += '<div><span class="text-xs font-bold uppercase text-orange-100 tracking-wider">Total Offloaded Weight (' + wasteViewType + ')</span>';
-            html += '<div class="text-2xl font-extrabold mt-1">' + periodTotalQty.toFixed(1) + ' <span class="text-sm font-semibold">KG</span></div></div>';
+            html += '<div class="text-2xl font-extrabold mt-1">' + formatIndianNumber(periodTotalQty, 1) + ' <span class="text-sm font-semibold">KG</span></div></div>';
             html += '<div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-xl text-white"><i class="fa-solid fa-weight-hanging"></i></div></div>';
 
             if (!hideFinancials) {
                 html += '<div class="bg-gradient-to-r from-emerald-700 to-teal-700 text-white p-5 rounded-2xl shadow-md border border-emerald-600 flex items-center justify-between">';
                 html += '<div><span class="text-xs font-bold uppercase text-emerald-100 tracking-wider">Total Financial Revenue (' + wasteViewType + ')</span>';
-                html += '<div class="text-2xl font-extrabold mt-1">₹' + periodTotalAmt.toFixed(2) + '</div></div>';
+                html += '<div class="text-2xl font-extrabold mt-1">₹' + formatIndianNumber(periodTotalAmt, 2) + '</div></div>';
                 html += '<div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-xl text-white"><i class="fa-solid fa-indian-rupee-sign"></i></div></div>';
             }
             html += '</div>';
@@ -7969,18 +8011,18 @@
                 var itemData = wasteTypeBreakdown[itemType];
                 html += '<tr class="hover:bg-slate-50 transition">';
                 html += '<td class="p-3 font-bold text-slate-900">' + itemType + '</td>';
-                html += '<td class="p-3 font-mono font-semibold text-orange-700">' + itemData.qty.toFixed(1) + ' KG</td>';
+                html += '<td class="p-3 font-mono font-semibold text-orange-700">' + formatIndianNumber(itemData.qty, 1) + ' KG</td>';
                 if (!hideFinancials) {
-                    html += '<td class="p-3 font-mono font-bold text-emerald-700">₹' + itemData.amt.toFixed(2) + '</td>';
+                    html += '<td class="p-3 font-mono font-bold text-emerald-700">₹' + formatIndianNumber(itemData.amt, 2) + '</td>';
                 }
                 html += '</tr>';
             });
 
             html += '</tbody><tfoot class="bg-slate-100/80 font-extrabold text-slate-900 border-t-2 border-slate-300"><tr>';
             html += '<td class="p-3 uppercase">Total Period Summary</td>';
-            html += '<td class="p-3 font-mono text-orange-800 text-sm">' + periodTotalQty.toFixed(1) + ' KG</td>';
+            html += '<td class="p-3 font-mono text-orange-800 text-sm">' + formatIndianNumber(periodTotalQty, 1) + ' KG</td>';
             if (!hideFinancials) {
-                html += '<td class="p-3 font-mono text-emerald-800 text-sm">₹' + periodTotalAmt.toFixed(2) + '</td>';
+                html += '<td class="p-3 font-mono text-emerald-800 text-sm">₹' + formatIndianNumber(periodTotalAmt, 2) + '</td>';
             }
             html += '</tr></tfoot></table></div></div>';
 
@@ -8023,9 +8065,9 @@
                         }
                         html += '<td class="p-3">' + (qtyPills.length > 0 ? qtyPills.join('') : '<span class="text-slate-400 italic">-</span>') + '</td>';
                     }
-                    html += '<td class="p-3 font-mono font-semibold text-slate-700 whitespace-nowrap">' + (off.totalQty || 0).toFixed(1) + ' KG</td>';
+                    html += '<td class="p-3 font-mono font-semibold text-slate-700 whitespace-nowrap">' + formatIndianNumber(off.totalQty || 0, 1) + ' KG</td>';
                     if (!hideFinancials) {
-                        html += '<td class="p-3 font-mono font-bold text-emerald-700 whitespace-nowrap">₹' + (off.totalAmt || 0).toFixed(2) + '</td>';
+                        html += '<td class="p-3 font-mono font-bold text-emerald-700 whitespace-nowrap">₹' + formatIndianNumber(off.totalAmt || 0, 2) + '</td>';
                     }
                     html += '<td class="p-3 text-slate-500">' + (off.loggedBy || 'System') + '</td>';
 
@@ -8159,27 +8201,27 @@
             var aGlass = qGlass * rGlass;
 
             // Display Unit Rates
-            document.getElementById('dispRateSoftPlastic').innerText = '₹' + rSoft.toFixed(2);
-            document.getElementById('dispRateHardPlastic').innerText = '₹' + rHard.toFixed(2);
-            document.getElementById('dispRateCardboard').innerText = '₹' + rCard.toFixed(2);
-            document.getElementById('dispRateColourPaper').innerText = '₹' + rPaper.toFixed(2);
-            document.getElementById('dispRateMetalTin').innerText = '₹' + rMetal.toFixed(2);
-            document.getElementById('dispRateGlass').innerText = '₹' + rGlass.toFixed(2);
+            document.getElementById('dispRateSoftPlastic').innerText = '₹' + formatIndianNumber(rSoft, 2);
+            document.getElementById('dispRateHardPlastic').innerText = '₹' + formatIndianNumber(rHard, 2);
+            document.getElementById('dispRateCardboard').innerText = '₹' + formatIndianNumber(rCard, 2);
+            document.getElementById('dispRateColourPaper').innerText = '₹' + formatIndianNumber(rPaper, 2);
+            document.getElementById('dispRateMetalTin').innerText = '₹' + formatIndianNumber(rMetal, 2);
+            document.getElementById('dispRateGlass').innerText = '₹' + formatIndianNumber(rGlass, 2);
 
             // Display Row Amounts
-            document.getElementById('dispAmtSoftPlastic').innerText = '₹' + aSoft.toFixed(2);
-            document.getElementById('dispAmtHardPlastic').innerText = '₹' + aHard.toFixed(2);
-            document.getElementById('dispAmtCardboard').innerText = '₹' + aCard.toFixed(2);
-            document.getElementById('dispAmtColourPaper').innerText = '₹' + aPaper.toFixed(2);
-            document.getElementById('dispAmtMetalTin').innerText = '₹' + aMetal.toFixed(2);
-            document.getElementById('dispAmtGlass').innerText = '₹' + aGlass.toFixed(2);
+            document.getElementById('dispAmtSoftPlastic').innerText = '₹' + formatIndianNumber(aSoft, 2);
+            document.getElementById('dispAmtHardPlastic').innerText = '₹' + formatIndianNumber(aHard, 2);
+            document.getElementById('dispAmtCardboard').innerText = '₹' + formatIndianNumber(aCard, 2);
+            document.getElementById('dispAmtColourPaper').innerText = '₹' + formatIndianNumber(aPaper, 2);
+            document.getElementById('dispAmtMetalTin').innerText = '₹' + formatIndianNumber(aMetal, 2);
+            document.getElementById('dispAmtGlass').innerText = '₹' + formatIndianNumber(aGlass, 2);
 
             // Bottom Aggregate Summary
             var totalQty = qSoft + qHard + qCard + qPaper + qMetal + qGlass;
             var totalAmt = aSoft + aHard + aCard + aPaper + aMetal + aGlass;
 
-            document.getElementById('liveOffloadTotalQty').innerText = totalQty.toFixed(1) + ' KG';
-            document.getElementById('liveOffloadTotalAmt').innerText = '₹' + totalAmt.toFixed(2);
+            document.getElementById('liveOffloadTotalQty').innerText = formatIndianNumber(totalQty, 1) + ' KG';
+            document.getElementById('liveOffloadTotalAmt').innerText = '₹' + formatIndianNumber(totalAmt, 2);
         }
 
         async function handleSaveWasteOffloading(e) {
@@ -8350,7 +8392,7 @@
             html += '<div class="bg-gradient-to-br from-emerald-700 to-emerald-900 text-white p-5 rounded-2xl shadow-md border border-emerald-600 flex items-center justify-between">';
             html += '<div>';
             html += '<span class="text-[11px] font-bold uppercase tracking-wider text-emerald-200 block">Total Wet Waste Received Till Now</span>';
-            html += '<div class="text-2xl sm:text-3xl font-extrabold mt-1 font-mono">' + totalRegularWetWaste.toFixed(1) + ' <span class="text-sm font-semibold">kg</span></div>';
+            html += '<div class="text-2xl sm:text-3xl font-extrabold mt-1 font-mono">' + formatIndianNumber(totalRegularWetWaste, 1) + ' <span class="text-sm font-semibold">kg</span></div>';
             html += '<div class="text-[11px] text-emerald-200 mt-1">Regular wet waste measured prior to shredding</div>';
             html += '</div>';
             html += '<div class="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center text-xl text-emerald-200"><i class="fa-solid fa-scale-balanced"></i></div>';
@@ -8360,7 +8402,7 @@
             html += '<div class="bg-gradient-to-br from-teal-700 to-teal-900 text-white p-5 rounded-2xl shadow-md border border-teal-600 flex items-center justify-between">';
             html += '<div>';
             html += '<span class="text-[11px] font-bold uppercase tracking-wider text-teal-200 block">Total Shredded Wet Waste Till Now</span>';
-            html += '<div class="text-2xl sm:text-3xl font-extrabold mt-1 font-mono">' + totalShreddedWetWaste.toFixed(1) + ' <span class="text-sm font-semibold">kg</span></div>';
+            html += '<div class="text-2xl sm:text-3xl font-extrabold mt-1 font-mono">' + formatIndianNumber(totalShreddedWetWaste, 1) + ' <span class="text-sm font-semibold">kg</span></div>';
             html += '<div class="text-[11px] text-teal-200 mt-1">Shredded from regular waste &amp; loaded into crates</div>';
             html += '</div>';
             html += '<div class="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center text-xl text-teal-200"><i class="fa-solid fa-recycle"></i></div>';
@@ -8370,7 +8412,7 @@
             html += '<div class="bg-gradient-to-br from-amber-600 to-amber-800 text-white p-5 rounded-2xl shadow-md border border-amber-500 flex items-center justify-between">';
             html += '<div>';
             html += '<span class="text-[11px] font-bold uppercase tracking-wider text-amber-100 block">Total Compost Generated Till Now</span>';
-            html += '<div class="text-2xl sm:text-3xl font-extrabold mt-1 font-mono">' + totalCompostGeneratedTillNow.toFixed(1) + ' <span class="text-sm font-semibold">kg</span></div>';
+            html += '<div class="text-2xl sm:text-3xl font-extrabold mt-1 font-mono">' + formatIndianNumber(totalCompostGeneratedTillNow, 1) + ' <span class="text-sm font-semibold">kg</span></div>';
             html += '<div class="text-[11px] text-amber-100 mt-1">Harvested from ' + dbCompostLogs.length + ' completed crate cycles</div>';
             html += '</div>';
             html += '<div class="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center text-xl text-amber-100"><i class="fa-solid fa-seedling"></i></div>';
@@ -8406,7 +8448,7 @@
                 html += '<div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-2xl text-emerald-300"><i class="fa-solid fa-box-open"></i></div>';
                 html += '<div>';
                 html += '<span class="text-xs font-bold uppercase tracking-wider text-emerald-300">Shredded Wet Waste Currently in Crates</span>';
-                html += '<div class="text-2xl sm:text-3xl font-extrabold font-mono text-white mt-0.5">' + shreddedCurrentlyInCrates.toFixed(1) + ' <span class="text-sm font-semibold text-emerald-200">kg</span></div>';
+                html += '<div class="text-2xl sm:text-3xl font-extrabold font-mono text-white mt-0.5">' + formatIndianNumber(shreddedCurrentlyInCrates, 1) + ' <span class="text-sm font-semibold text-emerald-200">kg</span></div>';
                 html += '</div>';
                 html += '</div>';
                 html += '<div class="flex items-center space-x-3 flex-wrap gap-y-2">';
@@ -8552,19 +8594,19 @@
 
                 html += '<div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm">';
                 html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Regular Wet Waste Total (' + selectedMonthLabel + ')</span>';
-                html += '<div class="text-xl font-extrabold text-emerald-700 font-mono mt-1">' + monthRegularTotal.toFixed(1) + ' kg</div>';
+                html += '<div class="text-xl font-extrabold text-emerald-700 font-mono mt-1">' + formatIndianNumber(monthRegularTotal, 1) + ' kg</div>';
                 html += '<span class="text-[11px] text-slate-400">Initial wet waste measured before shredding</span>';
                 html += '</div>';
 
                 html += '<div class="bg-white p-4 rounded-xl border border-teal-200 shadow-sm">';
                 html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Shredded Wet Waste Total (' + selectedMonthLabel + ')</span>';
-                html += '<div class="text-xl font-extrabold text-teal-700 font-mono mt-1">' + monthShreddedTotal.toFixed(1) + ' kg</div>';
+                html += '<div class="text-xl font-extrabold text-teal-700 font-mono mt-1">' + formatIndianNumber(monthShreddedTotal, 1) + ' kg</div>';
                 html += '<span class="text-[11px] text-slate-400">Shredded from regular waste &amp; put into crates</span>';
                 html += '</div>';
 
                 html += '<div class="bg-white p-4 rounded-xl border border-amber-200 shadow-sm">';
                 html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Compost Generated (' + selectedMonthLabel + ')</span>';
-                html += '<div class="text-xl font-extrabold text-amber-600 font-mono mt-1">' + monthCompostTotal.toFixed(1) + ' kg</div>';
+                html += '<div class="text-xl font-extrabold text-amber-600 font-mono mt-1">' + formatIndianNumber(monthCompostTotal, 1) + ' kg</div>';
                 html += '<span class="text-[11px] text-slate-400">Harvested in selected month</span>';
                 html += '</div>';
 
@@ -9086,8 +9128,7 @@
             }
 
             if (matched) {
-                var cap = matched.capacity || ((matched.capacityValue || '') + ' ' + (matched.capacityUnit || 'Liters')).trim();
-                if (!cap && defaultCapNote) cap = defaultCapNote;
+                var cap = formatTankCapacityIndian(matched, defaultCapNote);
                 var logs = getTankRecentCleanings(matched);
                 return {
                     id: matched.id,
@@ -9916,7 +9957,7 @@
                         recentDatesHtml += '</div>';
                     }
 
-                    var capDisplay = tank.capacity || ((tank.capacityValue || '') + ' ' + (tank.capacityUnit || 'Liters'));
+                    var capDisplay = formatTankCapacityIndian(tank);
                     var isExpanded = !!expandedTankHistoryIds[tank.id];
 
                     html += '<tr class="hover:bg-slate-50 transition">';
@@ -10416,7 +10457,7 @@
 
                 var costBadge = '';
                 if (log.cost != null && log.cost !== '') {
-                    costBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-indian-rupee-sign mr-0.5 text-[10px]"></i>Cost: ₹' + Number(log.cost).toLocaleString() + '</span>';
+                    costBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-indian-rupee-sign mr-0.5 text-[10px]"></i>Cost: ₹' + formatIndianCurrency(log.cost) + '</span>';
                 }
                 var agencyBadge = '';
                 if (log.agency) {
@@ -10548,7 +10589,7 @@
                 providingWaterTo: providingWaterTo,
                 capacityValue: capVal,
                 capacityUnit: capUnit,
-                capacity: capVal.toLocaleString() + ' ' + capUnit,
+                capacity: formatIndianCurrency(capVal) + ' ' + capUnit,
                 updatedAt: new Date().toISOString(),
                 loggedBy: currentUser ? currentUser.email : 'System'
             };
@@ -10747,7 +10788,7 @@
 
             var matchedSelect = document.getElementById('cleanReportMatchedTankSelect');
             matchedSelect.innerHTML = candidates.map(function(t) {
-                var cap = t.capacity || ((t.capacityValue || '') + ' ' + (t.capacityUnit || 'Liters'));
+                var cap = formatTankCapacityIndian(t);
                 return '<option value="' + t.id + '">' + t.location + ' — ' + t.type + ' / ' + t.category + ' (' + cap + ')</option>';
             }).join('');
 
@@ -10896,7 +10937,7 @@
             var tankHistoryModal = document.getElementById('tankHistoryModal');
             if (tankHistoryModal && !tankHistoryModal.classList.contains('hidden') && linkedTank) {
                 var logs = getTankRecentCleanings(linkedTank);
-                var capDisplay = linkedTank.capacity || ((linkedTank.capacityValue || '') + ' ' + (linkedTank.capacityUnit || 'Liters'));
+                var capDisplay = formatTankCapacityIndian(linkedTank);
                 document.getElementById('tankHistoryModalSubtitle').innerText =
                     'Providing Water To: ' + (linkedTank.providingWaterTo || '-') + ' | Type: ' + linkedTank.type + ' | Category: ' + linkedTank.category + ' | Capacity: ' + capDisplay + ' | Total Cleanings: ' + logs.length;
                 document.getElementById('tankHistoryModalBody').innerHTML = renderTankChronologicalHistoryHtml(linkedTank, logs);
@@ -10910,7 +10951,7 @@
             if (!tank) return;
 
             var logs = getTankRecentCleanings(tank);
-            var capDisplay = tank.capacity || ((tank.capacityValue || '') + ' ' + (tank.capacityUnit || 'Liters'));
+            var capDisplay = formatTankCapacityIndian(tank);
 
             document.getElementById('tankHistoryModalTitle').innerHTML =
                 '<i class="fa-solid fa-clock-rotate-left text-sky-600"></i><span>Cleaning History — ' + tank.location + '</span>';
@@ -10939,7 +10980,7 @@
 
                 var costBadge = '';
                 if (log.cost != null && log.cost !== '') {
-                    costBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-indian-rupee-sign mr-0.5 text-[10px]"></i>Cost: ₹' + Number(log.cost).toLocaleString() + '</span>';
+                    costBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-indian-rupee-sign mr-0.5 text-[10px]"></i>Cost: ₹' + formatIndianCurrency(log.cost) + '</span>';
                 }
                 var agencyBadge = '';
                 if (log.agency) {
@@ -11745,7 +11786,7 @@
                     html += '<td class="p-3.5"><div class="font-bold text-slate-900">' + (req.requestedBy || '-') + '</div><div class="text-[10px] text-slate-500 font-medium">' + (req.requestedRole || '') + '</div></td>';
                     html += '<td class="p-3.5"><span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 font-semibold">' + areaDeptLabel + '</span>';
                     if (isApproved && uniqueVendors.length > 0) {
-                        html += '<div class="text-[10px] text-emerald-700 font-bold mt-1"><i class="fa-solid fa-truck-field mr-1"></i>' + uniqueVendors.join(', ') + ' (₹' + grandWithGst.toFixed(2) + ' incl. GST)</div>';
+                        html += '<div class="text-[10px] text-emerald-700 font-bold mt-1"><i class="fa-solid fa-truck-field mr-1"></i>' + uniqueVendors.join(', ') + ' (₹' + formatIndianNumber(grandWithGst, 2) + ' incl. GST)</div>';
                     }
                     html += '</td>';
                     html += '<td class="p-3.5 text-center">' + statusBadgeHtml + '</td>';
@@ -12058,7 +12099,7 @@
                 html += '</div>';
                 html += '<div class="text-right min-w-[95px]">';
                 html += '<span class="block text-[10px] font-bold uppercase text-slate-400">Item Total</span>';
-                html += '<span id="approveItemTotalDisp_' + item.id + '" class="font-mono font-extrabold text-sm ' + (sel.isSelected ? 'text-emerald-700' : 'text-slate-400') + '">₹' + lineTotal.toFixed(2) + '</span>';
+                html += '<span id="approveItemTotalDisp_' + item.id + '" class="font-mono font-extrabold text-sm ' + (sel.isSelected ? 'text-emerald-700' : 'text-slate-400') + '">₹' + formatIndianNumber(lineTotal, 2) + '</span>';
                 html += '</div>';
                 html += '</div></div>';
 
@@ -12067,7 +12108,7 @@
                 html += '<div class="text-[11px] font-bold text-slate-600 mb-2 flex items-center justify-between">';
                 html += '<span><i class="fa-solid fa-Store text-purple-600 mr-1.5"></i>Available Vendors &amp; Mapped Rates (Select Vendor for Purchase Order):</span>';
                 if (sel.isSelected && sel.vendorName) {
-                    html += '<span class="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">Selected: ' + sel.vendorName + ' @ ₹' + (parseFloat(sel.rate) || 0).toFixed(2) + '</span>';
+                    html += '<span class="text-[11px] font-extrabold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">Selected: ' + sel.vendorName + ' @ ₹' + formatIndianNumber(parseFloat(sel.rate) || 0, 2) + '</span>';
                 }
                 html += '</div>';
 
@@ -12140,7 +12181,7 @@
             var totalDisp = document.getElementById('approveItemTotalDisp_' + itemId);
             if (totalDisp) {
                 var lineTot = sel.isSelected ? (q * (parseFloat(sel.rate) || 0)) : 0;
-                totalDisp.innerText = '₹' + lineTot.toFixed(2);
+                totalDisp.innerText = '₹' + formatIndianNumber(lineTot, 2);
             }
             updateApprovalModalSummaryTotals();
         }
@@ -12209,9 +12250,9 @@
 
             if (cEl) cEl.innerText = itemCount;
             if (vEl) vEl.innerText = Object.keys(vendorSet).length;
-            if (sEl) sEl.innerText = '₹' + subtotal.toFixed(2);
-            if (gEl) gEl.innerText = '₹' + gstAmt.toFixed(2);
-            if (totEl) totEl.innerText = '₹' + grandTotal.toFixed(2);
+            if (sEl) sEl.innerText = '₹' + formatIndianNumber(subtotal, 2);
+            if (gEl) gEl.innerText = '₹' + formatIndianNumber(gstAmt, 2);
+            if (totEl) totEl.innerText = '₹' + formatIndianNumber(grandTotal, 2);
         }
 
         async function handleConfirmMaterialRequestApproval() {
@@ -12785,9 +12826,9 @@
                 tableRows.push([
                     String(idx + 1),
                     String(it.itemName || it.name || '-'),
-                    String(q) + (it.unit ? ' ' + it.unit : ''),
-                    'Rs. ' + r.toFixed(2),
-                    'Rs. ' + tot.toFixed(2)
+                    formatIndianCurrency(q) + (it.unit ? ' ' + it.unit : ''),
+                    'Rs. ' + formatIndianNumber(r, 2),
+                    'Rs. ' + formatIndianNumber(tot, 2)
                 ]);
             });
 
@@ -12838,10 +12879,10 @@
             doc.setFontSize(9.5);
             doc.setTextColor(51, 65, 85);
             doc.text('Subtotal:', summaryBoxX + 12, finalY + 18);
-            doc.text('Rs. ' + subtotal.toFixed(2), summaryBoxX + summaryBoxWidth - 12, finalY + 18, { align: 'right' });
+            doc.text('Rs. ' + formatIndianNumber(subtotal, 2), summaryBoxX + summaryBoxWidth - 12, finalY + 18, { align: 'right' });
 
             doc.text('Add: GST @ 18%:', summaryBoxX + 12, finalY + 36);
-            doc.text('Rs. ' + gstAmount.toFixed(2), summaryBoxX + summaryBoxWidth - 12, finalY + 36, { align: 'right' });
+            doc.text('Rs. ' + formatIndianNumber(gstAmount, 2), summaryBoxX + summaryBoxWidth - 12, finalY + 36, { align: 'right' });
 
             doc.setDrawColor(148, 163, 184);
             doc.line(summaryBoxX + 10, finalY + 45, summaryBoxX + summaryBoxWidth - 10, finalY + 45);
@@ -12850,7 +12891,7 @@
             doc.setFontSize(10.5);
             doc.setTextColor(30, 64, 175);
             doc.text('Final Grand Total:', summaryBoxX + 12, finalY + 62);
-            doc.text('Rs. ' + finalGrandTotal.toFixed(2), summaryBoxX + summaryBoxWidth - 12, finalY + 62, { align: 'right' });
+            doc.text('Rs. ' + formatIndianNumber(finalGrandTotal, 2), summaryBoxX + summaryBoxWidth - 12, finalY + 62, { align: 'right' });
 
             // Authorized Signatory line on Bottom Left with Real Signature
             doc.setFont('helvetica', 'normal');
@@ -13482,9 +13523,9 @@
                                 : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed') + '">';
                         html += '</td>';
 
-                        html += '<td class="p-3 text-right font-mono font-semibold text-slate-700" id="procRateCell_' + item.id + '">₹' + vendorRate.toFixed(2) + '</td>';
+                        html += '<td class="p-3 text-right font-mono font-semibold text-slate-700" id="procRateCell_' + item.id + '">₹' + formatIndianNumber(vendorRate, 2) + '</td>';
 
-                        html += '<td class="p-3 text-right font-mono font-extrabold ' + (isChecked ? 'text-emerald-700' : 'text-slate-400') + '" id="procTotalCell_' + item.id + '">₹' + rowTotal.toFixed(2) + '</td>';
+                        html += '<td class="p-3 text-right font-mono font-extrabold ' + (isChecked ? 'text-emerald-700' : 'text-slate-400') + '" id="procTotalCell_' + item.id + '">₹' + formatIndianNumber(rowTotal, 2) + '</td>';
                         html += '</tr>';
                     }
                 });
@@ -13583,7 +13624,7 @@
                 var rowTot = isChecked ? ((parseFloat(st.qty) || 0) * rate) : 0;
                 var totalCell = document.getElementById('procTotalCell_' + changedItemId);
                 if (totalCell) {
-                    totalCell.innerText = '₹' + rowTot.toFixed(2);
+                    totalCell.innerText = '₹' + formatIndianNumber(rowTot, 2);
                     totalCell.className = 'p-3 text-right font-mono font-extrabold ' + (isChecked ? 'text-emerald-700' : 'text-slate-400');
                 }
             }
@@ -13603,7 +13644,7 @@
             var countEl = document.getElementById('procSelectedCountDisp');
             var grandEl = document.getElementById('procGrandTotalDisp');
             if (countEl) countEl.innerText = count;
-            if (grandEl) grandEl.innerText = '₹' + grandTotal.toFixed(2);
+            if (grandEl) grandEl.innerText = '₹' + formatIndianNumber(grandTotal, 2);
         }
 
         async function handleSaveProcurementOrder(e) {
@@ -13782,7 +13823,7 @@
                     html += '<td class="p-3.5 font-mono font-bold text-slate-900"><i class="fa-regular fa-calendar text-purple-600 mr-1.5"></i>' + ord.date + '</td>';
                     html += '<td class="p-3.5"><span class="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-900 border border-purple-200 font-bold">' + ord.vendorName + '</span></td>';
                     html += '<td class="p-3.5 text-center"><span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 font-mono font-bold border border-slate-200">' + itemCount + ' Items</span></td>';
-                    html += '<td class="p-3.5 text-right font-mono font-extrabold text-emerald-700 text-sm">₹' + gTotal.toFixed(2) + '</td>';
+                    html += '<td class="p-3.5 text-right font-mono font-extrabold text-emerald-700 text-sm">₹' + formatIndianNumber(gTotal, 2) + '</td>';
                     html += '<td class="p-3.5 text-center">';
                     html += '<div class="flex items-center justify-center space-x-2">';
                     html += '<button type="button" onclick="editProcurementOrder(\'' + ord.id + '\')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1" title="Edit Order"><i class="fa-solid fa-pen-to-square"></i><span>Edit</span></button>';
@@ -14028,7 +14069,7 @@
             html += '<span class="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block leading-tight">Total Repairs</span>';
             html += '<div class="flex items-baseline space-x-1.5 mt-0.5">';
             html += '<span class="text-xl font-extrabold font-mono leading-tight">' + totalRepairsCount + '</span>';
-            html += '<span class="text-[10px] text-emerald-100 font-mono">(₹' + totalRepairExpense.toLocaleString() + ')</span>';
+            html += '<span class="text-[10px] text-emerald-100 font-mono">(₹' + formatIndianCurrency(totalRepairExpense) + ')</span>';
             html += '</div>';
             html += '</div>';
             html += '<div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm text-white flex-shrink-0"><i class="fa-solid fa-screwdriver-wrench"></i></div>';
@@ -14318,7 +14359,7 @@
                             if (rep.afterPhoto) {
                                 html += '<div class="pt-1">' + renderInlineMediaThumbnail(rep.afterPhoto, 'After Repair Media — ' + (rep.date || ''), 'h-10 w-14') + '</div>';
                             }
-                            html += '</div><div class="flex items-center space-x-3"><span class="font-extrabold text-emerald-700 text-xs">₹' + rep.cost + '</span><button onclick="editRepairLog(\'' + brk.id + '\', \'' + rep.id + '\')" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteRepairLog(\'' + brk.id + '\', \'' + rep.id + '\')" class="text-red-600 hover:text-red-800 text-xs font-semibold"><i class="fa-solid fa-trash-can"></i></button></div></div>';
+                            html += '</div><div class="flex items-center space-x-3"><span class="font-extrabold text-emerald-700 text-xs">₹' + formatIndianCurrency(rep.cost) + '</span><button onclick="editRepairLog(\'' + brk.id + '\', \'' + rep.id + '\')" class="text-indigo-600 hover:text-indigo-800 text-xs font-semibold"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteRepairLog(\'' + brk.id + '\', \'' + rep.id + '\')" class="text-red-600 hover:text-red-800 text-xs font-semibold"><i class="fa-solid fa-trash-can"></i></button></div></div>';
                         });
                     } else {
                         html += '<p class="text-[11px] text-slate-400 italic">No repair entries recorded for this breakdown yet.</p>';
@@ -14328,7 +14369,7 @@
                 listContainer.innerHTML = html;
             }
 
-            if (totalCostEl) totalCostEl.innerText = '₹' + totalRepairExpenses;
+            if (totalCostEl) totalCostEl.innerText = '₹' + formatIndianCurrency(totalRepairExpenses);
         }
 
         function editBreakdownLog(brkId) {
@@ -14968,7 +15009,7 @@
             if (rec.breakdown) {
                 Object.keys(rec.breakdown).forEach(function(k) {
                     var item = rec.breakdown[k];
-                    rows.push([k, (item.qty || 0).toFixed(1) + " KG", "Rs. " + (item.rate || 0).toFixed(2), "Rs. " + (item.amt || 0).toFixed(2)]);
+                    rows.push([k, formatIndianNumber(item.qty || 0, 1) + " KG", "Rs. " + formatIndianNumber(item.rate || 0, 2), "Rs. " + formatIndianNumber(item.amt || 0, 2)]);
                 });
             }
 
@@ -14981,8 +15022,8 @@
 
             var finalY = doc.lastAutoTable.finalY + 20;
             doc.setFontSize(11);
-            doc.text("Total Weight: " + (rec.totalQty || 0).toFixed(1) + " KG", 40, finalY);
-            doc.text("Grand Total: Rs. " + (rec.totalAmt || 0).toFixed(2), 250, finalY);
+            doc.text("Total Weight: " + formatIndianNumber(rec.totalQty || 0, 1) + " KG", 40, finalY);
+            doc.text("Grand Total: Rs. " + formatIndianNumber(rec.totalAmt || 0, 2), 250, finalY);
 
             doc.save("Dry_Waste_Receipt_" + rec.date + ".pdf");
         }
@@ -15048,8 +15089,8 @@
                 exportRows = filteredOffloads.map(function(r) {
                     return {
                         'Receipt Date': r.date,
-                        'Total Weight (KG)': (r.totalQty || 0).toFixed(1),
-                        'Grand Total Amount (Rs)': (r.totalAmt || 0).toFixed(2),
+                        'Total Weight (KG)': formatIndianNumber(r.totalQty || 0, 1),
+                        'Grand Total Amount (Rs)': formatIndianNumber(r.totalAmt || 0, 2),
                         'Logged By': r.loggedBy || 'System'
                     };
                 });
@@ -15219,7 +15260,7 @@
                             'Unit': item.unit
                         };
                         dbProcurementVendors.forEach(function(vName) {
-                            row[vName + ' Rate (Rs)'] = getVendorItemRate(item.id, vName).toFixed(2);
+                            row[vName + ' Rate (Rs)'] = formatIndianNumber(getVendorItemRate(item.id, vName), 2);
                         });
                         exportRows.push(row);
                     });
@@ -15251,7 +15292,7 @@
                             'Date': ord.date,
                             'Vendor Name': ord.vendorName,
                             'Total Items': Array.isArray(ord.items) ? ord.items.length : (ord.totalItems || 0),
-                            'Grand Total (Rs)': (parseFloat(ord.grandTotal) || 0).toFixed(2),
+                            'Grand Total (Rs)': formatIndianNumber(parseFloat(ord.grandTotal) || 0, 2),
                             'Logged By': ord.loggedBy || 'System'
                         });
                     });
