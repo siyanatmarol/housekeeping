@@ -2147,6 +2147,8 @@
         var dbCleaningLogs = [];
         var DEFAULT_SCOPE_OF_WORK = {};
         var dbScopeOfWork = {};
+        var dbScopeSubAreaOrder = {};
+        var dbScopeOrderVersion = 0;
         var dbDailyWorkReports = [];
         var dbMediaCache = {};
         var deletedRecordIds = {};
@@ -2411,6 +2413,8 @@
                 dbCleaningLogs: dbCleaningLogs || [],
                 dbDailyWorkReports: dbDailyWorkReports || [],
                 dbScopeOfWork: dbScopeOfWork || {},
+                dbScopeSubAreaOrder: dbScopeSubAreaOrder || {},
+                dbScopeOrderVersion: dbScopeOrderVersion || 0,
                 dbDriveConfig: dbDriveConfig || {},
                 deletedRecordIds: deletedRecordIds || {}
             };
@@ -2525,7 +2529,16 @@
                 });
             }
             if (snap.dbScopeOfWork && typeof snap.dbScopeOfWork === 'object') {
-                dbScopeOfWork = snap.dbScopeOfWork;
+                if (typeof hydrateScopeOfWorkFromCloudData === 'function') {
+                    hydrateScopeOfWorkFromCloudData({
+                        scope: snap.dbScopeOfWork,
+                        subAreaOrder: snap.dbScopeSubAreaOrder || {},
+                        orderedScope: snap.orderedScope || null,
+                        orderVersion: snap.dbScopeOrderVersion || snap.orderVersion || 0
+                    }, false);
+                } else {
+                    dbScopeOfWork = snap.dbScopeOfWork;
+                }
             }
             if (snap.dbDriveConfig && typeof snap.dbDriveConfig === 'object') {
                 if (snap.dbDriveConfig.scriptUrl) dbDriveConfig.scriptUrl = snap.dbDriveConfig.scriptUrl;
@@ -5529,12 +5542,121 @@
             return areaName;
         }
 
+        function isReservedScopeMetadataKey(key) {
+            if (key === null || key === undefined) return true;
+            var s = String(key).trim();
+            if (!s) return true;
+            var lower = s.toLowerCase();
+            return s.indexOf('__') === 0 ||
+                   lower === '__subareaorder' ||
+                   lower === 'subareaorder' ||
+                   lower === '_subareaorder' ||
+                   lower === 'orderedsubareas' ||
+                   lower === 'orderedscope' ||
+                   lower === 'areaorder' ||
+                   lower === 'orderversion' ||
+                   lower === 'updatedat' ||
+                   lower === 'updatedby' ||
+                   lower === 'scope';
+        }
+
+        function getSubAreaNaturalSortInfo(subAreaName) {
+            var s = String(subAreaName || '').trim().toLowerCase();
+            if (!s) return { isFloorLike: false, category: 9, rank: 9999 };
+
+            // 1. Ground Floor (Rank 0)
+            if (/^(ground\s*floor|ground\s*flr|ground\s*level|ground\s*lvl|ground|g\s*floor|gf|stilt|stilt\s*floor)$/i.test(s) ||
+                /\b(ground\s*floor|g\s*floor)\b/i.test(s)) {
+                return { isFloorLike: true, category: 1, rank: 0 };
+            }
+
+            // 2. Mezzanine Floor (Rank 0.5)
+            if (/\b(mezzanine|mezz)\b/i.test(s)) {
+                return { isFloorLike: true, category: 1, rank: 0.5 };
+            }
+
+            // 3. Numbered Floors: "1st floor", "2nd floor", "10th floor", "Floor 1", etc.
+            var numMatch = s.match(/^(\d+)\s*(st|nd|rd|th)?\s*(floor|flr|fl|level|lvl|f)\b/i) ||
+                           s.match(/\b(\d+)\s*(st|nd|rd|th)\s*(floor|flr|fl|level|lvl)\b/i) ||
+                           s.match(/\b(floor|flr|level|lvl)\s*[-#:]?\s*(\d+)\b/i);
+            if (numMatch) {
+                var numVal = parseInt(numMatch[1], 10);
+                if (isNaN(numVal)) numVal = parseInt(numMatch[2], 10);
+                if (!isNaN(numVal)) {
+                    return { isFloorLike: true, category: 1, rank: numVal };
+                }
+            }
+
+            var wordFloors = {
+                'first': 1, 'second': 2, 'third': 3, 'fourth': 4, 'fifth': 5,
+                'sixth': 6, 'seventh': 7, 'eighth': 8, 'ninth': 9, 'tenth': 10,
+                'eleventh': 11, 'twelfth': 12, 'thirteenth': 13, 'fourteenth': 14, 'fifteenth': 15
+            };
+            var wfKeys = Object.keys(wordFloors);
+            for (var w = 0; w < wfKeys.length; w++) {
+                var wk = wfKeys[w];
+                if (new RegExp('\\b' + wk + '\\s*(floor|flr|level|lvl)\\b', 'i').test(s)) {
+                    return { isFloorLike: true, category: 1, rank: wordFloors[wk] };
+                }
+            }
+
+            // 4. Terrace / Roof (after numbered floors)
+            if (/\b(terrace|roof|rooftop)\b/i.test(s)) {
+                return { isFloorLike: true, category: 2, rank: 100 };
+            }
+
+            // 5. Lift & Staircase (after floors, before Basement — matches Boys/Girls Hostel standard layout)
+            if (/\b(lift|staircase|stairs|elevator)\b/i.test(s)) {
+                return { isFloorLike: true, category: 3, rank: 200 };
+            }
+
+            // 6. Basement / Parking (at the end of building floors — matches Boys/Girls Hostel standard layout)
+            if (/\b(basement|lower\s*basement|upper\s*basement|sub\s*basement|b1|b2)\b/i.test(s)) {
+                return { isFloorLike: true, category: 4, rank: 300 };
+            }
+
+            return { isFloorLike: false, category: 5, rank: 500 };
+        }
+
+        function compareSubAreaNamesNaturally(a, b) {
+            var infoA = getSubAreaNaturalSortInfo(a);
+            var infoB = getSubAreaNaturalSortInfo(b);
+            if (infoA.category !== infoB.category) {
+                return infoA.category - infoB.category;
+            }
+            if (infoA.rank !== infoB.rank) {
+                return infoA.rank - infoB.rank;
+            }
+            return String(a || '').localeCompare(String(b || ''), undefined, { numeric: true, sensitivity: 'base' });
+        }
+
+        function isLegacyFloorOrderScrambled(keysArray) {
+            if (!Array.isArray(keysArray) || keysArray.length < 2) return false;
+            var floorRanks = [];
+
+            for (var i = 0; i < keysArray.length; i++) {
+                var info = getSubAreaNaturalSortInfo(keysArray[i]);
+                if (info.category === 1) {
+                    floorRanks.push(info.rank);
+                }
+            }
+
+            if (floorRanks.length < 2) return false;
+            for (var j = 1; j < floorRanks.length; j++) {
+                if (floorRanks[j] < floorRanks[j - 1]) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function getUserAssignedDwrAreas() {
             if (!currentUser) return ALL_AREAS.slice();
             var isAdmin = currentUser.role === 'Administrator';
             if (isAdmin) {
                 var combined = ALL_AREAS.slice();
                 Object.keys(dbScopeOfWork || {}).forEach(function(k) {
+                    if (isReservedScopeMetadataKey(k)) return;
                     var normK = normalizeAreaAlias(k);
                     if (combined.indexOf(normK) === -1 && k !== 'Mahad al Zahra') {
                         combined.push(k);
@@ -5550,44 +5672,99 @@
 
         function getRawScopeSubAreasObject(areaName) {
             if (!areaName || !dbScopeOfWork) return {};
+            var targetObj = null;
             if (dbScopeOfWork[areaName] && typeof dbScopeOfWork[areaName] === 'object') {
-                return dbScopeOfWork[areaName];
-            }
-            var norm = normalizeAreaAlias(areaName);
-            if (dbScopeOfWork[norm] && typeof dbScopeOfWork[norm] === 'object') {
-                return dbScopeOfWork[norm];
-            }
-            if (norm === 'Mahad Bldg' && dbScopeOfWork['Mahad al Zahra'] && typeof dbScopeOfWork['Mahad al Zahra'] === 'object') {
-                return dbScopeOfWork['Mahad al Zahra'];
-            }
-            var lowerTarget = norm.toLowerCase();
-            var keys = Object.keys(dbScopeOfWork);
-            for (var i = 0; i < keys.length; i++) {
-                if (normalizeAreaAlias(keys[i]).toLowerCase() === lowerTarget) {
-                    return dbScopeOfWork[keys[i]];
+                targetObj = dbScopeOfWork[areaName];
+            } else {
+                var norm = normalizeAreaAlias(areaName);
+                if (dbScopeOfWork[norm] && typeof dbScopeOfWork[norm] === 'object') {
+                    targetObj = dbScopeOfWork[norm];
+                } else if (norm === 'Mahad Bldg' && dbScopeOfWork['Mahad al Zahra'] && typeof dbScopeOfWork['Mahad al Zahra'] === 'object') {
+                    targetObj = dbScopeOfWork['Mahad al Zahra'];
+                } else {
+                    var lowerTarget = norm.toLowerCase();
+                    var keys = Object.keys(dbScopeOfWork);
+                    for (var i = 0; i < keys.length; i++) {
+                        if (!isReservedScopeMetadataKey(keys[i]) && normalizeAreaAlias(keys[i]).toLowerCase() === lowerTarget) {
+                            targetObj = dbScopeOfWork[keys[i]];
+                            break;
+                        }
+                    }
                 }
             }
-            return {};
+            if (!targetObj || typeof targetObj !== 'object') return {};
+            // If legacy __subAreaOrder is still sitting inside targetObj, migrate it to dbScopeSubAreaOrder and delete it from targetObj
+            if (Array.isArray(targetObj.__subAreaOrder)) {
+                var canonKey = normalizeAreaAlias(areaName);
+                if (!dbScopeSubAreaOrder || typeof dbScopeSubAreaOrder !== 'object') dbScopeSubAreaOrder = {};
+                if (!Array.isArray(dbScopeSubAreaOrder[canonKey]) || dbScopeSubAreaOrder[canonKey].length === 0) {
+                    dbScopeSubAreaOrder[canonKey] = targetObj.__subAreaOrder.filter(function(x) { return !isReservedScopeMetadataKey(x); });
+                }
+                delete targetObj.__subAreaOrder;
+            }
+            if ('subAreaOrder' in targetObj) delete targetObj.subAreaOrder;
+            return targetObj;
+        }
+
+        function getRawScopeSubAreaOrderArray(areaName) {
+            if (!areaName || !dbScopeSubAreaOrder || typeof dbScopeSubAreaOrder !== 'object') return [];
+            if (Array.isArray(dbScopeSubAreaOrder[areaName])) return dbScopeSubAreaOrder[areaName];
+            var norm = normalizeAreaAlias(areaName);
+            if (Array.isArray(dbScopeSubAreaOrder[norm])) return dbScopeSubAreaOrder[norm];
+            if (norm === 'Mahad Bldg' && Array.isArray(dbScopeSubAreaOrder['Mahad al Zahra'])) return dbScopeSubAreaOrder['Mahad al Zahra'];
+            var lowerTarget = norm.toLowerCase();
+            var keys = Object.keys(dbScopeSubAreaOrder);
+            for (var i = 0; i < keys.length; i++) {
+                if (normalizeAreaAlias(keys[i]).toLowerCase() === lowerTarget && Array.isArray(dbScopeSubAreaOrder[keys[i]])) {
+                    return dbScopeSubAreaOrder[keys[i]];
+                }
+            }
+            return [];
+        }
+
+        function setRawScopeSubAreaOrderArray(areaName, orderArr) {
+            if (!areaName) return;
+            if (!dbScopeSubAreaOrder || typeof dbScopeSubAreaOrder !== 'object') dbScopeSubAreaOrder = {};
+            var canon = normalizeAreaAlias(areaName);
+            var cleanArr = (Array.isArray(orderArr) ? orderArr : []).filter(function(k) {
+                return !isReservedScopeMetadataKey(k);
+            });
+            dbScopeSubAreaOrder[canon] = cleanArr.slice();
+            if (canon === 'Mahad Bldg') {
+                dbScopeSubAreaOrder['Mahad al Zahra'] = cleanArr.slice();
+            }
+            window.dbScopeSubAreaOrder = dbScopeSubAreaOrder;
         }
 
         function getOrderedSubAreaKeys(areaName) {
             var rawMap = getRawScopeSubAreasObject(areaName);
             if (!rawMap || typeof rawMap !== 'object') return [];
             var allKeys = Object.keys(rawMap).filter(function(k) {
-                return k !== '__subAreaOrder' && Array.isArray(rawMap[k]);
+                return !isReservedScopeMetadataKey(k) && Array.isArray(rawMap[k]);
             });
-            var savedOrder = Array.isArray(rawMap.__subAreaOrder) ? rawMap.__subAreaOrder : [];
+            if (allKeys.length === 0) return [];
+
+            var savedOrder = getRawScopeSubAreaOrderArray(areaName);
             var ordered = [];
             savedOrder.forEach(function(k) {
-                if (allKeys.indexOf(k) !== -1 && ordered.indexOf(k) === -1) {
+                if (!isReservedScopeMetadataKey(k) && allKeys.indexOf(k) !== -1 && ordered.indexOf(k) === -1) {
                     ordered.push(k);
                 }
             });
-            allKeys.forEach(function(k) {
-                if (ordered.indexOf(k) === -1) {
-                    ordered.push(k);
-                }
+
+            var remaining = allKeys.filter(function(k) {
+                return ordered.indexOf(k) === -1;
             });
+            if (remaining.length > 0) {
+                // If there was no savedOrder at all and the keys look like building floors, sort them naturally
+                var hasFloorKeys = remaining.some(function(k) { return getSubAreaNaturalSortInfo(k).isFloorLike; });
+                if (hasFloorKeys) {
+                    remaining.sort(compareSubAreaNamesNaturally);
+                }
+                remaining.forEach(function(k) {
+                    if (ordered.indexOf(k) === -1) ordered.push(k);
+                });
+            }
             return ordered;
         }
 
@@ -5596,10 +5773,223 @@
             var orderedKeys = getOrderedSubAreaKeys(areaName);
             var cleanOrderedMap = {};
             orderedKeys.forEach(function(k) {
-                cleanOrderedMap[k] = Array.isArray(rawMap[k]) ? rawMap[k] : [];
+                if (!isReservedScopeMetadataKey(k)) {
+                    var rawTasks = Array.isArray(rawMap[k]) ? rawMap[k] : [];
+                    cleanOrderedMap[k] = rawTasks.filter(function(t) {
+                        return t !== null && t !== undefined && String(t).trim() !== '' && !isReservedScopeMetadataKey(t);
+                    });
+                }
             });
             return cleanOrderedMap;
         }
+
+        function hydrateScopeOfWorkFromCloudData(rawCloudDoc, isFromFirestore) {
+            if (!rawCloudDoc || typeof rawCloudDoc !== 'object') {
+                return { cleanedScope: dbScopeOfWork || {}, cleanedOrder: dbScopeSubAreaOrder || {}, hadLegacyPollutionOrScramble: false };
+            }
+            var hasExplicitV2Order = Number(rawCloudDoc.orderVersion || 0) >= 2;
+            var topLevelSubAreaOrder = (rawCloudDoc.subAreaOrder && typeof rawCloudDoc.subAreaOrder === 'object') ? rawCloudDoc.subAreaOrder : {};
+            var topLevelOrderedScope = Array.isArray(rawCloudDoc.orderedScope) ? rawCloudDoc.orderedScope : null;
+            var remoteScope = (rawCloudDoc.scope && typeof rawCloudDoc.scope === 'object') ? rawCloudDoc.scope : rawCloudDoc;
+
+            var cleanedScope = {};
+            var cleanedOrder = {};
+            var hadLegacyPollutionOrScramble = false;
+
+            // 1. First hydrate from orderedScope array if available (100% Firestore Array order-preserving for Areas, Sub-Areas, and Tasks)
+            if (topLevelOrderedScope && topLevelOrderedScope.length > 0) {
+                topLevelOrderedScope.forEach(function(areaEntry) {
+                    if (!areaEntry || !areaEntry.area || isReservedScopeMetadataKey(areaEntry.area)) return;
+                    var aKey = areaEntry.area;
+                    var subList = Array.isArray(areaEntry.subAreas) ? areaEntry.subAreas : [];
+                    cleanedScope[aKey] = {};
+                    cleanedOrder[aKey] = [];
+                    subList.forEach(function(subEntry) {
+                        if (!subEntry || !subEntry.name || isReservedScopeMetadataKey(subEntry.name)) {
+                            hadLegacyPollutionOrScramble = true;
+                            return;
+                        }
+                        var sName = String(subEntry.name).trim();
+                        var tArr = (Array.isArray(subEntry.tasks) ? subEntry.tasks : []).filter(function(t) {
+                            return t !== null && t !== undefined && String(t).trim() !== '' && !isReservedScopeMetadataKey(t);
+                        });
+                        cleanedScope[aKey][sName] = tArr;
+                        if (cleanedOrder[aKey].indexOf(sName) === -1) {
+                            cleanedOrder[aKey].push(sName);
+                        }
+                    });
+                });
+            }
+
+            // 2. Also hydrate/reconcile all areas in remoteScope map
+            if (remoteScope && typeof remoteScope === 'object') {
+                Object.keys(remoteScope).forEach(function(areaKey) {
+                    if (isReservedScopeMetadataKey(areaKey)) return;
+                    var areaObj = remoteScope[areaKey];
+                    if (!areaObj || typeof areaObj !== 'object' || Array.isArray(areaObj)) return;
+
+                    // Detect if legacy __subAreaOrder or metadata key was stored inside areaObj
+                    Object.keys(areaObj).forEach(function(sk) {
+                        if (isReservedScopeMetadataKey(sk)) {
+                            hadLegacyPollutionOrScramble = true;
+                        }
+                    });
+
+                    var allSubKeys = Object.keys(areaObj).filter(function(sk) {
+                        return !isReservedScopeMetadataKey(sk) && Array.isArray(areaObj[sk]);
+                    });
+
+                    // Determine candidate saved order
+                    var candidateOrder = [];
+                    if (Array.isArray(cleanedOrder[areaKey]) && cleanedOrder[areaKey].length > 0) {
+                        candidateOrder = cleanedOrder[areaKey].slice();
+                    } else if (Array.isArray(topLevelSubAreaOrder[areaKey]) && topLevelSubAreaOrder[areaKey].length > 0) {
+                        candidateOrder = topLevelSubAreaOrder[areaKey].slice();
+                    } else if (Array.isArray(areaObj.__subAreaOrder) && areaObj.__subAreaOrder.length > 0) {
+                        candidateOrder = areaObj.__subAreaOrder.slice();
+                        hadLegacyPollutionOrScramble = true;
+                    } else if (dbScopeSubAreaOrder && Array.isArray(dbScopeSubAreaOrder[areaKey]) && dbScopeSubAreaOrder[areaKey].length > 0) {
+                        candidateOrder = dbScopeSubAreaOrder[areaKey].slice();
+                    }
+
+                    candidateOrder = candidateOrder.filter(function(sk) {
+                        return !isReservedScopeMetadataKey(sk) && allSubKeys.indexOf(sk) !== -1;
+                    });
+
+                    // Self-heal legacy scrambled floor orders that were created when Firestore map keys were saved directly into __subAreaOrder
+                    if (!hasExplicitV2Order && isLegacyFloorOrderScrambled(candidateOrder)) {
+                        candidateOrder = allSubKeys.slice().sort(compareSubAreaNamesNaturally);
+                        hadLegacyPollutionOrScramble = true;
+                    }
+
+                    var finalSubOrder = [];
+                    candidateOrder.forEach(function(sk) {
+                        if (allSubKeys.indexOf(sk) !== -1 && finalSubOrder.indexOf(sk) === -1) {
+                            finalSubOrder.push(sk);
+                        }
+                    });
+
+                    var missingKeys = allSubKeys.filter(function(sk) {
+                        return finalSubOrder.indexOf(sk) === -1;
+                    });
+                    if (missingKeys.length > 0) {
+                        var hasFloorLike = missingKeys.some(function(sk) { return getSubAreaNaturalSortInfo(sk).isFloorLike; });
+                        if (hasFloorLike || (!hasExplicitV2Order && isLegacyFloorOrderScrambled(missingKeys))) {
+                            missingKeys.sort(compareSubAreaNamesNaturally);
+                        }
+                        missingKeys.forEach(function(sk) {
+                            if (finalSubOrder.indexOf(sk) === -1) finalSubOrder.push(sk);
+                        });
+                    }
+
+                    var rebuiltArea = {};
+                    finalSubOrder.forEach(function(sk) {
+                        // Prefer tasks from orderedScope if already parsed, otherwise from areaObj[sk]
+                        var sourceTasks = (cleanedScope[areaKey] && Array.isArray(cleanedScope[areaKey][sk]))
+                            ? cleanedScope[areaKey][sk]
+                            : (Array.isArray(areaObj[sk]) ? areaObj[sk] : []);
+                        rebuiltArea[sk] = sourceTasks.filter(function(t) {
+                            return t !== null && t !== undefined && String(t).trim() !== '' && !isReservedScopeMetadataKey(t);
+                        });
+                    });
+
+                    cleanedScope[areaKey] = rebuiltArea;
+                    cleanedOrder[areaKey] = finalSubOrder;
+                });
+            }
+
+            // Ensure Mahad Bldg / Mahad al Zahra alias consistency
+            if (cleanedScope['Mahad Bldg']) {
+                cleanedScope['Mahad al Zahra'] = JSON.parse(JSON.stringify(cleanedScope['Mahad Bldg']));
+                cleanedOrder['Mahad al Zahra'] = (cleanedOrder['Mahad Bldg'] || []).slice();
+            } else if (cleanedScope['Mahad al Zahra']) {
+                cleanedScope['Mahad Bldg'] = JSON.parse(JSON.stringify(cleanedScope['Mahad al Zahra']));
+                cleanedOrder['Mahad Bldg'] = (cleanedOrder['Mahad al Zahra'] || []).slice();
+            }
+
+            if (isFromFirestore && (!topLevelOrderedScope || !hasExplicitV2Order)) {
+                hadLegacyPollutionOrScramble = true;
+            }
+
+            dbScopeOfWork = cleanedScope;
+            window.dbScopeOfWork = cleanedScope;
+            dbScopeSubAreaOrder = cleanedOrder;
+            window.dbScopeSubAreaOrder = cleanedOrder;
+            dbScopeOrderVersion = 2;
+            window.dbScopeOrderVersion = 2;
+
+            return {
+                cleanedScope: cleanedScope,
+                cleanedOrder: cleanedOrder,
+                hadLegacyPollutionOrScramble: hadLegacyPollutionOrScramble
+            };
+        }
+
+        function buildCleanScopeFirestorePayload(scopeInput) {
+            var srcScope = scopeInput || dbScopeOfWork || {};
+            var cleanScope = {};
+            var cleanSubAreaOrder = {};
+            var orderedScopeArray = [];
+
+            // Order areas following ALL_AREAS first, then any custom areas
+            var allAreaKeys = [];
+            (ALL_AREAS || []).forEach(function(a) {
+                if (srcScope[a] && typeof srcScope[a] === 'object' && allAreaKeys.indexOf(a) === -1) {
+                    allAreaKeys.push(a);
+                }
+            });
+            Object.keys(srcScope).forEach(function(k) {
+                if (!isReservedScopeMetadataKey(k) && srcScope[k] && typeof srcScope[k] === 'object' && !Array.isArray(srcScope[k])) {
+                    if (allAreaKeys.indexOf(k) === -1) allAreaKeys.push(k);
+                }
+            });
+
+            allAreaKeys.forEach(function(areaKey) {
+                var orderedSubKeys = getOrderedSubAreaKeys(areaKey);
+                var rawArea = srcScope[areaKey] || {};
+                var areaMapClean = {};
+                var subAreasArr = [];
+
+                orderedSubKeys.forEach(function(sk) {
+                    if (isReservedScopeMetadataKey(sk)) return;
+                    var tasks = Array.isArray(rawArea[sk]) ? rawArea[sk] : [];
+                    var cleanTasks = tasks.filter(function(t) {
+                        return t !== null && t !== undefined && String(t).trim() !== '' && !isReservedScopeMetadataKey(t);
+                    });
+                    areaMapClean[sk] = cleanTasks;
+                    subAreasArr.push({
+                        name: sk,
+                        tasks: cleanTasks
+                    });
+                });
+
+                cleanScope[areaKey] = areaMapClean;
+                cleanSubAreaOrder[areaKey] = orderedSubKeys.slice();
+                orderedScopeArray.push({
+                    area: areaKey,
+                    subAreas: subAreasArr
+                });
+            });
+
+            if (cleanScope['Mahad Bldg']) {
+                cleanScope['Mahad al Zahra'] = JSON.parse(JSON.stringify(cleanScope['Mahad Bldg']));
+                cleanSubAreaOrder['Mahad al Zahra'] = (cleanSubAreaOrder['Mahad Bldg'] || []).slice();
+            }
+
+            return {
+                scope: cleanScope,
+                subAreaOrder: cleanSubAreaOrder,
+                orderedScope: orderedScopeArray,
+                orderVersion: 2,
+                updatedAt: new Date().toISOString(),
+                updatedBy: (window.currentUser && window.currentUser.email) ? window.currentUser.email : 'System'
+            };
+        }
+
+        window.hydrateScopeOfWorkFromCloudData = hydrateScopeOfWorkFromCloudData;
+        window.buildCleanScopeFirestorePayload = buildCleanScopeFirestorePayload;
+        window.getOrderedSubAreaKeys = getOrderedSubAreaKeys;
+        window.getScopeSubAreasForArea = getScopeSubAreasForArea;
 
         function buildTaskKey(subArea, taskName) {
             return subArea + ' :: ' + taskName;
@@ -6256,7 +6646,7 @@
             if (!dwrFormState.area) dwrFormState.area = assignedAreas[0] || ALL_AREAS[0];
 
             var subAreasMap = getScopeSubAreasForArea(dwrFormState.area);
-            var subAreaNames = Object.keys(subAreasMap);
+            var subAreaNames = getOrderedSubAreaKeys(dwrFormState.area);
             var totalTasksInArea = 0;
             var totalCheckedInArea = 0;
 
@@ -6521,9 +6911,10 @@
 
         function toggleAllDwrAreaTasks(checkAll) {
             var subAreasMap = getScopeSubAreasForArea(dwrFormState.area);
+            var orderedSubAreas = getOrderedSubAreaKeys(dwrFormState.area);
             dwrFormState.tasksCompleted = [];
             if (checkAll) {
-                Object.keys(subAreasMap).forEach(function(subArea) {
+                orderedSubAreas.forEach(function(subArea) {
                     var tasks = Array.isArray(subAreasMap[subArea]) ? subAreasMap[subArea] : [];
                     tasks.forEach(function(taskName) {
                         dwrFormState.tasksCompleted.push(buildTaskKey(subArea, taskName));
@@ -6672,7 +7063,7 @@
             } else if (!dwrBuilderSelectedArea || allAreas.indexOf(dwrBuilderSelectedArea) === -1) {
                 // Default to first area that already has tasks, or ALL_AREAS[0]
                 var configuredKeys = Object.keys(dbScopeOfWork || {}).filter(function(k) {
-                    return k !== 'Mahad al Zahra' && dbScopeOfWork[k] && Object.keys(dbScopeOfWork[k]).length > 0;
+                    return !isReservedScopeMetadataKey(k) && k !== 'Mahad al Zahra' && getOrderedSubAreaKeys(k).length > 0;
                 });
                 dwrBuilderSelectedArea = configuredKeys.length > 0 ? configuredKeys[0] : (allAreas[0] || 'Religious Block');
             }
@@ -6691,7 +7082,7 @@
             if (!dwrBuilderSelectedArea) dwrBuilderSelectedArea = allAreas[0] || 'Religious Block';
 
             var subAreasMap = getScopeSubAreasForArea(dwrBuilderSelectedArea);
-            var subAreaNames = Object.keys(subAreasMap);
+            var subAreaNames = getOrderedSubAreaKeys(dwrBuilderSelectedArea);
             var totalTasksInSelectedArea = 0;
             subAreaNames.forEach(function(s) {
                 totalTasksInSelectedArea += (Array.isArray(subAreasMap[s]) ? subAreasMap[s].length : 0);
@@ -6702,7 +7093,7 @@
             var grandTotalTasks = 0;
             allAreas.forEach(function(a) {
                 var sMap = getScopeSubAreasForArea(a);
-                var sKeys = Object.keys(sMap);
+                var sKeys = getOrderedSubAreaKeys(a);
                 if (sKeys.length > 0) {
                     totalConfiguredAreas++;
                     sKeys.forEach(function(sk) {
@@ -6758,9 +7149,10 @@
             html += '<div class="flex flex-wrap gap-2">';
             allAreas.forEach(function(areaName) {
                 var aMap = getScopeSubAreasForArea(areaName);
-                var aSubCount = Object.keys(aMap).length;
+                var aOrderedKeys = getOrderedSubAreaKeys(areaName);
+                var aSubCount = aOrderedKeys.length;
                 var aTaskCount = 0;
-                Object.keys(aMap).forEach(function(k) { aTaskCount += (Array.isArray(aMap[k]) ? aMap[k].length : 0); });
+                aOrderedKeys.forEach(function(k) { aTaskCount += (Array.isArray(aMap[k]) ? aMap[k].length : 0); });
                 var isSelected = doAreasMatch(areaName, dwrBuilderSelectedArea);
                 var safeA = areaName.replace(/'/g, "\\'");
 
@@ -6789,13 +7181,19 @@
             html += '<p class="text-xs text-slate-500 mt-0.5">' + subAreaNames.length + ' Sub-Area(s) &bull; ' + totalTasksInSelectedArea + ' Checklist Task(s)</p>';
             html += '</div>';
 
-            // Add Sub-Area Form inline
-            html += '<form onsubmit="handleAddDwrSubArea(event)" class="flex items-center space-x-2 w-full sm:w-auto">';
+            // Add Sub-Area Form inline + Auto-Sort Floors button
+            html += '<div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">';
+            if (subAreaNames.length > 1) {
+                html += '<button type="button" onclick="autoSortDwrSubAreasForArea(\'' + safeArea + '\')" class="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold px-3 py-2 rounded-xl transition whitespace-nowrap flex items-center space-x-1.5" title="Automatically sort floors in sequence (Ground floor -> 1st..11th floor -> Lift & Staircase -> Basement)">';
+                html += '<i class="fa-solid fa-arrow-down-1-9 text-amber-600"></i><span>Auto-Sort Floors</span>';
+                html += '</button>';
+            }
+            html += '<form onsubmit="handleAddDwrSubArea(event)" class="flex items-center space-x-2 flex-1 sm:flex-initial">';
             html += '<input type="text" id="newDwrSubAreaInput" required placeholder="New Sub-Area (e.g. Masjid, Auditorium)..." class="w-full sm:w-64 text-xs px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">';
             html += '<button type="submit" class="bg-[#004d3d] hover:bg-[#00382c] text-white text-xs font-bold px-4 py-2 rounded-xl shadow transition whitespace-nowrap flex items-center space-x-1.5">';
             html += '<i class="fa-solid fa-plus text-emerald-300"></i><span>Add Sub-Area</span>';
             html += '</button>';
-            html += '</form></div>';
+            html += '</form></div></div>';
 
             if (subAreaNames.length === 0) {
                 html += '<div class="p-10 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300 space-y-3">';
@@ -6811,10 +7209,14 @@
 
                     html += '<div class="rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col justify-between overflow-hidden shadow-2xs">';
                     html += '<div>';
-                    // Sub-Area Card Header with Rename & Delete buttons
+                    // Sub-Area Card Header with Position Selector, Move Arrows, Rename & Delete buttons
                     html += '<div class="px-3.5 py-2.5 bg-slate-900 text-white flex items-center justify-between gap-2">';
                     html += '<div class="flex items-center space-x-2 min-w-0">';
-                    html += '<span class="w-5 h-5 rounded bg-indigo-500 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">' + (sIdx + 1) + '</span>';
+                    html += '<select onchange="jumpDwrSubAreaToIndex(\'' + safeArea + '\', ' + sIdx + ', parseInt(this.value, 10))" class="h-5 px-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold flex-shrink-0 cursor-pointer border border-indigo-400 focus:outline-none" title="Jump Sub-Area to position #">';
+                    for (var posIdx = 0; posIdx < subAreaNames.length; posIdx++) {
+                        html += '<option value="' + posIdx + '" ' + (posIdx === sIdx ? 'selected' : '') + ' class="bg-slate-900 text-white">' + (posIdx + 1) + '</option>';
+                    }
+                    html += '</select>';
                     html += '<span class="font-extrabold text-xs truncate" title="' + subArea + '">' + subArea + '</span>';
                     html += '<span class="text-[10px] font-mono bg-slate-800 text-emerald-300 px-1.5 py-0.5 rounded">' + tasks.length + '</span>';
                     html += '</div>';
@@ -6870,18 +7272,71 @@
             orderedKeys[targetIdx] = temp;
 
             var currentRaw = getRawScopeSubAreasObject(canon);
-            var newOrderedMap = { __subAreaOrder: orderedKeys.slice() };
+            var newOrderedMap = {};
             orderedKeys.forEach(function(k) {
-                newOrderedMap[k] = Array.isArray(currentRaw[k]) ? currentRaw[k].slice() : [];
+                if (!isReservedScopeMetadataKey(k)) {
+                    newOrderedMap[k] = Array.isArray(currentRaw[k]) ? currentRaw[k].slice() : [];
+                }
             });
             dbScopeOfWork[canon] = newOrderedMap;
+            setRawScopeSubAreaOrderArray(canon, orderedKeys);
 
             saveStateToLocalBackup();
             renderManageDwrFormPageView(document.getElementById('moduleContainer'));
             if (window.syncModifiedScopeOfWork) {
                 await syncModifiedScopeOfWork();
             }
-            showAppNotification('Sub-Area order reshuffled & saved!', 'success');
+            showAppNotification('Sub-Area order updated & synced to all logins!', 'success');
+        }
+
+        async function jumpDwrSubAreaToIndex(areaName, fromIndex, toIndex) {
+            var canon = ensureAreaExistsInScope(areaName);
+            var orderedKeys = getOrderedSubAreaKeys(canon);
+            if (fromIndex < 0 || fromIndex >= orderedKeys.length || toIndex < 0 || toIndex >= orderedKeys.length || fromIndex === toIndex) return;
+
+            var movedKey = orderedKeys.splice(fromIndex, 1)[0];
+            orderedKeys.splice(toIndex, 0, movedKey);
+
+            var currentRaw = getRawScopeSubAreasObject(canon);
+            var newOrderedMap = {};
+            orderedKeys.forEach(function(k) {
+                if (!isReservedScopeMetadataKey(k)) {
+                    newOrderedMap[k] = Array.isArray(currentRaw[k]) ? currentRaw[k].slice() : [];
+                }
+            });
+            dbScopeOfWork[canon] = newOrderedMap;
+            setRawScopeSubAreaOrderArray(canon, orderedKeys);
+
+            saveStateToLocalBackup();
+            renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+            if (window.syncModifiedScopeOfWork) {
+                await syncModifiedScopeOfWork();
+            }
+            showAppNotification('Moved "' + movedKey + '" to position #' + (toIndex + 1) + '!', 'success');
+        }
+
+        async function autoSortDwrSubAreasForArea(areaName) {
+            var canon = ensureAreaExistsInScope(areaName);
+            var orderedKeys = getOrderedSubAreaKeys(canon);
+            if (orderedKeys.length <= 1) return;
+
+            var sortedKeys = orderedKeys.slice().sort(compareSubAreaNamesNaturally);
+            var currentRaw = getRawScopeSubAreasObject(canon);
+            var newOrderedMap = {};
+            sortedKeys.forEach(function(k) {
+                if (!isReservedScopeMetadataKey(k)) {
+                    newOrderedMap[k] = Array.isArray(currentRaw[k]) ? currentRaw[k].slice() : [];
+                }
+            });
+            dbScopeOfWork[canon] = newOrderedMap;
+            setRawScopeSubAreaOrderArray(canon, sortedKeys);
+
+            saveStateToLocalBackup();
+            renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+            if (window.syncModifiedScopeOfWork) {
+                await syncModifiedScopeOfWork();
+            }
+            showAppNotification('Auto-sorted Sub-Areas for ' + formatAreaDisplayLabel(canon) + ' & synced to all users!', 'success');
         }
 
         async function moveDwrTask(areaName, subAreaName, taskIndex, direction) {
@@ -6896,15 +7351,22 @@
             tasks[taskIndex] = tasks[targetIdx];
             tasks[targetIdx] = temp;
 
-            dbScopeOfWork[canon] = currentRaw;
-            dbScopeOfWork[canon].__subAreaOrder = getOrderedSubAreaKeys(canon);
+            var orderedKeys = getOrderedSubAreaKeys(canon);
+            var cleanMap = {};
+            orderedKeys.forEach(function(k) {
+                if (!isReservedScopeMetadataKey(k)) {
+                    cleanMap[k] = Array.isArray(currentRaw[k]) ? currentRaw[k].slice() : [];
+                }
+            });
+            dbScopeOfWork[canon] = cleanMap;
+            setRawScopeSubAreaOrderArray(canon, orderedKeys);
 
             saveStateToLocalBackup();
             renderManageDwrFormPageView(document.getElementById('moduleContainer'));
             if (window.syncModifiedScopeOfWork) {
                 await syncModifiedScopeOfWork();
             }
-            showAppNotification('Task order reshuffled & saved!', 'success');
+            showAppNotification('Task order updated & synced to all logins!', 'success');
         }
 
         function ensureAreaExistsInScope(areaName) {
@@ -6913,23 +7375,41 @@
             if (!dbScopeOfWork[canon] || typeof dbScopeOfWork[canon] !== 'object') {
                 dbScopeOfWork[canon] = {};
             }
+            delete dbScopeOfWork[canon].__subAreaOrder;
+            delete dbScopeOfWork[canon].subAreaOrder;
             return canon;
         }
 
         async function syncModifiedScopeOfWork() {
+            if (!dbScopeSubAreaOrder || typeof dbScopeSubAreaOrder !== 'object') dbScopeSubAreaOrder = {};
             Object.keys(dbScopeOfWork || {}).forEach(function(areaKey) {
+                if (isReservedScopeMetadataKey(areaKey)) {
+                    delete dbScopeOfWork[areaKey];
+                    return;
+                }
                 if (dbScopeOfWork[areaKey] && typeof dbScopeOfWork[areaKey] === 'object') {
                     var ordered = getOrderedSubAreaKeys(areaKey);
-                    var rebuilt = { __subAreaOrder: ordered };
+                    var rebuilt = {};
                     ordered.forEach(function(sk) {
-                        rebuilt[sk] = Array.isArray(dbScopeOfWork[areaKey][sk]) ? dbScopeOfWork[areaKey][sk] : [];
+                        if (!isReservedScopeMetadataKey(sk)) {
+                            var rawTasks = Array.isArray(dbScopeOfWork[areaKey][sk]) ? dbScopeOfWork[areaKey][sk] : [];
+                            rebuilt[sk] = rawTasks.filter(function(t) {
+                                return t !== null && t !== undefined && String(t).trim() !== '' && !isReservedScopeMetadataKey(t);
+                            });
+                        }
                     });
                     dbScopeOfWork[areaKey] = rebuilt;
+                    dbScopeSubAreaOrder[areaKey] = ordered.slice();
                 }
             });
             if (dbScopeOfWork['Mahad Bldg']) {
                 dbScopeOfWork['Mahad al Zahra'] = JSON.parse(JSON.stringify(dbScopeOfWork['Mahad Bldg']));
+                dbScopeSubAreaOrder['Mahad al Zahra'] = (dbScopeSubAreaOrder['Mahad Bldg'] || []).slice();
             }
+            dbScopeOrderVersion = 2;
+            window.dbScopeOfWork = dbScopeOfWork;
+            window.dbScopeSubAreaOrder = dbScopeSubAreaOrder;
+            window.dbScopeOrderVersion = 2;
             saveStateToLocalBackup();
             if (window.saveScopeOfWorkToFirestore) {
                 await window.saveScopeOfWorkToFirestore(dbScopeOfWork);
@@ -6945,6 +7425,7 @@
             openPromptDialog('Add New Area / Building', 'Enter Area Name (e.g. Religious Block, Guest House)', async function(val) {
                 if (!val || !val.trim()) return;
                 var clean = normalizeAreaAlias(val.trim());
+                if (isReservedScopeMetadataKey(clean)) return;
                 ensureAreaExistsInScope(clean);
                 if (ALL_AREAS.indexOf(clean) === -1 && clean !== 'Mahad al Zahra') {
                     ALL_AREAS.push(clean);
@@ -6960,7 +7441,11 @@
             openConfirmDialog('Are you sure you want to clear all Sub-Areas and Tasks for "' + formatAreaDisplayLabel(areaName) + '"?', async function() {
                 var canon = normalizeAreaAlias(areaName);
                 delete dbScopeOfWork[canon];
-                if (canon === 'Mahad Bldg') delete dbScopeOfWork['Mahad al Zahra'];
+                if (dbScopeSubAreaOrder) delete dbScopeSubAreaOrder[canon];
+                if (canon === 'Mahad Bldg') {
+                    delete dbScopeOfWork['Mahad al Zahra'];
+                    if (dbScopeSubAreaOrder) delete dbScopeSubAreaOrder['Mahad al Zahra'];
+                }
                 await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Cleared DWR form for ' + areaName + '.', 'info');
@@ -6972,6 +7457,10 @@
             var inp = document.getElementById('newDwrSubAreaInput');
             if (!inp || !inp.value.trim()) return;
             var subName = inp.value.trim();
+            if (isReservedScopeMetadataKey(subName)) {
+                showAppNotification('Invalid Sub-Area name.', 'error');
+                return;
+            }
             var canon = ensureAreaExistsInScope(dwrBuilderSelectedArea);
             if (dbScopeOfWork[canon][subName]) {
                 showAppNotification('Sub-Area "' + subName + '" already exists in ' + canon + '.', 'error');
@@ -6980,7 +7469,7 @@
             var orderedKeys = getOrderedSubAreaKeys(canon);
             dbScopeOfWork[canon][subName] = [];
             if (orderedKeys.indexOf(subName) === -1) orderedKeys.push(subName);
-            dbScopeOfWork[canon].__subAreaOrder = orderedKeys;
+            setRawScopeSubAreaOrderArray(canon, orderedKeys);
             inp.value = '';
             await syncModifiedScopeOfWork();
             renderManageDwrFormPageView(document.getElementById('moduleContainer'));
@@ -6991,16 +7480,18 @@
             openPromptDialog('Rename Sub-Area (' + oldSubName + ')', oldSubName, async function(newVal) {
                 if (!newVal || !newVal.trim() || newVal.trim() === oldSubName) return;
                 var newSub = newVal.trim();
+                if (isReservedScopeMetadataKey(newSub)) return;
                 var canon = ensureAreaExistsInScope(areaName);
                 var orderedKeys = getOrderedSubAreaKeys(canon);
                 var currentMap = getRawScopeSubAreasObject(canon) || {};
                 var newOrder = orderedKeys.map(function(k) { return k === oldSubName ? newSub : k; });
-                var rebuilt = { __subAreaOrder: newOrder };
+                var rebuilt = {};
                 newOrder.forEach(function(k) {
                     var srcKey = (k === newSub) ? oldSubName : k;
                     rebuilt[k] = Array.isArray(currentMap[srcKey]) ? currentMap[srcKey] : [];
                 });
                 dbScopeOfWork[canon] = rebuilt;
+                setRawScopeSubAreaOrderArray(canon, newOrder);
                 await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Renamed Sub-Area to "' + newSub + '".', 'success');
@@ -7014,14 +7505,19 @@
         function deleteDwrSubArea(areaName, subName) {
             openConfirmDialog('Delete Sub-Area "' + subName + '" and all its tasks from ' + areaName + '?', async function() {
                 var norm = normalizeAreaAlias(areaName).toLowerCase();
-                // Delete from all alias keys of dbScopeOfWork
+                // Delete from all alias keys of dbScopeOfWork and dbScopeSubAreaOrder
                 Object.keys(dbScopeOfWork || {}).forEach(function(k) {
                     if (normalizeAreaAlias(k).toLowerCase() === norm || k.toLowerCase() === norm) {
                         if (dbScopeOfWork[k] && typeof dbScopeOfWork[k] === 'object') {
                             delete dbScopeOfWork[k][subName];
-                            if (Array.isArray(dbScopeOfWork[k].__subAreaOrder)) {
-                                dbScopeOfWork[k].__subAreaOrder = dbScopeOfWork[k].__subAreaOrder.filter(function(item) { return item !== subName; });
-                            }
+                            delete dbScopeOfWork[k].__subAreaOrder;
+                        }
+                    }
+                });
+                Object.keys(dbScopeSubAreaOrder || {}).forEach(function(k) {
+                    if (normalizeAreaAlias(k).toLowerCase() === norm || k.toLowerCase() === norm) {
+                        if (Array.isArray(dbScopeSubAreaOrder[k])) {
+                            dbScopeSubAreaOrder[k] = dbScopeSubAreaOrder[k].filter(function(item) { return item !== subName; });
                         }
                     }
                 });
@@ -7038,6 +7534,7 @@
             openPromptDialog('Clone Sub-Area: ' + subName, defaultCloneName, async function(newSubName) {
                 if (!newSubName || !newSubName.trim()) return;
                 var cleanSub = newSubName.trim();
+                if (isReservedScopeMetadataKey(cleanSub)) return;
                 var canon = ensureAreaExistsInScope(areaName);
                 if (dbScopeOfWork[canon] && dbScopeOfWork[canon][cleanSub]) {
                     showAppNotification('Sub-Area "' + cleanSub + '" already exists in ' + canon + '.', 'error');
@@ -7047,7 +7544,7 @@
                 if (!dbScopeOfWork[canon]) dbScopeOfWork[canon] = {};
                 dbScopeOfWork[canon][cleanSub] = existingTasks.slice();
                 if (orderedKeys.indexOf(cleanSub) === -1) orderedKeys.push(cleanSub);
-                dbScopeOfWork[canon].__subAreaOrder = orderedKeys;
+                setRawScopeSubAreaOrderArray(canon, orderedKeys);
                 await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Cloned Sub-Area "' + cleanSub + '" with ' + existingTasks.length + ' tasks!', 'success');
@@ -7116,6 +7613,7 @@
                     var data = new Uint8Array(evt.target.result);
                     var workbook = XLSX.read(data, { type: 'array' });
                     var parsedScope = {};
+                    var parsedSubAreaOrder = {};
                     var totalAreasParsed = 0;
                     var totalSubAreasParsed = 0;
                     var totalTasksParsed = 0;
@@ -7164,10 +7662,14 @@
                                 });
                                 if (areaVal) lastArea = areaVal;
                                 if (subVal) lastSubArea = subVal;
-                                if (lastArea && lastSubArea && taskVal) {
+                                if (lastArea && lastSubArea && taskVal && !isReservedScopeMetadataKey(lastSubArea) && !isReservedScopeMetadataKey(taskVal)) {
                                     var canonArea = normalizeAreaAlias(lastArea);
-                                    if (!parsedScope[canonArea]) { parsedScope[canonArea] = {}; totalAreasParsed++; }
-                                    if (!parsedScope[canonArea][lastSubArea]) { parsedScope[canonArea][lastSubArea] = []; totalSubAreasParsed++; }
+                                    if (!parsedScope[canonArea]) { parsedScope[canonArea] = {}; parsedSubAreaOrder[canonArea] = []; totalAreasParsed++; }
+                                    if (!parsedScope[canonArea][lastSubArea]) {
+                                        parsedScope[canonArea][lastSubArea] = [];
+                                        if (parsedSubAreaOrder[canonArea].indexOf(lastSubArea) === -1) parsedSubAreaOrder[canonArea].push(lastSubArea);
+                                        totalSubAreasParsed++;
+                                    }
                                     if (parsedScope[canonArea][lastSubArea].indexOf(taskVal) === -1) {
                                         parsedScope[canonArea][lastSubArea].push(taskVal);
                                         totalTasksParsed++;
@@ -7223,6 +7725,7 @@
                                     currentArea = normalizeAreaAlias(singleText);
                                     if (!parsedScope[currentArea]) {
                                         parsedScope[currentArea] = {};
+                                        parsedSubAreaOrder[currentArea] = [];
                                         totalAreasParsed++;
                                     }
                                     if (ALL_AREAS.indexOf(currentArea) === -1 && currentArea !== 'Mahad al Zahra') {
@@ -7238,10 +7741,15 @@
                             if (expectingSubAreaRow && currentArea) {
                                 activeSubAreaByCol = {};
                                 nonEmptyIndices.forEach(function(item) {
+                                    if (isReservedScopeMetadataKey(item.val)) return;
                                     activeSubAreaByCol[item.col] = item.val;
                                     if (!parsedScope[currentArea][item.val]) {
                                         parsedScope[currentArea][item.val] = [];
                                         totalSubAreasParsed++;
+                                    }
+                                    if (!parsedSubAreaOrder[currentArea]) parsedSubAreaOrder[currentArea] = [];
+                                    if (parsedSubAreaOrder[currentArea].indexOf(item.val) === -1) {
+                                        parsedSubAreaOrder[currentArea].push(item.val);
                                     }
                                 });
                                 expectingSubAreaRow = false;
@@ -7253,7 +7761,7 @@
                             if (currentArea && Object.keys(activeSubAreaByCol).length > 0) {
                                 nonEmptyIndices.forEach(function(item) {
                                     var subName = activeSubAreaByCol[item.col];
-                                    if (subName && parsedScope[currentArea] && parsedScope[currentArea][subName]) {
+                                    if (subName && !isReservedScopeMetadataKey(subName) && !isReservedScopeMetadataKey(item.val) && parsedScope[currentArea] && parsedScope[currentArea][subName]) {
                                         if (parsedScope[currentArea][subName].indexOf(item.val) === -1) {
                                             parsedScope[currentArea][subName].push(item.val);
                                             totalTasksParsed++;
@@ -7274,6 +7782,7 @@
                     var importedAreaKeys = Object.keys(parsedScope);
                     importedAreaKeys.forEach(function(areaKey) {
                         dbScopeOfWork[areaKey] = parsedScope[areaKey];
+                        setRawScopeSubAreaOrderArray(areaKey, parsedSubAreaOrder[areaKey] || Object.keys(parsedScope[areaKey]));
                         if (areaKey === 'Mahad Bldg') {
                             dbScopeOfWork['Mahad al Zahra'] = JSON.parse(JSON.stringify(parsedScope[areaKey]));
                         }
@@ -7379,11 +7888,24 @@
             html += '<span class="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">Verified Response</span>';
             html += '</div>';
 
-            if (completedArr.length === 0) {
+            var orderedModalSubNames = [];
+            var configuredOrderForModal = getOrderedSubAreaKeys(rep.area || rep.block || '');
+            configuredOrderForModal.forEach(function(sk) {
+                if (groupedTasks[sk] && orderedModalSubNames.indexOf(sk) === -1) {
+                    orderedModalSubNames.push(sk);
+                }
+            });
+            Object.keys(groupedTasks).forEach(function(sk) {
+                if (!isReservedScopeMetadataKey(sk) && orderedModalSubNames.indexOf(sk) === -1) {
+                    orderedModalSubNames.push(sk);
+                }
+            });
+
+            if (orderedModalSubNames.length === 0) {
                 html += '<p class="text-xs text-slate-400 italic">No checklist tasks recorded in this report.</p>';
             } else {
                 html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">';
-                Object.keys(groupedTasks).forEach(function(subName) {
+                orderedModalSubNames.forEach(function(subName) {
                     var tList = groupedTasks[subName];
                     html += '<div class="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-1.5">';
                     html += '<div class="flex items-center justify-between border-b border-slate-100 pb-1">';
@@ -15719,6 +16241,7 @@
                 navigator.serviceWorker.register('./sw.js')
                     .then(function(reg) {
                         console.log('Siyanat ServiceWorker registered successfully with scope:', reg.scope);
+                        try { reg.update(); } catch (uErr) {}
                     })
                     .catch(function(err) {
                         console.warn('Siyanat ServiceWorker registration note:', err);
@@ -15921,6 +16444,17 @@
                 if (firebaseUsers.length > 0) {
                     window.userRegistry = mergeCollectionWithLocal(firebaseUsers, window.userRegistry, 'email');
                     saveStateToLocalBackup();
+                }
+                const scopeSnap = await getDoc(doc(db, "settings", "scope_of_work"));
+                if (scopeSnap.exists() && typeof window.hydrateScopeOfWorkFromCloudData === "function") {
+                    const res = window.hydrateScopeOfWorkFromCloudData(scopeSnap.data(), true);
+                    saveStateToLocalBackup();
+                    if (res && res.hadLegacyPollutionOrScramble && typeof window.saveScopeOfWorkToFirestore === "function") {
+                        window.saveScopeOfWorkToFirestore(window.dbScopeOfWork);
+                    }
+                    if (window.activeModule === "cleaning" && typeof window.renderCleaningModule === "function") {
+                        window.renderCleaningModule(document.getElementById("moduleContainer"), document.getElementById("modulePrimaryActions"), true);
+                    }
                 }
             } catch (e) {}
         };
@@ -16585,41 +17119,22 @@
                 onSnapshot(
                     doc(db, "settings", "scope_of_work"),
                     (docSnap) => {
+                        window.hasReceivedFirestoreSnapshot = true;
                         if (docSnap.exists()) {
                             const data = docSnap.data();
-                            const remoteScope = data.scope || data;
-                            if (remoteScope && typeof remoteScope === "object") {
-                                const cleanedScope = {};
-                                Object.keys(remoteScope).forEach((k) => {
-                                    if (k !== "updatedAt" && k !== "updatedBy" && remoteScope[k] && typeof remoteScope[k] === "object") {
-                                        const areaObj = remoteScope[k];
-                                        const allSubKeys = Object.keys(areaObj).filter((sk) => sk !== "__subAreaOrder" && Array.isArray(areaObj[sk]));
-                                        const savedOrder = Array.isArray(areaObj.__subAreaOrder) ? areaObj.__subAreaOrder : [];
-                                        const orderedSubKeys = [];
-                                        savedOrder.forEach((sk) => {
-                                            if (allSubKeys.includes(sk) && !orderedSubKeys.includes(sk)) orderedSubKeys.push(sk);
-                                        });
-                                        allSubKeys.forEach((sk) => {
-                                            if (!orderedSubKeys.includes(sk)) orderedSubKeys.push(sk);
-                                        });
-                                        const rebuiltArea = { __subAreaOrder: orderedSubKeys };
-                                        orderedSubKeys.forEach((sk) => {
-                                            rebuiltArea[sk] = areaObj[sk];
-                                        });
-                                        cleanedScope[k] = rebuiltArea;
-                                    }
-                                });
-                                window.dbScopeOfWork = cleanedScope;
+                            if (data && typeof data === "object" && typeof window.hydrateScopeOfWorkFromCloudData === "function") {
+                                const res = window.hydrateScopeOfWorkFromCloudData(data, true);
                                 saveStateToLocalBackup();
-                                if (window.activeModule === "cleaning") {
+                                // If cloud document had legacy __subAreaOrder inside scope[area] or scrambled floor keys, clean Firestore immediately
+                                if (res && res.hadLegacyPollutionOrScramble && typeof window.saveScopeOfWorkToFirestore === "function") {
+                                    window.saveScopeOfWorkToFirestore(window.dbScopeOfWork);
+                                }
+                                if (window.activeModule === "cleaning" && typeof window.renderCleaningModule === "function") {
                                     window.renderCleaningModule(document.getElementById("moduleContainer"), document.getElementById("modulePrimaryActions"), true);
                                 }
                             }
-                        } else if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0) {
-                            setDoc(doc(db, "settings", "scope_of_work"), {
-                                scope: window.dbScopeOfWork,
-                                updatedAt: new Date().toISOString()
-                            }, { merge: true }).catch(() => {});
+                        } else if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0 && typeof window.buildCleanScopeFirestorePayload === "function") {
+                            setDoc(doc(db, "settings", "scope_of_work"), window.buildCleanScopeFirestorePayload(window.dbScopeOfWork)).catch(() => {});
                         }
                     },
                     (err) => handleSnapshotError("settings/scope_of_work", err)
@@ -16959,11 +17474,14 @@
             saveStateToLocalBackup();
             try {
                 await window.ensureFirebaseAuthSession();
-                await setDoc(doc(db, "settings", "scope_of_work"), {
-                    scope: scopeObj,
-                    updatedAt: new Date().toISOString(),
-                    updatedBy: window.currentUser ? window.currentUser.email : "System"
-                });
+                const payload = typeof window.buildCleanScopeFirestorePayload === "function"
+                    ? window.buildCleanScopeFirestorePayload(scopeObj || window.dbScopeOfWork)
+                    : {
+                        scope: scopeObj || window.dbScopeOfWork || {},
+                        updatedAt: new Date().toISOString(),
+                        updatedBy: window.currentUser ? window.currentUser.email : "System"
+                    };
+                await setDoc(doc(db, "settings", "scope_of_work"), payload);
             } catch (err) {
                 handleWriteError("settings/scope_of_work", err);
             }
@@ -17569,7 +18087,10 @@
                     await window.batchSaveCollectionToFirestore('daily_work_reports', window.dbDailyWorkReports);
                 }
                 if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0) {
-                    await setDoc(doc(db, "settings", "scope_of_work"), { scope: window.dbScopeOfWork, updatedAt: new Date().toISOString() });
+                    const cleanPayload = typeof window.buildCleanScopeFirestorePayload === "function"
+                        ? window.buildCleanScopeFirestorePayload(window.dbScopeOfWork)
+                        : { scope: window.dbScopeOfWork, updatedAt: new Date().toISOString() };
+                    await setDoc(doc(db, "settings", "scope_of_work"), cleanPayload);
                 }
 
                 // 5. Pest Control, Waste, Crates, Water Tanks, Procurement, Machinery
