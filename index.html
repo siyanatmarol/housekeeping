@@ -2548,22 +2548,221 @@
             purgeDeletedRecordsAcrossAllModules();
         }
 
-        function saveStateToLocalBackup() {
+        var _localBackupDebounceTimer = null;
+        var _mediaBackupDebounceTimer = null;
+
+        function stripHeavyBase64ForLocalStorage(obj) {
+            if (!obj) return obj;
+            if (typeof obj === 'string') {
+                if (obj.length > 2048 && obj.indexOf('data:') === 0) {
+                    return '';
+                }
+                return obj;
+            }
+            if (Array.isArray(obj)) {
+                var arrOut = new Array(obj.length);
+                for (var i = 0; i < obj.length; i++) {
+                    arrOut[i] = stripHeavyBase64ForLocalStorage(obj[i]);
+                }
+                return arrOut;
+            }
+            if (typeof obj === 'object') {
+                var out = {};
+                var keys = Object.keys(obj);
+                for (var k = 0; k < keys.length; k++) {
+                    var key = keys[k];
+                    out[key] = stripHeavyBase64ForLocalStorage(obj[key]);
+                }
+                return out;
+            }
+            return obj;
+        }
+
+        function flushStateToLocalBackupImmediate() {
+            _localBackupDebounceTimer = null;
             var fullSnap = buildFullPortalStateSnapshot();
             saveToIndexedDB('full_state', fullSnap);
-            saveToIndexedDB('media_cache', dbMediaCache);
             try {
                 localStorage.setItem(LOCAL_STORAGE_DELETED_KEY, JSON.stringify(deletedRecordIds));
                 localStorage.setItem(LOCAL_STORAGE_DRIVE_KEY, JSON.stringify(dbDriveConfig));
-                localStorage.setItem(LOCAL_STORAGE_STATE_KEY, JSON.stringify(fullSnap));
-            } catch (quotaErr) {
-                // If localStorage hits 5MB due to inline base64 media, save lightweight copy in localStorage while IndexedDB holds full media
+                var lightSnap = stripHeavyBase64ForLocalStorage(fullSnap);
+                localStorage.setItem(LOCAL_STORAGE_STATE_KEY, JSON.stringify(lightSnap));
+            } catch (quotaErr) {}
+        }
+
+        function saveStateToLocalBackup(immediate) {
+            if (immediate === true) {
+                if (_localBackupDebounceTimer) clearTimeout(_localBackupDebounceTimer);
+                flushStateToLocalBackupImmediate();
+                return;
+            }
+            if (_localBackupDebounceTimer) clearTimeout(_localBackupDebounceTimer);
+            _localBackupDebounceTimer = setTimeout(function() {
+                if (typeof window.requestIdleCallback === 'function') {
+                    window.requestIdleCallback(flushStateToLocalBackupImmediate, { timeout: 1000 });
+                } else {
+                    flushStateToLocalBackupImmediate();
+                }
+            }, 400);
+        }
+
+        function saveMediaCacheToLocalBackup() {
+            if (_mediaBackupDebounceTimer) clearTimeout(_mediaBackupDebounceTimer);
+            _mediaBackupDebounceTimer = setTimeout(function() {
+                saveToIndexedDB('media_cache', dbMediaCache);
+            }, 600);
+        }
+
+        // Flush any pending debounced state backup before page unload
+        window.addEventListener('beforeunload', function() {
+            if (_localBackupDebounceTimer) {
+                clearTimeout(_localBackupDebounceTimer);
+                flushStateToLocalBackupImmediate();
+            }
+        });
+
+        // ================= ACTIVE-INPUT PROTECTION & COALESCED REAL-TIME RENDER ENGINE =================
+        var _pendingScheduledModuleRender = null;
+        var _scheduledRenderTimer = null;
+
+        function isUserActivelyTypingInModule() {
+            var activeEl = document.activeElement;
+            if (!activeEl || activeEl === document.body) return false;
+            var tag = (activeEl.tagName || '').toUpperCase();
+            var isEditable = (tag === 'INPUT' && activeEl.type !== 'checkbox' && activeEl.type !== 'radio' && activeEl.type !== 'file' && activeEl.type !== 'button' && activeEl.type !== 'submit') ||
+                             tag === 'TEXTAREA' ||
+                             tag === 'SELECT' ||
+                             activeEl.isContentEditable;
+            if (!isEditable) return false;
+            var modContainer = document.getElementById('moduleContainer');
+            return !!(modContainer && modContainer.contains(activeEl));
+        }
+
+        function captureContainerUIState(container) {
+            if (!container) return null;
+            var state = {
+                inputsById: {},
+                inputsByKey: {},
+                scrollByKey: {},
+                focusedId: null,
+                focusedKey: null,
+                selStart: null,
+                selEnd: null,
+                windowScrollY: window.scrollY
+            };
+            var activeEl = document.activeElement;
+            if (activeEl && container.contains(activeEl)) {
+                state.focusedId = activeEl.id || null;
+                state.focusedKey = activeEl.getAttribute ? activeEl.getAttribute('data-preserve-key') : null;
                 try {
-                    var lightSnap = Object.assign({}, fullSnap);
-                    localStorage.setItem(LOCAL_STORAGE_STATE_KEY, JSON.stringify(lightSnap));
-                } catch (e2) {}
+                    if (typeof activeEl.selectionStart === 'number') {
+                        state.selStart = activeEl.selectionStart;
+                        state.selEnd = activeEl.selectionEnd;
+                    }
+                } catch (e) {}
+            }
+            var inputs = container.querySelectorAll('input[type="text"], input[type="search"], input[type="number"], textarea');
+            for (var i = 0; i < inputs.length; i++) {
+                var el = inputs[i];
+                if (el.value !== undefined && el.value !== '') {
+                    if (el.id) state.inputsById[el.id] = el.value;
+                    var pk = el.getAttribute('data-preserve-key');
+                    if (pk) state.inputsByKey[pk] = el.value;
+                }
+            }
+            var scrollables = container.querySelectorAll('[data-preserve-scroll]');
+            for (var j = 0; j < scrollables.length; j++) {
+                var sEl = scrollables[j];
+                var sk = sEl.getAttribute('data-preserve-scroll');
+                if (sk && sEl.scrollTop > 0) {
+                    state.scrollByKey[sk] = sEl.scrollTop;
+                }
+            }
+            return state;
+        }
+
+        function restoreContainerUIState(container, state, skipInputId) {
+            if (!container || !state) return;
+            Object.keys(state.inputsById || {}).forEach(function(id) {
+                if (id === skipInputId) return;
+                var el = document.getElementById(id);
+                if (el && container.contains(el) && el.value === '') {
+                    el.value = state.inputsById[id];
+                }
+            });
+            Object.keys(state.inputsByKey || {}).forEach(function(pk) {
+                var el = container.querySelector('[data-preserve-key="' + pk.replace(/"/g, '\\"') + '"]');
+                if (el && el.id !== skipInputId && el.value === '') {
+                    el.value = state.inputsByKey[pk];
+                }
+            });
+            Object.keys(state.scrollByKey || {}).forEach(function(sk) {
+                var sEl = container.querySelector('[data-preserve-scroll="' + sk.replace(/"/g, '\\"') + '"]');
+                if (sEl) {
+                    sEl.scrollTop = state.scrollByKey[sk];
+                }
+            });
+            var focusTarget = null;
+            if (state.focusedId) {
+                focusTarget = document.getElementById(state.focusedId);
+            }
+            if (!focusTarget && state.focusedKey) {
+                focusTarget = container.querySelector('[data-preserve-key="' + state.focusedKey.replace(/"/g, '\\"') + '"]');
+            }
+            if (focusTarget && container.contains(focusTarget)) {
+                try {
+                    focusTarget.focus({ preventScroll: true });
+                    if (state.selStart !== null && focusTarget.value) {
+                        var pos = Math.min(state.selStart, focusTarget.value.length);
+                        var endPos = state.selEnd !== null ? Math.min(state.selEnd, focusTarget.value.length) : pos;
+                        focusTarget.setSelectionRange(pos, endPos);
+                    }
+                } catch (e) {}
             }
         }
+
+        function scheduleActiveModuleRender(targetModule, forceImmediate) {
+            if (!window.activeModule) return;
+            if (targetModule && window.activeModule !== targetModule && !(targetModule === 'inventory' && window.activeModule === 'procurement')) {
+                return;
+            }
+            if (!forceImmediate && isUserActivelyTypingInModule()) {
+                // User is currently typing in an input/textarea inside #moduleContainer!
+                // Defer the visual re-render until they finish typing (blur) so their cursor and text never disappear.
+                _pendingScheduledModuleRender = window.activeModule;
+                return;
+            }
+            if (_scheduledRenderTimer) clearTimeout(_scheduledRenderTimer);
+            _scheduledRenderTimer = setTimeout(function() {
+                _scheduledRenderTimer = null;
+                if (!forceImmediate && isUserActivelyTypingInModule()) {
+                    _pendingScheduledModuleRender = window.activeModule;
+                    return;
+                }
+                _pendingScheduledModuleRender = null;
+                var modContainer = document.getElementById('moduleContainer');
+                var uiSnap = captureContainerUIState(modContainer);
+                if (window.activeModule === 'cleaning' && typeof window.renderCleaningModule === 'function') {
+                    window.renderCleaningModule(modContainer, document.getElementById('modulePrimaryActions'), true);
+                } else if (typeof window.switchModule === 'function') {
+                    window.switchModule(window.activeModule);
+                }
+                restoreContainerUIState(modContainer, uiSnap);
+            }, 60);
+        }
+        window.scheduleActiveModuleRender = scheduleActiveModuleRender;
+
+        document.addEventListener('focusout', function(evt) {
+            if (_pendingScheduledModuleRender) {
+                setTimeout(function() {
+                    if (_pendingScheduledModuleRender && !isUserActivelyTypingInModule()) {
+                        var modToRender = _pendingScheduledModuleRender;
+                        _pendingScheduledModuleRender = null;
+                        scheduleActiveModuleRender(modToRender, false);
+                    }
+                }, 120);
+            }
+        });
 
         function purgeStaleLegacyData() {
             var purgedAny = false;
@@ -2711,25 +2910,34 @@
             return '';
         }
 
-        function resolveMediaUrl(src) {
+        function resolveMediaUrl(src, forThumbnail) {
             if (!src) return '';
             if (typeof src === 'string') {
-                if (dbMediaCache[src]) return dbMediaCache[src];
                 if (src.indexOf('media-ref://') === 0) {
                     var mediaId = src.replace('media-ref://', '');
                     if (dbMediaCache[mediaId]) return dbMediaCache[mediaId];
+                    if (typeof window.fetchMediaBlobOnDemand === 'function') {
+                        window.fetchMediaBlobOnDemand(mediaId);
+                    }
+                    return '';
                 }
                 var driveFileId = extractGoogleDriveFileId(src);
                 if (driveFileId) {
-                    if (dbMediaCache['drive_' + driveFileId]) {
-                        return dbMediaCache['drive_' + driveFileId];
-                    }
                     var lower = src.toLowerCase();
                     var isVidOrDoc = lower.indexOf('mime=video') !== -1 || lower.indexOf('mime=application') !== -1 || lower.match(/\.(mp4|webm|ogg|mov|pdf|doc|docx)(\?|#|$)/);
                     if (!isVidOrDoc) {
-                        return 'https://drive.google.com/thumbnail?id=' + driveFileId + '&sz=w1600';
+                        // Use fast lightweight 320px thumbnail in tables/cards, and full 1600px in modal view
+                        var szParam = forThumbnail ? 'w320' : 'w1600';
+                        if (forThumbnail) {
+                            return 'https://drive.google.com/thumbnail?id=' + driveFileId + '&sz=' + szParam;
+                        }
+                        if (dbMediaCache['drive_' + driveFileId]) {
+                            return dbMediaCache['drive_' + driveFileId];
+                        }
+                        return 'https://drive.google.com/thumbnail?id=' + driveFileId + '&sz=' + szParam;
                     }
                 }
+                if (dbMediaCache[src]) return dbMediaCache[src];
             }
             return src;
         }
@@ -3008,7 +3216,7 @@
         }
 
         function renderInlineMediaThumbnail(src, caption, sizeClasses) {
-            var resolved = resolveMediaUrl(src);
+            var resolved = resolveMediaUrl(src, true);
             if (!resolved) return '';
             var mType = detectMediaType(src);
             var cls = sizeClasses || 'h-16 w-20';
@@ -3016,7 +3224,7 @@
             var safeSrcArg = String(src || '').replace(/'/g, "\\'");
             if (mType === 'video') {
                 return '<div onclick="expandPhotoModal(\'' + safeSrcArg + '\', \'' + safeCaption + '\')" class="' + cls + ' rounded-lg border border-slate-300 bg-slate-900 text-white flex flex-col items-center justify-center cursor-pointer hover:opacity-85 transition shadow-2xs relative overflow-hidden">' +
-                    '<video src="' + resolved + '" class="absolute inset-0 w-full h-full object-cover opacity-60" muted></video>' +
+                    '<video src="' + resolved + '" preload="metadata" class="absolute inset-0 w-full h-full object-cover opacity-60" muted></video>' +
                     '<i class="fa-solid fa-circle-play text-lg text-white z-10"></i>' +
                     '<span class="text-[9px] font-bold uppercase tracking-wider z-10 mt-0.5">Video</span>' +
                 '</div>';
@@ -3027,7 +3235,7 @@
                     '<span class="text-[9px] font-bold uppercase tracking-wider mt-0.5">Document</span>' +
                 '</div>';
             }
-            return '<img src="' + resolved + '" data-fallback-step="0" onerror="handleInlineThumbnailImgError(this, \'' + safeSrcArg + '\')" onclick="expandPhotoModal(\'' + safeSrcArg + '\', \'' + safeCaption + '\')" title="Click to expand preview" class="' + cls + ' object-cover rounded-lg border border-slate-300 cursor-pointer hover:opacity-85 transition shadow-2xs">';
+            return '<img src="' + resolved + '" loading="lazy" decoding="async" data-fallback-step="0" onerror="handleInlineThumbnailImgError(this, \'' + safeSrcArg + '\')" onclick="expandPhotoModal(\'' + safeSrcArg + '\', \'' + safeCaption + '\')" title="Click to expand preview" class="' + cls + ' object-cover rounded-lg border border-slate-300 cursor-pointer hover:opacity-85 transition shadow-2xs">';
         }
 
         var currentActiveVideoSrc = '';
@@ -3290,11 +3498,8 @@
                             dbMediaCache[remoteUrl] = dataUrl;
                             if (extractedId) {
                                 dbMediaCache['drive_' + extractedId] = dataUrl;
-                                if (window.saveChunkedMediaToFirestore && dataUrl.length < 400000) {
-                                    window.saveChunkedMediaToFirestore('drive_' + extractedId, dataUrl, cleanFileName, mimeType, subFolderLabel);
-                                }
                             }
-                            saveStateToLocalBackup();
+                            saveMediaCacheToLocalBackup();
                         }
                         showAppNotification('Uploaded to fm.marol Google Drive (' + (subFolderLabel || 'Drive') + ')', 'success');
                         return remoteUrl;
@@ -3318,7 +3523,7 @@
             if (dataUrl && dataUrl.length > 120000) {
                 var mediaId = 'MEDIA-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
                 dbMediaCache[mediaId] = dataUrl;
-                saveStateToLocalBackup();
+                saveMediaCacheToLocalBackup();
                 if (window.saveChunkedMediaToFirestore) {
                     window.saveChunkedMediaToFirestore(mediaId, dataUrl, cleanFileName, mimeType, subFolderLabel);
                 }
@@ -5911,6 +6116,10 @@
                 hadLegacyPollutionOrScramble = true;
             }
 
+            var newSig = computeScopeDataSignature(cleanedScope, cleanedOrder);
+            var didScopeChange = (newSig !== window._lastLocalScopeSignature);
+            window._lastLocalScopeSignature = newSig;
+
             dbScopeOfWork = cleanedScope;
             window.dbScopeOfWork = cleanedScope;
             dbScopeSubAreaOrder = cleanedOrder;
@@ -5921,9 +6130,35 @@
             return {
                 cleanedScope: cleanedScope,
                 cleanedOrder: cleanedOrder,
-                hadLegacyPollutionOrScramble: hadLegacyPollutionOrScramble
+                hadLegacyPollutionOrScramble: hadLegacyPollutionOrScramble,
+                didScopeChange: didScopeChange
             };
         }
+
+        function computeScopeDataSignature(scopeMap, orderMap) {
+            try {
+                var sObj = scopeMap || dbScopeOfWork || {};
+                var oObj = orderMap || dbScopeSubAreaOrder || {};
+                var parts = [];
+                var areaKeys = Object.keys(sObj).filter(function(k) { return !isReservedScopeMetadataKey(k) && k !== 'Mahad al Zahra'; }).sort();
+                for (var i = 0; i < areaKeys.length; i++) {
+                    var ak = areaKeys[i];
+                    var ord = Array.isArray(oObj[ak]) ? oObj[ak] : Object.keys(sObj[ak] || {});
+                    var subParts = [];
+                    for (var j = 0; j < ord.length; j++) {
+                        var sk = ord[j];
+                        if (isReservedScopeMetadataKey(sk)) continue;
+                        var tArr = (sObj[ak] && Array.isArray(sObj[ak][sk])) ? sObj[ak][sk] : [];
+                        subParts.push(sk + ':' + tArr.join('|'));
+                    }
+                    parts.push(ak + '=[' + subParts.join(';') + ']');
+                }
+                return parts.join('||');
+            } catch (e) {
+                return String(Date.now());
+            }
+        }
+        window.computeScopeDataSignature = computeScopeDataSignature;
 
         function buildCleanScopeFirestorePayload(scopeInput) {
             var srcScope = scopeInput || dbScopeOfWork || {};
@@ -6755,41 +6990,44 @@
 
                 subAreaNames.forEach(function(subArea, sIdx) {
                     var tasks = Array.isArray(subAreasMap[subArea]) ? subAreasMap[subArea] : [];
-                    var matchingTasks = tasks.filter(function(t) {
-                        if (!qFilter) return true;
-                        return subArea.toLowerCase().indexOf(qFilter) !== -1 || t.toLowerCase().indexOf(qFilter) !== -1;
-                    });
-                    if (qFilter && matchingTasks.length === 0) return;
+                    var subLower = subArea.toLowerCase();
+                    var subMatchesFilter = !qFilter || subLower.indexOf(qFilter) !== -1;
+                    var hasAnyVisibleTask = false;
 
                     var subCheckedCount = 0;
                     tasks.forEach(function(t) {
                         if (isTaskMarkedCompleted(dwrFormState.tasksCompleted, subArea, t)) subCheckedCount++;
+                        if (subMatchesFilter || String(t || '').toLowerCase().indexOf(qFilter) !== -1) {
+                            hasAnyVisibleTask = true;
+                        }
                     });
                     var allSubChecked = tasks.length > 0 && subCheckedCount === tasks.length;
                     var safeSubArea = subArea.replace(/'/g, "\\'");
+                    var cardHiddenCls = (qFilter && !hasAnyVisibleTask) ? ' hidden' : '';
 
-                    html += '<div class="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden flex flex-col shadow-2xs">';
+                    html += '<div id="dwrSubCard_' + sIdx + '" data-dwr-subcard="' + sIdx + '" data-subarea-lower="' + subLower.replace(/"/g, '&quot;') + '" class="rounded-xl border border-slate-200 bg-slate-50/50 overflow-hidden flex flex-col shadow-2xs' + cardHiddenCls + '">';
                     html += '<div class="px-4 py-2.5 bg-slate-100 border-b border-slate-200 flex items-center justify-between gap-2">';
                     html += '<div class="flex items-center space-x-2 min-w-0">';
                     html += '<span class="w-5 h-5 rounded-md bg-teal-700 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">' + (sIdx + 1) + '</span>';
                     html += '<h5 class="font-extrabold text-xs text-slate-900 truncate" title="' + subArea + '">' + subArea + '</h5>';
                     html += '</div>';
                     html += '<div class="flex items-center space-x-2 flex-shrink-0">';
-                    html += '<span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ' + (allSubChecked ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-white text-slate-600 border border-slate-200') + '">' + subCheckedCount + '/' + tasks.length + '</span>';
-                    html += '<button type="button" onclick="toggleSubAreaDwrTasks(\'' + safeSubArea + '\', ' + (!allSubChecked) + ')" class="text-[10px] font-bold text-teal-700 hover:text-teal-900 hover:underline">' + (allSubChecked ? 'Uncheck' : 'Check All') + '</button>';
+                    html += '<span id="dwrSubBadge_' + sIdx + '" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ' + (allSubChecked ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-white text-slate-600 border border-slate-200') + '">' + subCheckedCount + '/' + tasks.length + '</span>';
+                    html += '<button type="button" id="dwrSubToggleBtn_' + sIdx + '" onclick="toggleSubAreaDwrTasks(\'' + safeSubArea + '\', ' + (!allSubChecked) + ')" class="text-[10px] font-bold text-teal-700 hover:text-teal-900 hover:underline">' + (allSubChecked ? 'Uncheck' : 'Check All') + '</button>';
                     html += '</div></div>';
 
                     html += '<div class="p-3 space-y-2 flex-1 divide-y divide-slate-100">';
-                    matchingTasks.forEach(function(taskName, tIdx) {
-                        var fullTaskKey = buildTaskKey(subArea, taskName);
+                    tasks.forEach(function(taskName, tIdx) {
                         var isChecked = isTaskMarkedCompleted(dwrFormState.tasksCompleted, subArea, taskName);
                         var safeSub = subArea.replace(/'/g, "\\'");
                         var safeTask = taskName.replace(/'/g, "\\'");
                         var chkId = 'dwrChk_' + sIdx + '_' + tIdx;
+                        var taskLower = String(taskName || '').toLowerCase();
+                        var rowHiddenCls = (qFilter && !subMatchesFilter && taskLower.indexOf(qFilter) === -1) ? ' hidden' : '';
 
-                        html += '<label for="' + chkId + '" class="flex items-start space-x-2.5 pt-2 first:pt-0 cursor-pointer group">';
-                        html += '<input type="checkbox" id="' + chkId + '" ' + (isChecked ? 'checked' : '') + ' onchange="handleDwrTaskCheckboxToggle(\'' + safeSub + '\', \'' + safeTask + '\', this.checked)" class="mt-0.5 w-4 h-4 rounded text-teal-600 border-slate-300 focus:ring-teal-500 cursor-pointer">';
-                        html += '<span class="text-xs leading-snug select-none ' + (isChecked ? 'font-bold text-emerald-900' : 'text-slate-700 group-hover:text-slate-900') + '">' + taskName + '</span>';
+                        html += '<label for="' + chkId + '" data-dwr-taskrow="' + sIdx + '_' + tIdx + '" data-task-lower="' + taskLower.replace(/"/g, '&quot;') + '" class="flex items-start space-x-2.5 pt-2 first:pt-0 cursor-pointer group' + rowHiddenCls + '">';
+                        html += '<input type="checkbox" id="' + chkId + '" data-sub-idx="' + sIdx + '" ' + (isChecked ? 'checked' : '') + ' onchange="handleDwrTaskCheckboxToggle(\'' + safeSub + '\', \'' + safeTask + '\', this.checked, ' + sIdx + ', ' + tIdx + ')" class="mt-0.5 w-4 h-4 rounded text-teal-600 border-slate-300 focus:ring-teal-500 cursor-pointer">';
+                        html += '<span id="dwrChkText_' + sIdx + '_' + tIdx + '" class="text-xs leading-snug select-none ' + (isChecked ? 'font-bold text-emerald-900' : 'text-slate-700 group-hover:text-slate-900') + '">' + taskName + '</span>';
                         html += '</label>';
                     });
                     html += '</div></div>';
@@ -6827,7 +7065,9 @@
             html += '</div>';
 
             html += '</form></div>';
+            var uiSnap = captureContainerUIState(container);
             container.innerHTML = html;
+            restoreContainerUIState(container, uiSnap);
         }
 
         function renderDwrFormPhotoThumbnailsHtml() {
@@ -6836,10 +7076,10 @@
                 return '<span class="text-[11px] text-slate-400 italic">No photos attached yet.</span>';
             }
             return urls.map(function(url, idx) {
-                var resolved = resolveMediaUrl(url);
+                var resolved = resolveMediaUrl(url, true);
                 var safeUrl = String(url).replace(/'/g, "\\'");
                 return '<div class="relative inline-block group border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs">' +
-                    '<img src="' + resolved + '" onclick="expandPhotoModal(\'' + safeUrl + '\', \'DWR Photo #' + (idx + 1) + ' — ' + dwrFormState.area + ' (' + dwrFormState.date + ')\')" class="h-16 w-20 object-cover cursor-pointer hover:opacity-85 transition" title="Click to view enlarged photo">' +
+                    '<img src="' + resolved + '" loading="lazy" decoding="async" onclick="expandPhotoModal(\'' + safeUrl + '\', \'DWR Photo #' + (idx + 1) + ' — ' + dwrFormState.area + ' (' + dwrFormState.date + ')\')" class="h-16 w-20 object-cover cursor-pointer hover:opacity-85 transition" title="Click to view enlarged photo">' +
                     '<button type="button" onclick="removeDwrFormPhoto(' + idx + ')" class="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px] shadow z-10" title="Remove photo"><i class="fa-solid fa-xmark"></i></button>' +
                 '</div>';
             }).join('');
@@ -6871,15 +7111,79 @@
 
         function handleDwrTaskFilterInput(val) {
             dwrFormState.taskSearchFilter = val;
-            renderAddDwrPageView(document.getElementById('moduleContainer'));
-            var inp = document.getElementById('dwrTaskSearchInput');
-            if (inp) {
-                inp.focus();
-                try { inp.setSelectionRange(val.length, val.length); } catch (e) {}
+            var qFilter = String(val || '').toLowerCase().trim();
+            var gridEl = document.getElementById('dwrDynamicSubAreasGrid');
+            if (!gridEl) return;
+            var cards = gridEl.querySelectorAll('[data-dwr-subcard]');
+            for (var i = 0; i < cards.length; i++) {
+                var card = cards[i];
+                var subLower = card.getAttribute('data-subarea-lower') || '';
+                var subMatches = !qFilter || subLower.indexOf(qFilter) !== -1;
+                var taskRows = card.querySelectorAll('[data-dwr-taskrow]');
+                var visibleCount = 0;
+                for (var j = 0; j < taskRows.length; j++) {
+                    var row = taskRows[j];
+                    var tLower = row.getAttribute('data-task-lower') || '';
+                    if (!qFilter || subMatches || tLower.indexOf(qFilter) !== -1) {
+                        row.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        row.classList.add('hidden');
+                    }
+                }
+                if (!qFilter || visibleCount > 0) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
             }
         }
 
-        function handleDwrTaskCheckboxToggle(subArea, taskName, isChecked) {
+        function updateDwrChecklistCountersInPlace(targetSubIdx) {
+            var subAreasMap = getScopeSubAreasForArea(dwrFormState.area);
+            var subAreaNames = getOrderedSubAreaKeys(dwrFormState.area);
+            var totalTasksInArea = 0;
+            var totalCheckedInArea = 0;
+
+            subAreaNames.forEach(function(sub, sIdx) {
+                var tasks = Array.isArray(subAreasMap[sub]) ? subAreasMap[sub] : [];
+                var subChecked = 0;
+                tasks.forEach(function(t) {
+                    totalTasksInArea++;
+                    if (isTaskMarkedCompleted(dwrFormState.tasksCompleted, sub, t)) {
+                        totalCheckedInArea++;
+                        subChecked++;
+                    }
+                });
+                if (targetSubIdx === undefined || targetSubIdx === sIdx) {
+                    var allSubChecked = tasks.length > 0 && subChecked === tasks.length;
+                    var badgeEl = document.getElementById('dwrSubBadge_' + sIdx);
+                    if (badgeEl) {
+                        badgeEl.textContent = subChecked + '/' + tasks.length;
+                        badgeEl.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ' +
+                            (allSubChecked ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-white text-slate-600 border border-slate-200');
+                    }
+                    var toggleBtn = document.getElementById('dwrSubToggleBtn_' + sIdx);
+                    if (toggleBtn) {
+                        var safeSubArea = sub.replace(/'/g, "\\'");
+                        toggleBtn.textContent = allSubChecked ? 'Uncheck' : 'Check All';
+                        toggleBtn.setAttribute('onclick', "toggleSubAreaDwrTasks('" + safeSubArea + "', " + (!allSubChecked) + ")");
+                    }
+                }
+            });
+
+            var pct = totalTasksInArea > 0 ? Math.round((totalCheckedInArea / totalTasksInArea) * 100) : 0;
+            var counterEl = document.getElementById('dwrProgressCounterText');
+            if (counterEl) {
+                counterEl.textContent = totalCheckedInArea + ' / ' + totalTasksInArea + ' (' + pct + '%)';
+            }
+            var barEl = document.getElementById('dwrProgressBarFill');
+            if (barEl) {
+                barEl.style.width = pct + '%';
+            }
+        }
+
+        function handleDwrTaskCheckboxToggle(subArea, taskName, isChecked, sIdx, tIdx) {
             if (!Array.isArray(dwrFormState.tasksCompleted)) dwrFormState.tasksCompleted = [];
             var fullKey = buildTaskKey(subArea, taskName);
             // Remove any legacy/variant representations of this subArea + taskName
@@ -6889,7 +7193,16 @@
             if (isChecked) {
                 dwrFormState.tasksCompleted.push(fullKey);
             }
-            renderAddDwrPageView(document.getElementById('moduleContainer'));
+            // Fast in-place DOM update without destroying or re-rendering #moduleContainer
+            if (typeof sIdx === 'number' && typeof tIdx === 'number') {
+                var txtEl = document.getElementById('dwrChkText_' + sIdx + '_' + tIdx);
+                if (txtEl) {
+                    txtEl.className = 'text-xs leading-snug select-none ' + (isChecked ? 'font-bold text-emerald-900' : 'text-slate-700 group-hover:text-slate-900');
+                }
+                updateDwrChecklistCountersInPlace(sIdx);
+            } else {
+                renderAddDwrPageView(document.getElementById('moduleContainer'));
+            }
         }
 
         function toggleSubAreaDwrTasks(subArea, checkAll) {
@@ -7229,7 +7542,8 @@
                     html += '</div></div>';
 
                     // Tasks List inside Sub-Area
-                    html += '<div class="p-3 space-y-1.5 max-h-72 overflow-y-auto custom-scrollbar divide-y divide-slate-200/70">';
+                    var safePreserveKey = (dwrBuilderSelectedArea + '::' + subArea).replace(/"/g, '&quot;');
+                    html += '<div data-preserve-scroll="' + safePreserveKey + '" class="p-3 space-y-1.5 max-h-72 overflow-y-auto custom-scrollbar divide-y divide-slate-200/70">';
                     if (tasks.length === 0) {
                         html += '<p class="text-[11px] text-slate-400 italic py-2 text-center">No tasks yet. Add one below.</p>';
                     } else {
@@ -7248,7 +7562,7 @@
 
                     // Quick Add Task Footer inside Sub-Area Card
                     html += '<form onsubmit="handleAddDwrTaskToSubArea(event, \'' + safeArea + '\', \'' + safeSub + '\', ' + sIdx + ')" class="p-2.5 bg-white border-t border-slate-200 flex items-center space-x-1.5">';
-                    html += '<input type="text" id="newDwrTaskInput_' + sIdx + '" required placeholder="Add task to ' + subArea + '..." class="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500">';
+                    html += '<input type="text" id="newDwrTaskInput_' + sIdx + '" data-preserve-key="' + safePreserveKey + '" required placeholder="Add task to ' + subArea + '..." class="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500">';
                     html += '<button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg shadow-2xs transition flex-shrink-0" title="Add Task"><i class="fa-solid fa-plus"></i></button>';
                     html += '</form>';
                     html += '</div>';
@@ -7257,7 +7571,9 @@
             }
 
             html += '</div></div>';
+            var uiSnap = captureContainerUIState(container);
             container.innerHTML = html;
+            restoreContainerUIState(container, uiSnap);
         }
 
         
@@ -7410,6 +7726,7 @@
             window.dbScopeOfWork = dbScopeOfWork;
             window.dbScopeSubAreaOrder = dbScopeSubAreaOrder;
             window.dbScopeOrderVersion = 2;
+            window._lastLocalScopeSignature = computeScopeDataSignature(dbScopeOfWork, dbScopeSubAreaOrder);
             saveStateToLocalBackup();
             if (window.saveScopeOfWorkToFirestore) {
                 await window.saveScopeOfWorkToFirestore(dbScopeOfWork);
@@ -7431,9 +7748,9 @@
                     ALL_AREAS.push(clean);
                 }
                 dwrBuilderSelectedArea = clean;
-                await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Area "' + clean + '" ready for Sub-Area & Task configuration.', 'success');
+                await syncModifiedScopeOfWork();
             });
         }
 
@@ -7446,9 +7763,9 @@
                     delete dbScopeOfWork['Mahad al Zahra'];
                     if (dbScopeSubAreaOrder) delete dbScopeSubAreaOrder['Mahad al Zahra'];
                 }
-                await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Cleared DWR form for ' + areaName + '.', 'info');
+                await syncModifiedScopeOfWork();
             });
         }
 
@@ -7471,9 +7788,14 @@
             if (orderedKeys.indexOf(subName) === -1) orderedKeys.push(subName);
             setRawScopeSubAreaOrderArray(canon, orderedKeys);
             inp.value = '';
-            await syncModifiedScopeOfWork();
+            // Render immediately at 0ms and restore focus to #newDwrSubAreaInput before network write
             renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+            var nextInp = document.getElementById('newDwrSubAreaInput');
+            if (nextInp) {
+                try { nextInp.focus({ preventScroll: true }); } catch (fErr) {}
+            }
             showAppNotification('Added Sub-Area "' + subName + '" to ' + canon + '!', 'success');
+            await syncModifiedScopeOfWork();
         }
 
         function promptRenameDwrSubArea(areaName, oldSubName) {
@@ -7492,9 +7814,9 @@
                 });
                 dbScopeOfWork[canon] = rebuilt;
                 setRawScopeSubAreaOrderArray(canon, newOrder);
-                await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Renamed Sub-Area to "' + newSub + '".', 'success');
+                await syncModifiedScopeOfWork();
             });
             setTimeout(function() {
                 var pInp = document.getElementById('appPromptInput');
@@ -7521,9 +7843,9 @@
                         }
                     }
                 });
-                await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Deleted Sub-Area "' + subName + '".', 'info');
+                await syncModifiedScopeOfWork();
             });
         }
 
@@ -7545,9 +7867,9 @@
                 dbScopeOfWork[canon][cleanSub] = existingTasks.slice();
                 if (orderedKeys.indexOf(cleanSub) === -1) orderedKeys.push(cleanSub);
                 setRawScopeSubAreaOrderArray(canon, orderedKeys);
-                await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Cloned Sub-Area "' + cleanSub + '" with ' + existingTasks.length + ' tasks!', 'success');
+                await syncModifiedScopeOfWork();
             });
             setTimeout(function() {
                 var pInp = document.getElementById('appPromptInput');
@@ -7566,9 +7888,14 @@
             }
             dbScopeOfWork[canon][subName].push(taskText);
             inp.value = '';
-            await syncModifiedScopeOfWork();
+            // Render immediately at 0ms and keep focus in #newDwrTaskInput_<sIdx> so user can type next task without interruption
             renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+            var nextTaskInp = document.getElementById('newDwrTaskInput_' + sIdx);
+            if (nextTaskInp) {
+                try { nextTaskInp.focus({ preventScroll: true }); } catch (fErr) {}
+            }
             showAppNotification('Task added to ' + subName + '!', 'success');
+            await syncModifiedScopeOfWork();
         }
 
         function promptEditDwrTask(areaName, subName, taskIdx) {
@@ -7580,9 +7907,9 @@
             openPromptDialog('Edit Checklist Task in ' + subName, currentTask, async function(newVal) {
                 if (!newVal || !newVal.trim()) return;
                 dbScopeOfWork[canon][subName][taskIdx] = newVal.trim();
-                await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Task updated & synced!', 'success');
+                await syncModifiedScopeOfWork();
             });
             setTimeout(function() {
                 var pInp = document.getElementById('appPromptInput');
@@ -7594,9 +7921,9 @@
             var canon = ensureAreaExistsInScope(areaName);
             if (dbScopeOfWork[canon] && Array.isArray(dbScopeOfWork[canon][subName])) {
                 dbScopeOfWork[canon][subName].splice(taskIdx, 1);
-                await syncModifiedScopeOfWork();
                 renderManageDwrFormPageView(document.getElementById('moduleContainer'));
                 showAppNotification('Task removed.', 'info');
+                await syncModifiedScopeOfWork();
             }
         }
 
@@ -16278,6 +16605,8 @@
             deleteDoc, 
             deleteField,
             onSnapshot,
+            query,
+            where,
             enableIndexedDbPersistence,
             writeBatch
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -16452,8 +16781,8 @@
                     if (res && res.hadLegacyPollutionOrScramble && typeof window.saveScopeOfWorkToFirestore === "function") {
                         window.saveScopeOfWorkToFirestore(window.dbScopeOfWork);
                     }
-                    if (window.activeModule === "cleaning" && typeof window.renderCleaningModule === "function") {
-                        window.renderCleaningModule(document.getElementById("moduleContainer"), document.getElementById("modulePrimaryActions"), true);
+                    if (res && res.didScopeChange && window.activeModule === "cleaning" && typeof window.scheduleActiveModuleRender === "function") {
+                        window.scheduleActiveModuleRender("cleaning", false);
                     }
                 }
             } catch (e) {}
@@ -16547,8 +16876,8 @@
                         });
                         window.dbPestControlRecords = mergeCollectionWithLocal(records, window.dbPestControlRecords, 'id');
                         saveStateToLocalBackup();
-                        if (window.activeModule === "pest") {
-                            window.switchModule("pest");
+                        if (window.activeModule === "pest" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("pest", false);
                         }
                     },
                     (err) => handleSnapshotError("pest_control", err)
@@ -16564,8 +16893,8 @@
                             window.dbWasteRates = Object.assign({}, window.dbWasteRates, docSnap.data());
                             saveStateToLocalBackup();
                         }
-                        if (window.activeModule === "waste") {
-                            window.switchModule("waste");
+                        if (window.activeModule === "waste" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("waste", false);
                         }
                     },
                     (err) => handleSnapshotError("settings/waste_rates", err)
@@ -16585,8 +16914,8 @@
                         merged.sort((a, b) => new Date(b.date) - new Date(a.date));
                         window.dbWasteOffloadings = merged;
                         saveStateToLocalBackup();
-                        if (window.activeModule === "waste") {
-                            window.switchModule("waste");
+                        if (window.activeModule === "waste" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("waste", false);
                         }
                     },
                     (err) => handleSnapshotError("dry_waste_offloadings", err)
@@ -16604,8 +16933,8 @@
                         });
                         window.dbCrates = crateMap;
                         saveStateToLocalBackup();
-                        if (window.activeModule === "compost") {
-                            window.switchModule("compost");
+                        if (window.activeModule === "compost" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("compost", false);
                         }
                     },
                     (err) => handleSnapshotError("crates", err)
@@ -16625,8 +16954,8 @@
                         merged.sort((a, b) => new Date(b.date) - new Date(a.date));
                         window.dbWetWasteLogs = merged;
                         saveStateToLocalBackup();
-                        if (window.activeModule === "compost") {
-                            window.switchModule("compost");
+                        if (window.activeModule === "compost" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("compost", false);
                         }
                     },
                     (err) => handleSnapshotError("wet_waste_logs", err)
@@ -16646,8 +16975,8 @@
                         merged.sort((a, b) => new Date(b.date) - new Date(a.date));
                         window.dbCompostLogs = merged;
                         saveStateToLocalBackup();
-                        if (window.activeModule === "compost") {
-                            window.switchModule("compost");
+                        if (window.activeModule === "compost" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("compost", false);
                         }
                     },
                     (err) => handleSnapshotError("compost_logs", err)
@@ -16705,8 +17034,8 @@
                         merged.sort((a, b) => new Date(b.date) - new Date(a.date));
                         window.dbTankCleaningLogs = merged;
                         saveStateToLocalBackup();
-                        if (window.activeModule === "water") {
-                            window.switchModule("water");
+                        if (window.activeModule === "water" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("water", false);
                         }
                     },
                     (err) => handleSnapshotError("tank_cleaning_logs", err)
@@ -16799,8 +17128,8 @@
                         if (osModal && !osModal.classList.contains('hidden') && typeof window.renderOpeningStockTable === 'function') {
                             window.renderOpeningStockTable();
                         }
-                        if (window.activeModule === "inventory" || window.activeModule === "procurement") {
-                            window.switchModule(window.activeModule);
+                        if ((window.activeModule === "inventory" || window.activeModule === "procurement") && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender(window.activeModule, false);
                         }
                     },
                     (err) => {
@@ -16832,8 +17161,8 @@
                         if (arcModal && !arcModal.classList.contains('hidden') && typeof window.renderInvArchiveModalTable === 'function') {
                             window.renderInvArchiveModalTable();
                         }
-                        if (window.activeModule === "inventory" || window.activeModule === "procurement") {
-                            window.switchModule(window.activeModule);
+                        if ((window.activeModule === "inventory" || window.activeModule === "procurement") && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender(window.activeModule, false);
                         }
                     },
                     (err) => handleSnapshotError("inventory_archive", err)
@@ -16851,8 +17180,8 @@
                             });
                             saveStateToLocalBackup();
                         }
-                        if (window.activeModule === "procurement") {
-                            window.switchModule("procurement");
+                        if (window.activeModule === "procurement" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("procurement", false);
                         }
                     },
                     (err) => handleSnapshotError("settings/procurement_vendors", err)
@@ -16878,8 +17207,8 @@
                         });
                         window.dbVendorRates = ratesMap;
                         saveStateToLocalBackup();
-                        if (window.activeModule === "procurement") {
-                            window.switchModule("procurement");
+                        if (window.activeModule === "procurement" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("procurement", false);
                         }
                     },
                     (err) => handleSnapshotError("vendor_rates", err)
@@ -16903,8 +17232,8 @@
                         merged.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
                         window.dbProcurements = merged;
                         saveStateToLocalBackup();
-                        if (window.activeModule === "procurement") {
-                            window.switchModule("procurement");
+                        if (window.activeModule === "procurement" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("procurement", false);
                         }
                     },
                     (err) => handleSnapshotError("procurements", err)
@@ -16931,8 +17260,8 @@
                             window.syncVendorNamesFromDirectory();
                         }
                         saveStateToLocalBackup();
-                        if (window.activeModule === "procurement") {
-                            window.switchModule("procurement");
+                        if (window.activeModule === "procurement" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("procurement", false);
                         }
                     },
                     (err) => handleSnapshotError("vendors", err)
@@ -16954,8 +17283,8 @@
                         mergedReqs.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
                         window.dbProcurementRequests = mergedReqs;
                         saveStateToLocalBackup();
-                        if (window.activeModule === "procurement") {
-                            window.switchModule("procurement");
+                        if (window.activeModule === "procurement" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("procurement", false);
                         }
                     },
                     (err) => handleSnapshotError("procurement_requests", err)
@@ -16988,8 +17317,8 @@
                         // Firestore is authoritative source of truth across all devices!
                         window.dbData.hrStaff = staffDocs;
                         saveStateToLocalBackup();
-                        if (window.activeModule === "hr") {
-                            window.switchModule("hr");
+                        if (window.activeModule === "hr" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("hr", false);
                         }
                     },
                     (err) => {
@@ -17044,8 +17373,8 @@
                         merged.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
                         window.dbCleaningLogs = merged;
                         saveStateToLocalBackup();
-                        if (window.activeModule === "cleaning") {
-                            window.switchModule("cleaning");
+                        if (window.activeModule === "cleaning" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("cleaning", false);
                         }
                     },
                     (err) => handleSnapshotError("cleaning_logs", err)
@@ -17105,9 +17434,12 @@
                         const finalReports = Object.values(mergedMap).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
                         window.dbDailyWorkReports = finalReports;
                         saveStateToLocalBackup();
+                        // Only re-render if user is on dashboard (NOT actively filling a DWR checklist or editing the Form Builder!)
                         if (window.activeModule === "cleaning") {
-                            if (typeof window.renderCleaningModule === "function") {
-                                window.renderCleaningModule(document.getElementById("moduleContainer"), document.getElementById("modulePrimaryActions"), false);
+                            if (typeof cleaningSubPage !== "undefined" && (cleaningSubPage === "add_dwr" || cleaningSubPage === "manage_dwr_form")) {
+                                // Do not wipe out active DWR form or Form Builder when another report is submitted
+                            } else if (typeof window.scheduleActiveModuleRender === "function") {
+                                window.scheduleActiveModuleRender("cleaning", false);
                             }
                         }
                     },
@@ -17129,8 +17461,9 @@
                                 if (res && res.hadLegacyPollutionOrScramble && typeof window.saveScopeOfWorkToFirestore === "function") {
                                     window.saveScopeOfWorkToFirestore(window.dbScopeOfWork);
                                 }
-                                if (window.activeModule === "cleaning" && typeof window.renderCleaningModule === "function") {
-                                    window.renderCleaningModule(document.getElementById("moduleContainer"), document.getElementById("modulePrimaryActions"), true);
+                                // Only re-render if the scope actually changed from our local signature!
+                                if (res && res.didScopeChange && window.activeModule === "cleaning" && typeof window.scheduleActiveModuleRender === "function") {
+                                    window.scheduleActiveModuleRender("cleaning", false);
                                 }
                             }
                         } else if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0 && typeof window.buildCleanScopeFirestorePayload === "function") {
@@ -17156,8 +17489,8 @@
                         });
                         window.dbData.machinery = mergeCollectionWithLocal(macs, window.dbData.machinery, 'id');
                         saveStateToLocalBackup();
-                        if (window.activeModule === "machinery") {
-                            window.switchModule("machinery");
+                        if (window.activeModule === "machinery" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("machinery", false);
                         }
                     },
                     (err) => handleSnapshotError("machinery", err)
@@ -17178,8 +17511,8 @@
                         });
                         window.dbData.breakdowns = mergeCollectionWithLocal(brks, window.dbData.breakdowns, 'id');
                         saveStateToLocalBackup();
-                        if (window.activeModule === "machinery") {
-                            window.switchModule("machinery");
+                        if (window.activeModule === "machinery" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("machinery", false);
                         }
                     },
                     (err) => handleSnapshotError("machinery_breakdowns", err)
@@ -17202,38 +17535,39 @@
                 )
             );
 
-            // 20. Sync Chunked Media Blobs (media_blobs) for large photos/videos/PDFs
-            activeUnsubscribers.push(
-                onSnapshot(
-                    collection(db, "media_blobs"),
-                    (snapshot) => {
-                        const chunksByMediaId = {};
-                        snapshot.forEach((docSnap) => {
-                            const d = docSnap.data();
-                            if (d && d.mediaId) {
-                                if (!chunksByMediaId[d.mediaId]) chunksByMediaId[d.mediaId] = [];
-                                chunksByMediaId[d.mediaId].push(d);
-                            }
-                        });
-                        let addedAny = false;
-                        Object.keys(chunksByMediaId).forEach((mId) => {
-                            if (!window.dbMediaCache[mId]) {
-                                const chunks = chunksByMediaId[mId].sort((a, b) => (a.chunkIndex || 0) - (b.chunkIndex || 0));
-                                if (chunks.length > 0 && chunks.length === (chunks[0].totalChunks || 1)) {
-                                    window.dbMediaCache[mId] = chunks.map((c) => c.data).join("");
-                                    addedAny = true;
-                                }
-                            }
-                        });
-                        if (addedAny) {
-                            saveStateToLocalBackup();
-                            if (window.activeModule) window.switchModule(window.activeModule);
-                        }
-                    },
-                    (err) => handleSnapshotError("media_blobs", err)
-                )
-            );
         }
+
+        // Lazy On-Demand Media Blob Loader (fetches ONLY requested media-ref:// ID instead of downloading all historical photos at startup)
+        const _inFlightMediaBlobFetches = {};
+        window.fetchMediaBlobOnDemand = async function(mediaId) {
+            if (!mediaId || window.dbMediaCache[mediaId] || _inFlightMediaBlobFetches[mediaId]) return;
+            _inFlightMediaBlobFetches[mediaId] = true;
+            try {
+                await window.ensureFirebaseAuthSession();
+                const q = query(collection(db, "media_blobs"), where("mediaId", "==", mediaId));
+                const snap = await getDocs(q);
+                const chunks = [];
+                snap.forEach((d) => {
+                    if (d.exists()) chunks.push(d.data());
+                });
+                if (chunks.length > 0) {
+                    chunks.sort((a, b) => (a.chunkIndex || 0) - (b.chunkIndex || 0));
+                    if (chunks.length === (chunks[0].totalChunks || chunks.length)) {
+                        window.dbMediaCache[mediaId] = chunks.map((c) => c.data).join("");
+                        if (typeof saveMediaCacheToLocalBackup === "function") {
+                            saveMediaCacheToLocalBackup();
+                        }
+                        if (window.activeModule && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender(window.activeModule, false);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn("On-demand media fetch note:", err.message);
+            } finally {
+                delete _inFlightMediaBlobFetches[mediaId];
+            }
+        };
 
         // Upload Media to Firebase Storage (Fallback Tier 2)
         window.uploadMediaToFirebaseStorage = async function(dataUrl, fileName, mimeType, subFolderLabel) {
@@ -18366,14 +18700,14 @@
             }
         });
 
-        // ================= AUTO-REFRESH BACKGROUND SYNC =================
-        // Automatically checks Firestore every 30 seconds so all users & devices
-        // see live data updates in real-time without requiring a page refresh.
-        setInterval(function() {
+        // ================= SMART RECONNECT & VISIBILITY SYNC =================
+        // Real-time Firestore onSnapshot WebSockets already push updates instantly.
+        // Only trigger a manual resync when the browser regains network connectivity.
+        window.addEventListener('online', function() {
             if (currentUser && window.forceSyncAllFromFirestore) {
                 window.forceSyncAllFromFirestore();
             }
-        }, 30000);
+        });
 
     </script>
 </body>
