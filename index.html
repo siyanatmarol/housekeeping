@@ -2004,6 +2004,116 @@
         </div>
     </div>
 
+    <!-- MODULE 3: DWR FORM RECOVERY & DEEP BROWSER STORAGE (LEVELDB) SCANNER MODAL -->
+    <div id="dwrFormRecoveryModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-[65] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full p-6 border border-slate-200 max-h-[92vh] flex flex-col">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200">
+                <div>
+                    <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 flex items-center space-x-1">
+                            <i class="fa-solid fa-clock-rotate-left text-amber-600"></i>
+                            <span>DWR Form Recovery Center</span>
+                        </span>
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900">Recover Previous / Overwritten DWR Scope of Work Forms</h3>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">Scan Firestore cloud fields (<code class="font-mono text-indigo-700">scope</code> vs <code class="font-mono text-indigo-700">orderedScope</code>), local version history, submitted DWR checklists, or Chrome/Edge disk storage (<code class="font-mono text-amber-800">.ldb</code> / <code class="font-mono text-amber-800">.log</code>) to recover yesterday&rsquo;s <strong>Girls Hostel</strong> &amp; <strong>Admin Phase 1</strong> forms.</p>
+                </div>
+                <div class="flex items-center space-x-2 self-end sm:self-auto">
+                    <button type="button" onclick="runAutomaticDwrScopeRecoveryScan()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span>Re-Scan Cloud &amp; Vault</span>
+                    </button>
+                    <button type="button" onclick="closeModal('dwrFormRecoveryModal')" class="text-slate-400 hover:text-slate-600 pl-2">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar space-y-5 pr-1">
+                <!-- Deep Browser Disk Scanner (Chrome / Edge LevelDB .ldb & .log files) -->
+                <div class="bg-amber-50/90 border border-amber-300 rounded-2xl p-4 space-y-3">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <h4 class="text-xs font-extrabold text-amber-950 uppercase tracking-wider flex items-center space-x-2">
+                                <i class="fa-solid fa-hard-drive text-amber-600"></i>
+                                <span>Method 1: Deep Scan Browser Disk Storage (Chrome / Edge LevelDB .ldb &amp; .log Files)</span>
+                            </h4>
+                            <p class="text-xs text-amber-900 leading-relaxed">
+                                When you saved <strong>Girls Hostel</strong> and <strong>Admin Phase 1</strong> yesterday, Chrome/Edge wrote your complete form JSON into its append-only disk log (<code class="font-mono font-bold">.ldb</code> and <code class="font-mono font-bold">.log</code> files). Even if today&rsquo;s sync overwrote the active key, yesterday&rsquo;s saved snapshots remain inside those files until disk compaction.
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                            <label class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold px-4 py-2.5 rounded-xl shadow transition flex items-center space-x-2 cursor-pointer">
+                                <i class="fa-solid fa-folder-open"></i>
+                                <span>Select Browser leveldb / IndexedDB Folder</span>
+                                <input type="file" webkitdirectory directory multiple class="hidden" onchange="handleLevelDbFilesScan(event)">
+                            </label>
+                            <label class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold px-3.5 py-2.5 rounded-xl shadow transition flex items-center space-x-2 cursor-pointer">
+                                <i class="fa-solid fa-file-Waveform"></i>
+                                <span>Select .ldb / .log / .json Files</span>
+                                <input type="file" multiple class="hidden" onchange="handleLevelDbFilesScan(event)">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="bg-white/90 rounded-xl p-3 border border-amber-200/80 space-y-2 text-[11px] text-slate-700">
+                        <div class="font-extrabold text-slate-800 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-copy text-indigo-600"></i>
+                            <span>How to scan your browser&rsquo;s yesterday cache in 10 seconds (Windows):</span>
+                        </div>
+                        <ol class="list-decimal list-inside space-y-1 text-slate-600">
+                            <li>Click one of the <strong>Copy Path</strong> buttons below for your browser (Chrome or Edge).</li>
+                            <li>Click <strong>&ldquo;Select Browser leveldb / IndexedDB Folder&rdquo;</strong> above, paste the copied path into the top address bar of the file window, press <strong>Enter</strong>, and click <strong>Upload / Select Folder</strong>.</li>
+                        </ol>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-2">
+                                <div class="truncate">
+                                    <span class="font-bold text-slate-800">Chrome LocalStorage:</span>
+                                    <code class="text-[10px] font-mono text-indigo-700 ml-1">%LocalAppData%\Google\Chrome\User Data\Default\Local Storage\leveldb</code>
+                                </div>
+                                <button type="button" onclick="copyTextToClipboardSafe('%LocalAppData%\\Google\\Chrome\\User Data\\Default\\Local Storage\\leveldb', 'Copied Chrome LocalStorage path!')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold px-2 py-1 rounded text-[10px] flex-shrink-0">Copy Path</button>
+                            </div>
+                            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-2">
+                                <div class="truncate">
+                                    <span class="font-bold text-slate-800">Chrome IndexedDB:</span>
+                                    <code class="text-[10px] font-mono text-indigo-700 ml-1">%LocalAppData%\Google\Chrome\User Data\Default\IndexedDB</code>
+                                </div>
+                                <button type="button" onclick="copyTextToClipboardSafe('%LocalAppData%\\Google\\Chrome\\User Data\\Default\\IndexedDB', 'Copied Chrome IndexedDB path!')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold px-2 py-1 rounded text-[10px] flex-shrink-0">Copy Path</button>
+                            </div>
+                            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-2">
+                                <div class="truncate">
+                                    <span class="font-bold text-slate-800">Edge LocalStorage:</span>
+                                    <code class="text-[10px] font-mono text-indigo-700 ml-1">%LocalAppData%\Microsoft\Edge\User Data\Default\Local Storage\leveldb</code>
+                                </div>
+                                <button type="button" onclick="copyTextToClipboardSafe('%LocalAppData%\\Microsoft\\Edge\\User Data\\Default\\Local Storage\\leveldb', 'Copied Edge LocalStorage path!')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold px-2 py-1 rounded text-[10px] flex-shrink-0">Copy Path</button>
+                            </div>
+                            <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 gap-2">
+                                <div class="truncate">
+                                    <span class="font-bold text-slate-800">Edge IndexedDB:</span>
+                                    <code class="text-[10px] font-mono text-indigo-700 ml-1">%LocalAppData%\Microsoft\Edge\User Data\Default\IndexedDB</code>
+                                </div>
+                                <button type="button" onclick="copyTextToClipboardSafe('%LocalAppData%\\Microsoft\\Edge\\User Data\\Default\\IndexedDB', 'Copied Edge IndexedDB path!')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-bold px-2 py-1 rounded text-[10px] flex-shrink-0">Copy Path</button>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-500 pt-0.5"><i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>If you use a named Chrome/Edge profile (e.g. <code class="font-mono">Profile 1</code> or <code class="font-mono">Profile 2</code> instead of <code class="font-mono">Default</code>), paste <code class="font-mono">%LocalAppData%\Google\Chrome\User Data</code> first or check <code class="font-mono">chrome://version</code> under <strong>Profile Path</strong>.</p>
+                    </div>
+
+                    <div id="dwrRecoveryDiskScanStatus" class="hidden text-xs font-bold px-3.5 py-2.5 rounded-xl bg-indigo-950 text-indigo-100 flex items-center justify-between"></div>
+                </div>
+
+                <!-- Discovered Snapshots & Cloud Discrepancies Container -->
+                <div id="dwrRecoveryCandidatesContainer" class="space-y-3">
+                    <!-- Populated dynamically by renderDwrRecoveryCandidatesList() -->
+                </div>
+            </div>
+
+            <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
+                <span class="text-[11px] text-slate-500"><i class="fa-solid fa-shield-halved text-emerald-600 mr-1"></i>All future Form Builder edits are now automatically versioned in a 25-snapshot local vault and protected against stale read-listener overwrites.</span>
+                <button type="button" onclick="closeModal('dwrFormRecoveryModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-5 py-2 rounded-lg transition">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN APPLICATION SCRIPT -->
     <script>
         var ADMIN_EXECUTIVE_AREAS = ['Admin Phase 1', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Estates'];
@@ -2149,6 +2259,11 @@
         var dbScopeOfWork = {};
         var dbScopeSubAreaOrder = {};
         var dbScopeOrderVersion = 0;
+        var dbScopeUpdatedAt = '';
+        var dbScopeUnsyncedLocal = false;
+        var dbScopeRecoveryCandidates = [];
+        var LOCAL_STORAGE_SCOPE_PROTECTED_KEY = 'siyanat_marol_scope_protected_v2';
+        var LOCAL_STORAGE_SCOPE_HISTORY_KEY = 'siyanat_marol_scope_history_v1';
         var dbDailyWorkReports = [];
         var dbMediaCache = {};
         var deletedRecordIds = {};
@@ -2415,6 +2530,8 @@
                 dbScopeOfWork: dbScopeOfWork || {},
                 dbScopeSubAreaOrder: dbScopeSubAreaOrder || {},
                 dbScopeOrderVersion: dbScopeOrderVersion || 0,
+                dbScopeUpdatedAt: dbScopeUpdatedAt || '',
+                dbScopeUnsyncedLocal: !!dbScopeUnsyncedLocal,
                 dbDriveConfig: dbDriveConfig || {},
                 deletedRecordIds: deletedRecordIds || {}
             };
@@ -2528,13 +2645,22 @@
                     return !isRecordDeleted(rId);
                 });
             }
-            if (snap.dbScopeOfWork && typeof snap.dbScopeOfWork === 'object') {
+            if (snap.dbScopeUpdatedAt) {
+                dbScopeUpdatedAt = snap.dbScopeUpdatedAt;
+                window.dbScopeUpdatedAt = dbScopeUpdatedAt;
+            }
+            if (typeof snap.dbScopeUnsyncedLocal === 'boolean') {
+                dbScopeUnsyncedLocal = snap.dbScopeUnsyncedLocal;
+                window.dbScopeUnsyncedLocal = dbScopeUnsyncedLocal;
+            }
+            if (snap.dbScopeOfWork && typeof snap.dbScopeOfWork === 'object' && Object.keys(snap.dbScopeOfWork).length > 0) {
                 if (typeof hydrateScopeOfWorkFromCloudData === 'function') {
                     hydrateScopeOfWorkFromCloudData({
                         scope: snap.dbScopeOfWork,
                         subAreaOrder: snap.dbScopeSubAreaOrder || {},
                         orderedScope: snap.orderedScope || null,
-                        orderVersion: snap.dbScopeOrderVersion || snap.orderVersion || 0
+                        orderVersion: snap.dbScopeOrderVersion || snap.orderVersion || 0,
+                        updatedAt: snap.dbScopeUpdatedAt || snap.savedAt || ''
                     }, false);
                 } else {
                     dbScopeOfWork = snap.dbScopeOfWork;
@@ -2830,6 +2956,23 @@
                     applyPortalStateSnapshot(snap);
                 }
             } catch (e) {}
+            try {
+                var protRaw = localStorage.getItem(LOCAL_STORAGE_SCOPE_PROTECTED_KEY);
+                if (protRaw) {
+                    var protObj = JSON.parse(protRaw);
+                    if (protObj && protObj.scope && typeof protObj.scope === 'object' && Object.keys(protObj.scope).length > 0) {
+                        var protTime = protObj.updatedAt ? new Date(protObj.updatedAt).getTime() : 0;
+                        var currTime = dbScopeUpdatedAt ? new Date(dbScopeUpdatedAt).getTime() : 0;
+                        if (protTime >= currTime || Object.keys(dbScopeOfWork || {}).length === 0) {
+                            hydrateScopeOfWorkFromCloudData(protObj, false);
+                            dbScopeUpdatedAt = protObj.updatedAt || dbScopeUpdatedAt;
+                            dbScopeUnsyncedLocal = !!protObj.unsyncedLocal;
+                            window.dbScopeUpdatedAt = dbScopeUpdatedAt;
+                            window.dbScopeUnsyncedLocal = dbScopeUnsyncedLocal;
+                        }
+                    }
+                }
+            } catch (e) {}
 
             // Hydrate from IndexedDB
             loadFromIndexedDB('media_cache').then(function(idbMedia) {
@@ -2840,7 +2983,22 @@
             
             loadFromIndexedDB('full_state').then(function(idbSnap) {
                 if (idbSnap && typeof idbSnap === 'object' && !hasReceivedFirestoreSnapshot) {
+                    // Preserve local scope if localStorage already has a newer or unsynced scope
+                    var keepLocalScope = dbScopeUnsyncedLocal && dbScopeOfWork && Object.keys(dbScopeOfWork).length > 0;
+                    var savedScopeCopy = keepLocalScope ? JSON.parse(JSON.stringify(dbScopeOfWork)) : null;
+                    var savedOrderCopy = keepLocalScope ? JSON.parse(JSON.stringify(dbScopeSubAreaOrder || {})) : null;
+                    var savedTs = dbScopeUpdatedAt;
                     applyPortalStateSnapshot(idbSnap);
+                    if (keepLocalScope && savedScopeCopy) {
+                        dbScopeOfWork = savedScopeCopy;
+                        window.dbScopeOfWork = savedScopeCopy;
+                        dbScopeSubAreaOrder = savedOrderCopy;
+                        window.dbScopeSubAreaOrder = savedOrderCopy;
+                        dbScopeUpdatedAt = savedTs;
+                        window.dbScopeUpdatedAt = savedTs;
+                        dbScopeUnsyncedLocal = true;
+                        window.dbScopeUnsyncedLocal = true;
+                    }
                     if (currentUser && activeModule) {
                         switchModule(activeModule);
                     }
@@ -5988,9 +6146,86 @@
             return cleanOrderedMap;
         }
 
+        function saveProtectedLocalScopeVault() {
+            var payload = {
+                scope: dbScopeOfWork || {},
+                subAreaOrder: dbScopeSubAreaOrder || {},
+                orderedScope: (typeof buildCleanScopeFirestorePayload === 'function') ? buildCleanScopeFirestorePayload(dbScopeOfWork).orderedScope : null,
+                orderVersion: 2,
+                updatedAt: dbScopeUpdatedAt || new Date().toISOString(),
+                unsyncedLocal: !!dbScopeUnsyncedLocal
+            };
+            try {
+                localStorage.setItem(LOCAL_STORAGE_SCOPE_PROTECTED_KEY, JSON.stringify(payload));
+            } catch (e) {}
+            saveToIndexedDB('protected_scope_vault', payload);
+        }
+
+        function loadScopeHistorySnapshotsFromStorage() {
+            try {
+                var raw = localStorage.getItem(LOCAL_STORAGE_SCOPE_HISTORY_KEY);
+                if (raw) {
+                    var parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) return parsed;
+                }
+            } catch (e) {}
+            return [];
+        }
+
+        function recordScopeHistorySnapshot(label, scopeMapInput, orderMapInput, customTimestamp) {
+            try {
+                var sMap = scopeMapInput || dbScopeOfWork || {};
+                var oMap = orderMapInput || dbScopeSubAreaOrder || {};
+                var areaKeys = Object.keys(sMap).filter(function(k) { return !isReservedScopeMetadataKey(k) && k !== 'Mahad al Zahra'; });
+                if (areaKeys.length === 0) return;
+                var totalTasks = 0;
+                areaKeys.forEach(function(ak) {
+                    var aObj = sMap[ak] || {};
+                    Object.keys(aObj).forEach(function(sk) {
+                        if (!isReservedScopeMetadataKey(sk) && Array.isArray(aObj[sk])) {
+                            totalTasks += aObj[sk].length;
+                        }
+                    });
+                });
+                if (totalTasks === 0) return;
+
+                var sig = computeScopeDataSignature(sMap, oMap);
+                var hist = loadScopeHistorySnapshotsFromStorage();
+                // Avoid duplicate consecutive snapshots with identical signature
+                for (var i = 0; i < hist.length; i++) {
+                    if (hist[i] && hist[i].signature === sig) {
+                        return;
+                    }
+                }
+                var entry = {
+                    id: 'SCOPE-SNAP-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                    label: label || 'Scope Snapshot',
+                    savedAt: customTimestamp || new Date().toISOString(),
+                    signature: sig,
+                    totalAreas: areaKeys.length,
+                    totalTasks: totalTasks,
+                    scope: JSON.parse(JSON.stringify(sMap)),
+                    subAreaOrder: JSON.parse(JSON.stringify(oMap))
+                };
+                hist.unshift(entry);
+                if (hist.length > 25) hist = hist.slice(0, 25);
+                try {
+                    localStorage.setItem(LOCAL_STORAGE_SCOPE_HISTORY_KEY, JSON.stringify(hist));
+                } catch (e) {}
+                saveToIndexedDB('scope_history_vault', hist);
+            } catch (err) {}
+        }
+        window.recordScopeHistorySnapshot = recordScopeHistorySnapshot;
+        window.saveProtectedLocalScopeVault = saveProtectedLocalScopeVault;
+
         function hydrateScopeOfWorkFromCloudData(rawCloudDoc, isFromFirestore) {
             if (!rawCloudDoc || typeof rawCloudDoc !== 'object') {
                 return { cleanedScope: dbScopeOfWork || {}, cleanedOrder: dbScopeSubAreaOrder || {}, hadLegacyPollutionOrScramble: false };
+            }
+            if (isFromFirestore) {
+                try {
+                    window._lastRawCloudScopeDoc = JSON.parse(JSON.stringify(rawCloudDoc));
+                } catch (e) {}
             }
             var hasExplicitV2Order = Number(rawCloudDoc.orderVersion || 0) >= 2;
             var topLevelSubAreaOrder = (rawCloudDoc.subAreaOrder && typeof rawCloudDoc.subAreaOrder === 'object') ? rawCloudDoc.subAreaOrder : {};
@@ -5999,6 +6234,8 @@
 
             var cleanedScope = {};
             var cleanedOrder = {};
+            var mapOnlyScope = {};
+            var mapOnlyOrder = {};
             var hadLegacyPollutionOrScramble = false;
 
             // 1. First hydrate from orderedScope array if available (100% Firestore Array order-preserving for Areas, Sub-Areas, and Tasks)
@@ -6042,6 +6279,22 @@
 
                     var allSubKeys = Object.keys(areaObj).filter(function(sk) {
                         return !isReservedScopeMetadataKey(sk) && Array.isArray(areaObj[sk]);
+                    });
+
+                    // Build mapOnly representation so we can detect if remoteScope[areaKey] differs from orderedScope
+                    mapOnlyScope[areaKey] = {};
+                    mapOnlyOrder[areaKey] = [];
+                    var mapOrderCand = Array.isArray(topLevelSubAreaOrder[areaKey]) ? topLevelSubAreaOrder[areaKey].slice() : (Array.isArray(areaObj.__subAreaOrder) ? areaObj.__subAreaOrder.slice() : allSubKeys.slice());
+                    allSubKeys.forEach(function(sk) {
+                        if (mapOrderCand.indexOf(sk) === -1) mapOrderCand.push(sk);
+                    });
+                    mapOrderCand.forEach(function(sk) {
+                        if (!isReservedScopeMetadataKey(sk) && Array.isArray(areaObj[sk])) {
+                            mapOnlyScope[areaKey][sk] = areaObj[sk].filter(function(t) {
+                                return t !== null && t !== undefined && String(t).trim() !== '' && !isReservedScopeMetadataKey(t);
+                            });
+                            if (mapOnlyOrder[areaKey].indexOf(sk) === -1) mapOnlyOrder[areaKey].push(sk);
+                        }
                     });
 
                     // Determine candidate saved order
@@ -6089,10 +6342,10 @@
 
                     var rebuiltArea = {};
                     finalSubOrder.forEach(function(sk) {
-                        // Prefer tasks from orderedScope if already parsed, otherwise from areaObj[sk]
-                        var sourceTasks = (cleanedScope[areaKey] && Array.isArray(cleanedScope[areaKey][sk]))
-                            ? cleanedScope[areaKey][sk]
-                            : (Array.isArray(areaObj[sk]) ? areaObj[sk] : []);
+                        // Prefer tasks from orderedScope if already parsed AND orderVersion >= 2, otherwise from areaObj[sk]
+                        var orderedTasks = (cleanedScope[areaKey] && Array.isArray(cleanedScope[areaKey][sk])) ? cleanedScope[areaKey][sk] : null;
+                        var mapTasks = Array.isArray(areaObj[sk]) ? areaObj[sk] : [];
+                        var sourceTasks = (hasExplicitV2Order && orderedTasks !== null) ? orderedTasks : (mapTasks.length > 0 ? mapTasks : (orderedTasks || []));
                         rebuiltArea[sk] = sourceTasks.filter(function(t) {
                             return t !== null && t !== undefined && String(t).trim() !== '' && !isReservedScopeMetadataKey(t);
                         });
@@ -6101,6 +6354,15 @@
                     cleanedScope[areaKey] = rebuiltArea;
                     cleanedOrder[areaKey] = finalSubOrder;
                 });
+            }
+
+            // If Firestore had both orderedScope and scope map, and they differed, save mapOnlyScope into recovery history so neither version is ever lost!
+            if (isFromFirestore && Object.keys(mapOnlyScope).length > 0) {
+                var sigOrdered = computeScopeDataSignature(cleanedScope, cleanedOrder);
+                var sigMapOnly = computeScopeDataSignature(mapOnlyScope, mapOnlyOrder);
+                if (sigOrdered !== sigMapOnly) {
+                    recordScopeHistorySnapshot('Firestore Cloud Map Field (settings/scope_of_work.scope)', mapOnlyScope, mapOnlyOrder, rawCloudDoc.updatedAt);
+                }
             }
 
             // Ensure Mahad Bldg / Mahad al Zahra alias consistency
@@ -6118,6 +6380,12 @@
 
             var newSig = computeScopeDataSignature(cleanedScope, cleanedOrder);
             var didScopeChange = (newSig !== window._lastLocalScopeSignature);
+
+            // Before overwriting existing local dbScopeOfWork with a different cloud snapshot, archive the current local dbScopeOfWork into history!
+            if (isFromFirestore && didScopeChange && dbScopeOfWork && Object.keys(dbScopeOfWork).length > 0) {
+                recordScopeHistorySnapshot('Local Scope State Before Cloud Update', dbScopeOfWork, dbScopeSubAreaOrder, dbScopeUpdatedAt);
+            }
+
             window._lastLocalScopeSignature = newSig;
 
             dbScopeOfWork = cleanedScope;
@@ -6126,6 +6394,14 @@
             window.dbScopeSubAreaOrder = cleanedOrder;
             dbScopeOrderVersion = 2;
             window.dbScopeOrderVersion = 2;
+            if (rawCloudDoc.updatedAt) {
+                dbScopeUpdatedAt = rawCloudDoc.updatedAt;
+                window.dbScopeUpdatedAt = dbScopeUpdatedAt;
+            }
+
+            if (isFromFirestore) {
+                recordScopeHistorySnapshot('Firestore Cloud Active Scope', cleanedScope, cleanedOrder, rawCloudDoc.updatedAt);
+            }
 
             return {
                 cleanedScope: cleanedScope,
@@ -7434,6 +7710,12 @@
             html += '</div></div>';
 
             html += '<div class="flex items-center flex-wrap gap-2 self-start lg:self-center">';
+            html += '<button type="button" onclick="openDwrFormRecoveryModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold px-3.5 py-2.5 rounded-xl shadow transition flex items-center space-x-1.5" title="Recover previous or overwritten DWR forms (Girls Hostel, Admin Phase 1, etc.) from Cloud, Local Vault, or Browser Disk Storage">';
+            html += '<i class="fa-solid fa-clock-rotate-left"></i><span>Recover Previous Forms</span>';
+            html += '</button>';
+            html += '<button type="button" onclick="exportDwrScopeJsonFile()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-extrabold px-3.5 py-2.5 rounded-xl shadow transition flex items-center space-x-1.5" title="Download all DWR forms as a standalone .json backup file">';
+            html += '<i class="fa-solid fa-download text-emerald-300"></i><span>Backup Forms (.json)</span>';
+            html += '</button>';
             html += '<label class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold px-4 py-2.5 rounded-xl shadow transition flex items-center space-x-2 cursor-pointer" title="Import Excel/CSV formatted like your sample image">';
             html += '<i class="fa-solid fa-file-excel text-emerald-300 text-sm"></i>';
             html += '<span>Import Excel / CSV (Sample Format)</span>';
@@ -7722,20 +8004,633 @@
                 dbScopeOfWork['Mahad al Zahra'] = JSON.parse(JSON.stringify(dbScopeOfWork['Mahad Bldg']));
                 dbScopeSubAreaOrder['Mahad al Zahra'] = (dbScopeSubAreaOrder['Mahad Bldg'] || []).slice();
             }
+            var nowIso = new Date().toISOString();
             dbScopeOrderVersion = 2;
+            dbScopeUpdatedAt = nowIso;
+            dbScopeUnsyncedLocal = true;
             window.dbScopeOfWork = dbScopeOfWork;
             window.dbScopeSubAreaOrder = dbScopeSubAreaOrder;
             window.dbScopeOrderVersion = 2;
+            window.dbScopeUpdatedAt = nowIso;
+            window.dbScopeUnsyncedLocal = true;
             window._lastLocalScopeSignature = computeScopeDataSignature(dbScopeOfWork, dbScopeSubAreaOrder);
-            saveStateToLocalBackup();
+
+            // Immediately flush to Protected Scope Vault, Rolling Version History, localStorage, and IndexedDB synchronously (0ms)
+            saveProtectedLocalScopeVault();
+            recordScopeHistorySnapshot('Admin Saved Form (' + (dwrBuilderSelectedArea || 'All Areas') + ')', dbScopeOfWork, dbScopeSubAreaOrder, nowIso);
+            saveStateToLocalBackup(true);
+
             if (window.saveScopeOfWorkToFirestore) {
-                await window.saveScopeOfWorkToFirestore(dbScopeOfWork);
+                return await window.saveScopeOfWorkToFirestore(dbScopeOfWork);
             }
+            return false;
         }
 
         async function publishDwrScopeToFirestoreManual() {
+            var syncedOk = await syncModifiedScopeOfWork();
+            if (syncedOk) {
+                showAppNotification('DWR Scope of Work saved to Local Vault & published live to Firestore (settings/scope_of_work)!', 'success');
+            } else {
+                showAppNotification('DWR Scope of Work saved safely to your PC Local Vault! Will auto-publish to Cloud as soon as connection is active.', 'info');
+            }
+        }
+
+        function exportDwrScopeJsonFile() {
+            var payload = buildCleanScopeFirestorePayload(dbScopeOfWork);
+            var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'Siyanat_DWR_Scope_of_Work_Forms_' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showAppNotification('Downloaded DWR Scope of Work Forms (.json) backup!', 'success');
+        }
+
+        // ================= DWR FORM RECOVERY & DEEP LEVELDB (.LDB / .LOG) FORENSIC SCANNER =================
+        function summarizeScopeCandidate(scopeMap, orderMap) {
+            var areaSummaries = [];
+            var totalTasks = 0;
+            var keys = Object.keys(scopeMap || {}).filter(function(k) {
+                return !isReservedScopeMetadataKey(k) && k !== 'Mahad al Zahra' && scopeMap[k] && typeof scopeMap[k] === 'object' && !Array.isArray(scopeMap[k]);
+            });
+            keys.forEach(function(ak) {
+                var aObj = scopeMap[ak] || {};
+                var subKeys = (orderMap && Array.isArray(orderMap[ak]) && orderMap[ak].length > 0)
+                    ? orderMap[ak].filter(function(sk) { return !isReservedScopeMetadataKey(sk) && Array.isArray(aObj[sk]); })
+                    : Object.keys(aObj).filter(function(sk) { return !isReservedScopeMetadataKey(sk) && Array.isArray(aObj[sk]); });
+                Object.keys(aObj).forEach(function(sk) {
+                    if (!isReservedScopeMetadataKey(sk) && Array.isArray(aObj[sk]) && subKeys.indexOf(sk) === -1) {
+                        subKeys.push(sk);
+                    }
+                });
+                var aTasks = 0;
+                subKeys.forEach(function(sk) {
+                    aTasks += (Array.isArray(aObj[sk]) ? aObj[sk].length : 0);
+                });
+                if (subKeys.length > 0 || aTasks > 0) {
+                    totalTasks += aTasks;
+                    areaSummaries.push({
+                        area: ak,
+                        subCount: subKeys.length,
+                        taskCount: aTasks,
+                        subNames: subKeys.slice(0, 8)
+                    });
+                }
+            });
+            return {
+                areaSummaries: areaSummaries,
+                totalAreas: areaSummaries.length,
+                totalTasks: totalTasks
+            };
+        }
+
+        function addOrMergeRecoveryCandidate(sourceLabel, timestampStr, rawScopeObj, rawOrderObj) {
+            if (!rawScopeObj || typeof rawScopeObj !== 'object') return false;
+            var cleanScope = {};
+            var cleanOrder = {};
+            Object.keys(rawScopeObj).forEach(function(ak) {
+                if (isReservedScopeMetadataKey(ak) || ak === 'Mahad al Zahra') return;
+                var canon = normalizeAreaAlias(ak);
+                var aObj = rawScopeObj[ak];
+                if (!aObj || typeof aObj !== 'object' || Array.isArray(aObj)) return;
+                var sKeys = (rawOrderObj && Array.isArray(rawOrderObj[ak])) ? rawOrderObj[ak].slice() : (Array.isArray(aObj.__subAreaOrder) ? aObj.__subAreaOrder.slice() : []);
+                Object.keys(aObj).forEach(function(sk) {
+                    if (!isReservedScopeMetadataKey(sk) && Array.isArray(aObj[sk]) && sKeys.indexOf(sk) === -1) {
+                        sKeys.push(sk);
+                    }
+                });
+                var validSubs = {};
+                var validOrder = [];
+                sKeys.forEach(function(sk) {
+                    if (!isReservedScopeMetadataKey(sk) && Array.isArray(aObj[sk])) {
+                        var tArr = aObj[sk].filter(function(t) { return typeof t === 'string' && t.trim() !== '' && !isReservedScopeMetadataKey(t); });
+                        validSubs[sk] = tArr;
+                        if (validOrder.indexOf(sk) === -1) validOrder.push(sk);
+                    }
+                });
+                if (validOrder.length > 0) {
+                    cleanScope[canon] = validSubs;
+                    cleanOrder[canon] = validOrder;
+                }
+            });
+
+            var summary = summarizeScopeCandidate(cleanScope, cleanOrder);
+            if (summary.totalAreas === 0 || summary.totalTasks === 0) return false;
+
+            var sig = computeScopeDataSignature(cleanScope, cleanOrder);
+            for (var i = 0; i < dbScopeRecoveryCandidates.length; i++) {
+                if (dbScopeRecoveryCandidates[i].signature === sig) {
+                    return false;
+                }
+            }
+            dbScopeRecoveryCandidates.push({
+                id: 'REC-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
+                sourceLabel: sourceLabel || 'Discovered Snapshot',
+                savedAt: timestampStr || '',
+                signature: sig,
+                scope: cleanScope,
+                subAreaOrder: cleanOrder,
+                summary: summary
+            });
+            return true;
+        }
+
+        async function runAutomaticDwrScopeRecoveryScan() {
+            dbScopeRecoveryCandidates = [];
+
+            // 1. Check raw Firestore document (settings/scope_of_work): inspect 'scope' map vs 'orderedScope' array separately!
+            if (window._lastRawCloudScopeDoc && typeof window._lastRawCloudScopeDoc === 'object') {
+                var rawDoc = window._lastRawCloudScopeDoc;
+                if (rawDoc.scope && typeof rawDoc.scope === 'object') {
+                    addOrMergeRecoveryCandidate('Firestore Cloud Map Field (settings/scope_of_work -> scope)', rawDoc.updatedAt || '', rawDoc.scope, rawDoc.subAreaOrder || {});
+                }
+                if (Array.isArray(rawDoc.orderedScope) && rawDoc.orderedScope.length > 0) {
+                    var ordScope = {};
+                    var ordMap = {};
+                    rawDoc.orderedScope.forEach(function(ae) {
+                        if (ae && ae.area && Array.isArray(ae.subAreas)) {
+                            ordScope[ae.area] = {};
+                            ordMap[ae.area] = [];
+                            ae.subAreas.forEach(function(se) {
+                                if (se && se.name && Array.isArray(se.tasks)) {
+                                    ordScope[ae.area][se.name] = se.tasks;
+                                    ordMap[ae.area].push(se.name);
+                                }
+                            });
+                        }
+                    });
+                    addOrMergeRecoveryCandidate('Firestore Cloud Ordered Array (settings/scope_of_work -> orderedScope)', rawDoc.updatedAt || '', ordScope, ordMap);
+                }
+            }
+
+            // 2. Check Local Rolling Scope History (localStorage + IndexedDB)
+            var localHist = loadScopeHistorySnapshotsFromStorage();
+            localHist.forEach(function(h) {
+                if (h && h.scope) {
+                    addOrMergeRecoveryCandidate('Local Vault History: ' + (h.label || 'Saved Snapshot'), h.savedAt || '', h.scope, h.subAreaOrder || {});
+                }
+            });
+            try {
+                var idbHist = await loadFromIndexedDB('scope_history_vault');
+                if (Array.isArray(idbHist)) {
+                    idbHist.forEach(function(h) {
+                        if (h && h.scope) {
+                            addOrMergeRecoveryCandidate('IndexedDB History Vault: ' + (h.label || 'Saved Snapshot'), h.savedAt || '', h.scope, h.subAreaOrder || {});
+                        }
+                    });
+                }
+                var idbProt = await loadFromIndexedDB('protected_scope_vault');
+                if (idbProt && idbProt.scope) {
+                    addOrMergeRecoveryCandidate('IndexedDB Protected Scope Vault', idbProt.updatedAt || '', idbProt.scope, idbProt.subAreaOrder || {});
+                }
+                var idbFull = await loadFromIndexedDB('full_state');
+                if (idbFull && idbFull.dbScopeOfWork) {
+                    addOrMergeRecoveryCandidate('IndexedDB Full Portal State Backup', idbFull.savedAt || idbFull.dbScopeUpdatedAt || '', idbFull.dbScopeOfWork, idbFull.dbScopeSubAreaOrder || {});
+                }
+            } catch (e) {}
+
+            // 3. Reconstruct any Sub-Areas & Tasks found inside submitted Daily Work Reports (dbDailyWorkReports)
+            if (Array.isArray(dbDailyWorkReports) && dbDailyWorkReports.length > 0) {
+                var dwrReconstructedScope = {};
+                var dwrReconstructedOrder = {};
+                dbDailyWorkReports.forEach(function(rep) {
+                    if (!rep || !rep.area || !Array.isArray(rep.tasksCompleted)) return;
+                    var canonArea = normalizeAreaAlias(rep.area);
+                    if (!dwrReconstructedScope[canonArea]) {
+                        dwrReconstructedScope[canonArea] = {};
+                        dwrReconstructedOrder[canonArea] = [];
+                    }
+                    rep.tasksCompleted.forEach(function(tk) {
+                        var str = String(tk || '');
+                        var parts = str.split(' :: ');
+                        if (parts.length >= 2) {
+                            var sName = parts[0].trim();
+                            var tName = parts.slice(1).join(' :: ').trim();
+                            if (sName && tName && !isReservedScopeMetadataKey(sName)) {
+                                if (!dwrReconstructedScope[canonArea][sName]) {
+                                    dwrReconstructedScope[canonArea][sName] = [];
+                                    dwrReconstructedOrder[canonArea].push(sName);
+                                }
+                                if (dwrReconstructedScope[canonArea][sName].indexOf(tName) === -1) {
+                                    dwrReconstructedScope[canonArea][sName].push(tName);
+                                }
+                            }
+                        }
+                    });
+                });
+                addOrMergeRecoveryCandidate('Reconstructed from Submitted Daily Work Reports (DWR History)', '', dwrReconstructedScope, dwrReconstructedOrder);
+            }
+
+            renderDwrRecoveryCandidatesList();
+        }
+
+        function openDwrFormRecoveryModal() {
+            openModal('dwrFormRecoveryModal');
+            runAutomaticDwrScopeRecoveryScan();
+        }
+
+        function renderDwrRecoveryCandidatesList() {
+            var container = document.getElementById('dwrRecoveryCandidatesContainer');
+            if (!container) return;
+
+            var currentSig = computeScopeDataSignature(dbScopeOfWork, dbScopeSubAreaOrder);
+            var html = '';
+
+            html += '<div class="flex items-center justify-between">';
+            html += '<h4 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center space-x-2">';
+            html += '<i class="fa-solid fa-layer-group text-indigo-600"></i>';
+            html += '<span>Discovered Form Snapshots (' + dbScopeRecoveryCandidates.length + ' Found)</span>';
+            html += '</h4>';
+            html += '</div>';
+
+            if (dbScopeRecoveryCandidates.length === 0) {
+                html += '<div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500">';
+                html += 'No snapshots loaded yet. Use <strong>&ldquo;Select Browser leveldb / IndexedDB Folder&rdquo;</strong> above to deep-scan your Chrome/Edge disk storage for yesterday&rsquo;s <strong>Girls Hostel</strong> and <strong>Admin Phase 1</strong> edits.';
+                html += '</div>';
+                container.innerHTML = html;
+                return;
+            }
+
+            dbScopeRecoveryCandidates.forEach(function(cand, idx) {
+                var isCurrentActive = (cand.signature === currentSig);
+                var borderCls = isCurrentActive ? 'border-emerald-300 bg-emerald-50/30' : 'border-indigo-200 bg-white';
+                html += '<div class="rounded-2xl border ' + borderCls + ' p-4 shadow-2xs space-y-3">';
+                html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">';
+                html += '<div>';
+                html += '<div class="flex items-center space-x-2 flex-wrap gap-y-1">';
+                html += '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase ' + (isCurrentActive ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800') + '">' + (isCurrentActive ? 'Currently Active in Builder' : 'Snapshot #' + (idx + 1)) + '</span>';
+                html += '<span class="text-xs font-extrabold text-slate-900">' + cand.sourceLabel + '</span>';
+                if (cand.savedAt) {
+                    html += '<span class="text-[11px] font-mono text-slate-500">(' + cand.savedAt.replace('T', ' ').slice(0, 19) + ')</span>';
+                }
+                html += '</div>';
+                html += '<p class="text-[11px] text-slate-500 mt-0.5">' + cand.summary.totalAreas + ' Area(s) &bull; ' + cand.summary.totalTasks + ' TotalChecklist Tasks</p>';
+                html += '</div>';
+                html += '<div class="flex items-center space-x-2 self-start sm:self-center">';
+                html += '<button type="button" onclick="restoreFullScopeCandidate(' + idx + ')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold px-3.5 py-2 rounded-xl shadow-2xs transition flex items-center space-x-1.5">';
+                html += '<i class="fa-solid fa-rotate-left"></i><span>Restore All Areas in Snapshot</span>';
+                html += '</button>';
+                html += '</div></div>';
+
+                // Per-area cards with 1-click "Restore This Area Only" button (ideal for restoring Girls Hostel or Admin Phase 1 individually!)
+                html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">';
+                cand.summary.areaSummaries.forEach(function(aSum) {
+                    var isHighlight = (aSum.area === 'Girls Hostel' || aSum.area === 'Admin Phase 1');
+                    var cardBg = isHighlight ? 'bg-amber-50/70 border-amber-300' : 'bg-slate-50 border-slate-200';
+                    var safeAreaAttr = aSum.area.replace(/'/g, "\\'");
+                    html += '<div class="rounded-xl border ' + cardBg + ' p-3 flex flex-col justify-between gap-2">';
+                    html += '<div>';
+                    html += '<div class="flex items-center justify-between gap-1">';
+                    html += '<span class="text-xs font-extrabold text-slate-900">' + formatAreaDisplayLabel(aSum.area) + '</span>';
+                    html += '<span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-700">' + aSum.subCount + ' Sub &bull; ' + aSum.taskCount + ' Tasks</span>';
+                    html += '</div>';
+                    html += '<p class="text-[10px] text-slate-600 mt-1 line-clamp-2" title="' + aSum.subNames.join(', ') + '"><strong>Sub-Areas:</strong> ' + (aSum.subNames.join(', ') || 'None') + (aSum.subCount > 8 ? ' ...' : '') + '</p>';
+                    html += '</div>';
+                    html += '<button type="button" onclick="restoreSingleAreaFromScopeCandidate(' + idx + ', \'' + safeAreaAttr + '\')" class="w-full bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold py-1.5 px-2.5 rounded-lg transition flex items-center justify-center space-x-1">';
+                    html += '<i class="fa-solid fa-check-double"></i><span>Restore ' + formatAreaDisplayLabel(aSum.area) + ' Only</span>';
+                    html += '</button>';
+                    html += '</div>';
+                });
+                html += '</div></div>';
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function restoreFullScopeCandidate(candIdx) {
+            var cand = dbScopeRecoveryCandidates[candIdx];
+            if (!cand || !cand.scope) return;
+            dbScopeOfWork = JSON.parse(JSON.stringify(cand.scope));
+            dbScopeSubAreaOrder = JSON.parse(JSON.stringify(cand.subAreaOrder || {}));
             await syncModifiedScopeOfWork();
-            showAppNotification('DWR Scope of Work saved & published to Firestore (settings/scope_of_work) for all users!', 'success');
+            renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+            renderDwrRecoveryCandidatesList();
+            closeModal('dwrFormRecoveryModal');
+            showAppNotification('Restored all DWR forms from "' + cand.sourceLabel + '" & published to Firestore!', 'success');
+        }
+
+        async function restoreSingleAreaFromScopeCandidate(candIdx, areaName) {
+            var cand = dbScopeRecoveryCandidates[candIdx];
+            if (!cand || !cand.scope || !cand.scope[areaName]) return;
+            var canon = normalizeAreaAlias(areaName);
+            if (!dbScopeOfWork || typeof dbScopeOfWork !== 'object') dbScopeOfWork = {};
+            if (!dbScopeSubAreaOrder || typeof dbScopeSubAreaOrder !== 'object') dbScopeSubAreaOrder = {};
+            dbScopeOfWork[canon] = JSON.parse(JSON.stringify(cand.scope[areaName]));
+            dbScopeSubAreaOrder[canon] = Array.isArray(cand.subAreaOrder && cand.subAreaOrder[areaName])
+                ? cand.subAreaOrder[areaName].slice()
+                : Object.keys(cand.scope[areaName]);
+            dwrBuilderSelectedArea = canon;
+            await syncModifiedScopeOfWork();
+            renderManageDwrFormPageView(document.getElementById('moduleContainer'));
+            renderDwrRecoveryCandidatesList();
+            showAppNotification('Restored "' + formatAreaDisplayLabel(canon) + '" (' + dbScopeSubAreaOrder[canon].length + ' Sub-Areas) & published to Firestore!', 'success');
+        }
+
+        // Pure-JS Snappy Decompressor & LevelDB (.ldb / .log) Forensic JSON Extractor
+        function snappyDecompressBlock(compressedBytes, offset, length) {
+            try {
+                var pos = offset || 0;
+                var end = pos + (length !== undefined ? length : (compressedBytes.length - pos));
+                // Read uncompressed length varint
+                var uncompressedLen = 0;
+                var shift = 0;
+                while (pos < end) {
+                    var b = compressedBytes[pos++];
+                    uncompressedLen |= (b & 0x7f) << shift;
+                    if ((b & 0x80) === 0) break;
+                    shift += 7;
+                    if (shift > 32) return null;
+                }
+                if (uncompressedLen <= 0 || uncompressedLen > 32 * 1024 * 1024) return null;
+                var out = new Uint8Array(uncompressedLen);
+                var outPos = 0;
+
+                while (pos < end && outPos < uncompressedLen) {
+                    var c = compressedBytes[pos++];
+                    var tagType = c & 0x03;
+                    if (tagType === 0) {
+                        var len = (c >>> 2) + 1;
+                        if (len > 60) {
+                            var extraBytes = len - 60;
+                            if (pos + extraBytes > end) return null;
+                            len = 0;
+                            for (var eb = 0; eb < extraBytes; eb++) {
+                                len |= compressedBytes[pos++] << (eb * 8);
+                            }
+                            len += 1;
+                        }
+                        if (pos + len > end || outPos + len > uncompressedLen) return null;
+                        out.set(compressedBytes.subarray(pos, pos + len), outPos);
+                        pos += len;
+                        outPos += len;
+                    } else {
+                        var copyLen = 0;
+                        var copyOffset = 0;
+                        if (tagType === 1) {
+                            copyLen = ((c >>> 2) & 0x07) + 4;
+                            if (pos >= end) return null;
+                            copyOffset = ((c & 0xe0) << 3) | compressedBytes[pos++];
+                        } else if (tagType === 2) {
+                            copyLen = (c >>> 2) + 1;
+                            if (pos + 2 > end) return null;
+                            copyOffset = compressedBytes[pos] | (compressedBytes[pos + 1] << 8);
+                            pos += 2;
+                        } else {
+                            copyLen = (c >>> 2) + 1;
+                            if (pos + 4 > end) return null;
+                            copyOffset = (compressedBytes[pos] | (compressedBytes[pos + 1] << 8) | (compressedBytes[pos + 2] << 16) | (compressedBytes[pos + 3] << 24)) >>> 0;
+                            pos += 4;
+                        }
+                        if (copyOffset <= 0 || copyOffset > outPos || outPos + copyLen > uncompressedLen) return null;
+                        var srcStart = outPos - copyOffset;
+                        for (var k = 0; k < copyLen; k++) {
+                            out[outPos++] = out[srcStart + k];
+                        }
+                    }
+                }
+                return outPos === uncompressedLen ? out : out.subarray(0, outPos);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function decodeLevelDbSstBlocksToStrings(uint8Arr) {
+            var texts = [];
+            try {
+                texts.push(new TextDecoder('utf-8', { fatal: false }).decode(uint8Arr));
+            } catch (e) {}
+            try {
+                // Chrome LocalStorage often encodes values in UTF-16LE (with 0x00 between ASCII chars)
+                texts.push(new TextDecoder('utf-16le', { fatal: false }).decode(uint8Arr));
+                if (uint8Arr.length > 1) {
+                    texts.push(new TextDecoder('utf-16le', { fatal: false }).decode(uint8Arr.subarray(1)));
+                }
+            } catch (e) {}
+
+            // Also parse LevelDB SSTable (.ldb) Snappy-compressed blocks via the 48-byte footer or block-trailer scan
+            try {
+                // Scan for 5-byte LevelDB block trailers: [compression_type == 0x01 (Snappy), 4-byte CRC]
+                // Or decode via LevelDB index block if footer magic matches 0xdb4775248b80fb57
+                var len = uint8Arr.length;
+                if (len >= 48) {
+                    // Check LevelDB magic number at last 8 bytes: 0x57, 0xfb, 0x80, 0x8b, 0x24, 0x75, 0x47, 0xdb
+                    var isLevelDbSst = (
+                        uint8Arr[len - 8] === 0x57 && uint8Arr[len - 7] === 0xfb &&
+                        uint8Arr[len - 6] === 0x80 && uint8Arr[len - 5] === 0x8b &&
+                        uint8Arr[len - 4] === 0x24 && uint8Arr[len - 3] === 0x75 &&
+                        uint8Arr[len - 2] === 0x47 && uint8Arr[len - 1] === 0xdb
+                    );
+                    if (isLevelDbSst) {
+                        var readVarint = function(buf, p) {
+                            var val = 0, sh = 0;
+                            while (p < buf.length && sh <= 35) {
+                                var b = buf[p++];
+                                val += (b & 0x7f) * Math.pow(2, sh);
+                                if ((b & 0x80) === 0) return { val: val, next: p };
+                                sh += 7;
+                            }
+                            return null;
+                        };
+                        // Footer starts at len - 48: metaindex_handle (offset, size), index_handle (offset, size)
+                        var p = len - 48;
+                        var mOff = readVarint(uint8Arr, p);
+                        var mSz = mOff ? readVarint(uint8Arr, mOff.next) : null;
+                        var iOff = mSz ? readVarint(uint8Arr, mSz.next) : null;
+                        var iSz = iOff ? readVarint(uint8Arr, iOff.next) : null;
+                        if (iOff && iSz && iOff.val + iSz.val <= len - 48) {
+                            var idxBlock = uint8Arr.subarray(iOff.val, iOff.val + iSz.val);
+                            if (uint8Arr[iOff.val + iSz.val] === 1) {
+                                idxBlock = snappyDecompressBlock(uint8Arr, iOff.val, iSz.val) || idxBlock;
+                            }
+                            // Walk index block entries to extract every data block handle
+                            if (idxBlock && idxBlock.length > 4) {
+                                var numRestarts = idxBlock[idxBlock.length - 4] | (idxBlock[idxBlock.length - 3] << 8) | (idxBlock[idxBlock.length - 2] << 16) | (idxBlock[idxBlock.length - 1] << 24);
+                                var entriesEnd = idxBlock.length - 4 - (numRestarts * 4);
+                                var ip = 0;
+                                while (ip < entriesEnd) {
+                                    var shared = readVarint(idxBlock, ip); if (!shared) break;
+                                    var nonShared = readVarint(idxBlock, shared.next); if (!nonShared) break;
+                                    var vLen = readVarint(idxBlock, nonShared.next); if (!vLen) break;
+                                    var valStart = vLen.next + nonShared.val;
+                                    var bOff = readVarint(idxBlock, valStart);
+                                    var bSz = bOff ? readVarint(idxBlock, bOff.next) : null;
+                                    if (bOff && bSz && bOff.val + bSz.val <= len) {
+                                        var compType = uint8Arr[bOff.val + bSz.val];
+                                        var dBlock = (compType === 1)
+                                            ? snappyDecompressBlock(uint8Arr, bOff.val, bSz.val)
+                                            : uint8Arr.subarray(bOff.val, bOff.val + bSz.val);
+                                        if (dBlock && dBlock.length > 0) {
+                                            try { texts.push(new TextDecoder('utf-8', { fatal: false }).decode(dBlock)); } catch (e) {}
+                                            try {
+                                                texts.push(new TextDecoder('utf-16le', { fatal: false }).decode(dBlock));
+                                                if (dBlock.length > 1) texts.push(new TextDecoder('utf-16le', { fatal: false }).decode(dBlock.subarray(1)));
+                                            } catch (e) {}
+                                        }
+                                    }
+                                    ip = valStart + vLen.val;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e) {}
+            return texts;
+        }
+
+        function extractBalancedJsonObjectAt(str, startBraceIdx, maxLen) {
+            var limit = Math.min(str.length, startBraceIdx + (maxLen || 500000));
+            var depth = 0;
+            var inStr = false;
+            var esc = false;
+            for (var i = startBraceIdx; i < limit; i++) {
+                var ch = str.charCodeAt(i);
+                if (inStr) {
+                    if (esc) {
+                        esc = false;
+                    } else if (ch === 92) { // backslash
+                        esc = true;
+                    } else if (ch === 34) { // quote
+                        inStr = false;
+                    }
+                } else {
+                    if (ch === 34) {
+                        inStr = true;
+                    } else if (ch === 123) { // {
+                        depth++;
+                    } else if (ch === 125) { // }
+                        depth--;
+                        if (depth === 0) {
+                            return str.slice(startBraceIdx, i + 1);
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        function extractScopeCandidatesFromDecodedText(text, fileName) {
+            if (!text || text.length < 15) return 0;
+            var foundCount = 0;
+
+            // 1. Search for full "dbScopeOfWork":{...} or "scope":{...} JSON objects
+            var scopeMarkers = ['"dbScopeOfWork":', '"scope":'];
+            scopeMarkers.forEach(function(marker) {
+                var searchPos = 0;
+                while (searchPos < text.length) {
+                    var idx = text.indexOf(marker, searchPos);
+                    if (idx === -1) break;
+                    var braceStart = text.indexOf('{', idx + marker.length);
+                    if (braceStart !== -1 && braceStart - (idx + marker.length) < 10) {
+                        var jsonSlice = extractBalancedJsonObjectAt(text, braceStart, 350000);
+                        if (jsonSlice) {
+                            try {
+                                var parsedScope = JSON.parse(jsonSlice);
+                                // Also look nearby for dbScopeSubAreaOrder or subAreaOrder
+                                var parsedOrder = {};
+                                var nearbySlice = text.slice(Math.max(0, idx - 2000), Math.min(text.length, braceStart + jsonSlice.length + 50000));
+                                var ordIdx = nearbySlice.indexOf('"dbScopeSubAreaOrder":');
+                                if (ordIdx === -1) ordIdx = nearbySlice.indexOf('"subAreaOrder":');
+                                if (ordIdx !== -1) {
+                                    var ordBrace = nearbySlice.indexOf('{', ordIdx + 14);
+                                    if (ordBrace !== -1) {
+                                        var ordJson = extractBalancedJsonObjectAt(nearbySlice, ordBrace, 100000);
+                                        if (ordJson) {
+                                            try { parsedOrder = JSON.parse(ordJson); } catch (e) {}
+                                        }
+                                    }
+                                }
+                                if (addOrMergeRecoveryCandidate('Disk Scan (' + fileName + ')', '', parsedScope, parsedOrder)) {
+                                    foundCount++;
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                    searchPos = idx + marker.length;
+                }
+            });
+
+            // 2. Also search directly for individual Area JSON blocks ("Girls Hostel":{...}, "Admin Phase 1":{...}, etc.)
+            // in case a block boundary split the outer dbScopeOfWork object!
+            var targetAreaNames = ['Girls Hostel', 'Admin Phase 1', 'Boys Hostel', 'Admin Phase 3', 'Mahad Bldg', 'Religious Block', 'Compound Area', 'Najmi Bldg', 'Estates'];
+            var partialScope = {};
+            var partialOrder = {};
+            targetAreaNames.forEach(function(areaName) {
+                var marker = '"' + areaName + '":';
+                var sPos = 0;
+                while (sPos < text.length) {
+                    var aIdx = text.indexOf(marker, sPos);
+                    if (aIdx === -1) break;
+                    var bStart = text.indexOf('{', aIdx + marker.length);
+                    if (bStart !== -1 && bStart - (aIdx + marker.length) < 8) {
+                        var aSlice = extractBalancedJsonObjectAt(text, bStart, 100000);
+                        if (aSlice) {
+                            try {
+                                var areaMap = JSON.parse(aSlice);
+                                if (areaMap && typeof areaMap === 'object' && !Array.isArray(areaMap)) {
+                                    var subK = Object.keys(areaMap).filter(function(k) { return !isReservedScopeMetadataKey(k) && Array.isArray(areaMap[k]); });
+                                    if (subK.length > 0) {
+                                        var singleAreaScope = {};
+                                        var singleAreaOrder = {};
+                                        singleAreaScope[areaName] = areaMap;
+                                        singleAreaOrder[areaName] = Array.isArray(areaMap.__subAreaOrder) ? areaMap.__subAreaOrder : subK;
+                                        if (addOrMergeRecoveryCandidate('Disk Scan Area Block: ' + areaName + ' (' + fileName + ')', '', singleAreaScope, singleAreaOrder)) {
+                                            foundCount++;
+                                        }
+                                    }
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                    sPos = aIdx + marker.length;
+                }
+            });
+
+            return foundCount;
+        }
+
+        async function handleLevelDbFilesScan(evt) {
+            var files = evt.target.files;
+            if (!files || files.length === 0) return;
+            var statusEl = document.getElementById('dwrRecoveryDiskScanStatus');
+            if (statusEl) {
+                statusEl.classList.remove('hidden');
+                statusEl.innerHTML = '<span><i class="fa-solid fa-spinner fa-spin mr-2 text-amber-400"></i>Scanning ' + files.length + ' browser storage file(s) &amp; decompressing Snappy .ldb blocks...</span>';
+            }
+
+            var scannedFiles = 0;
+            var newSnapshotsFound = 0;
+
+            for (var i = 0; i < files.length; i++) {
+                var f = files[i];
+                var nameLower = (f.name || '').toLowerCase();
+                // Scan .ldb, .log, .bak, .json, or any file under 25MB in leveldb/IndexedDB folders
+                if (f.size > 0 && f.size <= 35 * 1024 * 1024 && (
+                    nameLower.endsWith('.ldb') ||
+                    nameLower.endsWith('.log') ||
+                    nameLower.endsWith('.bak') ||
+                    nameLower.endsWith('.json') ||
+                    nameLower.indexOf('MANIFEST') === -1
+                )) {
+                    try {
+                        var buf = await f.arrayBuffer();
+                        var u8 = new Uint8Array(buf);
+                        var decodedStrings = decodeLevelDbSstBlocksToStrings(u8);
+                        for (var d = 0; d < decodedStrings.length; d++) {
+                            newSnapshotsFound += extractScopeCandidatesFromDecodedText(decodedStrings[d], f.name);
+                        }
+                        scannedFiles++;
+                    } catch (e) {}
+                }
+            }
+
+            if (statusEl) {
+                statusEl.innerHTML = '<span><i class="fa-solid fa-circle-check mr-2 text-emerald-400"></i>Scanned ' + scannedFiles + ' file(s) — discovered ' + newSnapshotsFound + ' distinct historical DWR form snapshot(s)!</span>';
+            }
+            renderDwrRecoveryCandidatesList();
+            evt.target.value = '';
         }
 
         function promptAddNewDwrArea() {
@@ -16776,13 +17671,21 @@
                 }
                 const scopeSnap = await getDoc(doc(db, "settings", "scope_of_work"));
                 if (scopeSnap.exists() && typeof window.hydrateScopeOfWorkFromCloudData === "function") {
-                    const res = window.hydrateScopeOfWorkFromCloudData(scopeSnap.data(), true);
-                    saveStateToLocalBackup();
-                    if (res && res.hadLegacyPollutionOrScramble && typeof window.saveScopeOfWorkToFirestore === "function") {
-                        window.saveScopeOfWorkToFirestore(window.dbScopeOfWork);
-                    }
-                    if (res && res.didScopeChange && window.activeModule === "cleaning" && typeof window.scheduleActiveModuleRender === "function") {
-                        window.scheduleActiveModuleRender("cleaning", false);
+                    const cloudScopeData = scopeSnap.data();
+                    if (window.dbScopeUnsyncedLocal && window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0) {
+                        // Local Admin has unsynced Scope of Work edits: archive cloud snapshot for recovery, and push local edits instead of overwriting!
+                        if (cloudScopeData && cloudScopeData.scope && typeof window.recordScopeHistorySnapshot === "function") {
+                            window.recordScopeHistorySnapshot("Cloud Scope Snapshot (Before Local Sync)", cloudScopeData.scope, cloudScopeData.subAreaOrder || {}, cloudScopeData.updatedAt);
+                        }
+                        if (window.currentUser && window.currentUser.role === "Administrator" && typeof window.saveScopeOfWorkToFirestore === "function") {
+                            window.saveScopeOfWorkToFirestore(window.dbScopeOfWork);
+                        }
+                    } else {
+                        const res = window.hydrateScopeOfWorkFromCloudData(cloudScopeData, true);
+                        saveStateToLocalBackup();
+                        if (res && res.didScopeChange && window.activeModule === "cleaning" && typeof window.scheduleActiveModuleRender === "function") {
+                            window.scheduleActiveModuleRender("cleaning", false);
+                        }
                     }
                 }
             } catch (e) {}
@@ -17455,19 +18358,28 @@
                         if (docSnap.exists()) {
                             const data = docSnap.data();
                             if (data && typeof data === "object" && typeof window.hydrateScopeOfWorkFromCloudData === "function") {
+                                // 1. If local Admin has unsynced edits in progress, do NOT let an incoming snapshot overwrite them!
+                                if (window.dbScopeUnsyncedLocal && window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0) {
+                                    if (data.scope && typeof window.recordScopeHistorySnapshot === "function") {
+                                        window.recordScopeHistorySnapshot("Cloud Snapshot Received While Local Edit Pending", data.scope, data.subAreaOrder || {}, data.updatedAt);
+                                    }
+                                    return;
+                                }
+                                // 2. If this snapshot came from stale offline IndexedDB cache and our local scope is newer, ignore the stale cache!
+                                if (docSnap.metadata && docSnap.metadata.fromCache && window.dbScopeUpdatedAt && data.updatedAt) {
+                                    const localMs = new Date(window.dbScopeUpdatedAt).getTime();
+                                    const cacheMs = new Date(data.updatedAt).getTime();
+                                    if (!isNaN(localMs) && !isNaN(cacheMs) && localMs > cacheMs) {
+                                        return;
+                                    }
+                                }
                                 const res = window.hydrateScopeOfWorkFromCloudData(data, true);
                                 saveStateToLocalBackup();
-                                // If cloud document had legacy __subAreaOrder inside scope[area] or scrambled floor keys, clean Firestore immediately
-                                if (res && res.hadLegacyPollutionOrScramble && typeof window.saveScopeOfWorkToFirestore === "function") {
-                                    window.saveScopeOfWorkToFirestore(window.dbScopeOfWork);
-                                }
                                 // Only re-render if the scope actually changed from our local signature!
                                 if (res && res.didScopeChange && window.activeModule === "cleaning" && typeof window.scheduleActiveModuleRender === "function") {
                                     window.scheduleActiveModuleRender("cleaning", false);
                                 }
                             }
-                        } else if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0 && typeof window.buildCleanScopeFirestorePayload === "function") {
-                            setDoc(doc(db, "settings", "scope_of_work"), window.buildCleanScopeFirestorePayload(window.dbScopeOfWork)).catch(() => {});
                         }
                     },
                     (err) => handleSnapshotError("settings/scope_of_work", err)
@@ -17805,7 +18717,11 @@
         };
 
         window.saveScopeOfWorkToFirestore = async function(scopeObj) {
-            saveStateToLocalBackup();
+            window.dbScopeUnsyncedLocal = true;
+            if (typeof window.saveProtectedLocalScopeVault === "function") {
+                window.saveProtectedLocalScopeVault();
+            }
+            saveStateToLocalBackup(true);
             try {
                 await window.ensureFirebaseAuthSession();
                 const payload = typeof window.buildCleanScopeFirestorePayload === "function"
@@ -17816,8 +18732,19 @@
                         updatedBy: window.currentUser ? window.currentUser.email : "System"
                     };
                 await setDoc(doc(db, "settings", "scope_of_work"), payload);
+                window.dbScopeUnsyncedLocal = false;
+                dbScopeUnsyncedLocal = false;
+                window.dbScopeUpdatedAt = payload.updatedAt;
+                dbScopeUpdatedAt = payload.updatedAt;
+                if (typeof window.saveProtectedLocalScopeVault === "function") {
+                    window.saveProtectedLocalScopeVault();
+                }
+                saveStateToLocalBackup(true);
+                setCloudSyncIndicator('connected', 'Cloud Synced (Firestore)');
+                return true;
             } catch (err) {
                 handleWriteError("settings/scope_of_work", err);
+                return false;
             }
         };
 
@@ -18420,11 +19347,13 @@
                 if (window.dbDailyWorkReports && window.dbDailyWorkReports.length > 0) {
                     await window.batchSaveCollectionToFirestore('daily_work_reports', window.dbDailyWorkReports);
                 }
-                if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0) {
+                if (window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0 && ((window.currentUser && window.currentUser.role === "Administrator") || window.dbScopeUnsyncedLocal)) {
                     const cleanPayload = typeof window.buildCleanScopeFirestorePayload === "function"
                         ? window.buildCleanScopeFirestorePayload(window.dbScopeOfWork)
                         : { scope: window.dbScopeOfWork, updatedAt: new Date().toISOString() };
                     await setDoc(doc(db, "settings", "scope_of_work"), cleanPayload);
+                    window.dbScopeUnsyncedLocal = false;
+                    dbScopeUnsyncedLocal = false;
                 }
 
                 // 5. Pest Control, Waste, Crates, Water Tanks, Procurement, Machinery
@@ -18519,6 +19448,9 @@
                 await syncUnsyncedList("compost_logs", window.dbCompostLogs, "id");
                 await syncUnsyncedList("cleaning_logs", window.dbCleaningLogs, "id");
                 await syncUnsyncedList("daily_work_reports", window.dbDailyWorkReports, "reportId");
+                if (window.dbScopeUnsyncedLocal && window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0 && typeof window.saveScopeOfWorkToFirestore === "function") {
+                    await window.saveScopeOfWorkToFirestore(window.dbScopeOfWork);
+                }
             } catch (e) {
                 console.warn("Auto-sync pending local vault note:", e.message);
             }
