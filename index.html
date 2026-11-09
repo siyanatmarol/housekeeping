@@ -932,17 +932,44 @@
 <!-- INVENTORY TRANSACTIONS ARCHIVE MODAL -->
     <div id="invArchiveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-5xl w-full p-6 border border-slate-100 max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+            <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100">
                 <div>
                     <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
                         <i class="fa-solid fa-clock-rotate-left text-blue-600"></i>
                         <span>Transaction Archive History</span>
+                        <span id="invArchiveCountBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">0 Records</span>
                     </h3>
                     <p class="text-xs text-slate-500 mt-0.5">Chronological record of stock purchases, issues, and consumption logs</p>
                 </div>
                 <button type="button" onclick="closeModal('invArchiveModal')" class="text-slate-400 hover:text-slate-600">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
+            </div>
+            <!-- Dynamic Search & Filter Bar (Type & Date) -->
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                    <input type="text" id="invArchiveSearchInput" oninput="handleInvArchiveFilterChange()" placeholder="Search by item name, store/area, logged by user name, or remarks..." class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex items-center space-x-1.5">
+                        <label for="invArchiveTypeFilter" class="text-[11px] font-bold text-slate-600 uppercase">Type:</label>
+                        <select id="invArchiveTypeFilter" onchange="handleInvArchiveFilterChange()" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="ALL">All Types</option>
+                            <option value="ISSUE">Issue</option>
+                            <option value="PURCHASE">Purchase</option>
+                            <option value="OUT">Out</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <label for="invArchiveDateFilter" class="text-[11px] font-bold text-slate-600 uppercase">Date:</label>
+                        <input type="date" id="invArchiveDateFilter" onchange="handleInvArchiveFilterChange()" class="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button type="button" onclick="resetInvArchiveFilters()" class="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-200/80 hover:bg-slate-300/80 px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1" title="Clear Search & Filters">
+                        <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                        <span>Reset</span>
+                    </button>
+                </div>
             </div>
             <div id="invArchiveModalBody" class="flex-1 overflow-y-auto custom-scrollbar border border-slate-200 rounded-xl"></div>
             <div class="pt-3 border-t border-slate-100 flex justify-end mt-3">
@@ -4333,6 +4360,38 @@
         }
         function toggleDropdown(id) { document.getElementById(id).classList.toggle('hidden'); }
 
+        function getUserDisplayName(emailOrName, fallbackName) {
+            if (fallbackName && typeof fallbackName === 'string' && fallbackName.trim() !== '' && fallbackName.indexOf('@') === -1) {
+                return fallbackName.trim();
+            }
+            if (!emailOrName || typeof emailOrName !== 'string') return 'System';
+            var raw = emailOrName.trim();
+            if (!raw) return 'System';
+            var lower = raw.toLowerCase();
+            if (lower === 'system' || lower === 'administrator' || lower === 'supervisor' || lower === 'user' || lower === '-') {
+                return raw;
+            }
+            var reg = (typeof userRegistry !== 'undefined' && Array.isArray(userRegistry)) ? userRegistry : (window.userRegistry || []);
+            for (var i = 0; i < reg.length; i++) {
+                var u = reg[i];
+                if (u && u.email && u.email.toLowerCase().trim() === lower && u.name && u.name.trim() !== '') {
+                    return u.name.trim();
+                }
+            }
+            if (typeof currentUser !== 'undefined' && currentUser && currentUser.email && currentUser.email.toLowerCase().trim() === lower && currentUser.name) {
+                return currentUser.name.trim();
+            }
+            if (raw.indexOf('@') === -1) {
+                return raw;
+            }
+            if (lower.indexOf('murtaza') !== -1) return 'Murtaza Kheraluwala';
+            if (lower.indexOf('fm.marol') !== -1) return 'FM Marol Admin';
+            var localPart = raw.split('@')[0].replace(/[._-]+/g, ' ').trim();
+            if (!localPart) return raw;
+            return localPart.replace(/\b\w/g, function(ch) { return ch.toUpperCase(); });
+        }
+        window.getUserDisplayName = getUserDisplayName;
+
         function updateUserDisplay() {
             var emailEl = document.getElementById('userEmailDisplay');
             var roleEl = document.getElementById('userRoleBadge');
@@ -4346,7 +4405,7 @@
                         ? 'Dry Waste & Compost'
                         : (currentUser.areas ? currentUser.areas.join(', ') : 'Assigned Area'));
                 if (emailEl) {
-                    emailEl.innerText = currentUser.name ? (currentUser.name + ' (' + currentUser.email + ')') : currentUser.email;
+                    emailEl.innerText = getUserDisplayName(currentUser.email, currentUser.name);
                 }
 
                 if (roleEl) {
@@ -5171,6 +5230,7 @@
                     type: type,
                     qty: entry.qty,
                     user: currentUser.email,
+                    userName: getUserDisplayName(currentUser.email, currentUser.name),
                     remarks: remarks,
                     updatedAt: new Date().toISOString()
                 };
@@ -5223,7 +5283,40 @@
             }
         }
 
+        var invArchiveSearchQuery = '';
+        var invArchiveTypeFilterVal = 'ALL';
+        var invArchiveDateFilterVal = '';
+
+        function handleInvArchiveFilterChange() {
+            var sEl = document.getElementById('invArchiveSearchInput');
+            var tEl = document.getElementById('invArchiveTypeFilter');
+            var dEl = document.getElementById('invArchiveDateFilter');
+            invArchiveSearchQuery = sEl ? sEl.value.trim() : '';
+            invArchiveTypeFilterVal = tEl ? tEl.value : 'ALL';
+            invArchiveDateFilterVal = dEl ? dEl.value : '';
+            renderInvArchiveModalTable();
+        }
+
+        function resetInvArchiveFilters() {
+            invArchiveSearchQuery = '';
+            invArchiveTypeFilterVal = 'ALL';
+            invArchiveDateFilterVal = '';
+            var sEl = document.getElementById('invArchiveSearchInput');
+            var tEl = document.getElementById('invArchiveTypeFilter');
+            var dEl = document.getElementById('invArchiveDateFilter');
+            if (sEl) sEl.value = '';
+            if (tEl) tEl.value = 'ALL';
+            if (dEl) dEl.value = '';
+            renderInvArchiveModalTable();
+        }
+
         function openInvArchiveModal() {
+            var sEl = document.getElementById('invArchiveSearchInput');
+            var tEl = document.getElementById('invArchiveTypeFilter');
+            var dEl = document.getElementById('invArchiveDateFilter');
+            if (sEl) sEl.value = invArchiveSearchQuery || '';
+            if (tEl) tEl.value = invArchiveTypeFilterVal || 'ALL';
+            if (dEl) dEl.value = invArchiveDateFilterVal || '';
             renderInvArchiveModalTable();
             openModal('invArchiveModal');
         }
@@ -5233,33 +5326,71 @@
             if (!bodyEl) return;
 
             var isAdmin = currentUser && currentUser.role === 'Administrator';
-            var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
-            var isSup = currentUser && currentUser.role === 'Supervisor';
+            var isExec = currentUser && currentUser.role && currentUser.role.indexOf('Executive') === 0;
+            var isSup = currentUser && (currentUser.role === 'Supervisor' || currentUser.role === 'Waste Management Supervisor');
+            // Edit & Delete options available to both Executive and Admin roles, but NOT Supervisors
+            var canManageArchive = (isAdmin || isExec) && !isSup;
+
+            var qLower = (invArchiveSearchQuery || '').toLowerCase();
+            var typeFilter = (invArchiveTypeFilterVal || 'ALL').toUpperCase();
+            var dateFilter = (invArchiveDateFilterVal || '').trim();
 
             var filteredArchive = dbData.inventoryArchive.filter(function(arc) {
-                if (isAdmin) return true;
-                if (isExec) return currentUser.areas.indexOf(arc.area) !== -1 || arc.area === 'Main Store';
-                if (isSup) return currentUser.areas.indexOf(arc.area) !== -1;
+                var roleAccessOk = true;
+                if (isAdmin) roleAccessOk = true;
+                else if (isExec) roleAccessOk = currentUser.areas.indexOf(arc.area) !== -1 || arc.area === 'Main Store';
+                else if (isSup) roleAccessOk = currentUser.areas.indexOf(arc.area) !== -1;
+                if (!roleAccessOk) return false;
+
+                if (typeFilter !== 'ALL' && String(arc.type || '').toUpperCase() !== typeFilter) {
+                    return false;
+                }
+                if (dateFilter && String(arc.date || '') !== dateFilter) {
+                    return false;
+                }
+                if (qLower) {
+                    var loggedByUserName = getUserDisplayName(arc.user, arc.userName).toLowerCase();
+                    var itemStr = String(arc.itemName || '').toLowerCase();
+                    var areaStr = String(arc.area || '').toLowerCase();
+                    var typeStr = String(arc.type || '').toLowerCase();
+                    var dateStr = String(arc.date || '').toLowerCase();
+                    var remStr = String(arc.remarks || '').toLowerCase();
+                    var qtyStr = String(arc.qty || '').toLowerCase();
+                    var matchSearch = itemStr.indexOf(qLower) !== -1 ||
+                        areaStr.indexOf(qLower) !== -1 ||
+                        loggedByUserName.indexOf(qLower) !== -1 ||
+                        typeStr.indexOf(qLower) !== -1 ||
+                        dateStr.indexOf(qLower) !== -1 ||
+                        remStr.indexOf(qLower) !== -1 ||
+                        qtyStr.indexOf(qLower) !== -1;
+                    if (!matchSearch) return false;
+                }
                 return true;
             });
 
+            var countBadge = document.getElementById('invArchiveCountBadge');
+            if (countBadge) {
+                countBadge.textContent = filteredArchive.length + (filteredArchive.length === 1 ? ' Record' : ' Records');
+            }
+
             var html = '<table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0 z-10"><tr>';
             html += '<th class="p-3">Date</th><th class="p-3">Type</th><th class="p-3">Item Name</th><th class="p-3">Store / Area</th><th class="p-3">Quantity</th><th class="p-3">Logged By</th>';
-            if (isAdmin) html += '<th class="p-3 text-center">Actions</th>';
+            if (canManageArchive) html += '<th class="p-3 text-center">Actions</th>';
             html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
             if (filteredArchive.length === 0) {
-                html += '<tr><td colspan="' + (isAdmin ? 7 : 6) + '" class="p-6 text-center text-slate-400 italic">No transaction records found matching your area access level.</td></tr>';
+                html += '<tr><td colspan="' + (canManageArchive ? 7 : 6) + '" class="p-6 text-center text-slate-400 italic">No transaction records found matching your search or filter criteria.</td></tr>';
             } else {
                 filteredArchive.forEach(function(arc) {
                     var badgeClass = arc.type === 'PURCHASE' ? 'bg-emerald-100 text-emerald-800' : arc.type === 'ISSUE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800';
+                    var userDispName = getUserDisplayName(arc.user, arc.userName);
                     html += '<tr class="hover:bg-slate-50 transition"><td class="p-3 text-slate-500 font-mono">' + arc.date + '</td>';
                     html += '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ' + badgeClass + '">' + arc.type + '</span></td>';
                     html += '<td class="p-3 font-medium text-slate-900">' + arc.itemName + '</td>';
                     html += '<td class="p-3 font-semibold text-slate-700">' + arc.area + '</td>';
                     html += '<td class="p-3 font-bold text-slate-900">' + arc.qty + '</td>';
-                    html += '<td class="p-3 text-slate-500">' + arc.user + '</td>';
-                    if (isAdmin) {
+                    html += '<td class="p-3 font-medium text-slate-700">' + userDispName + '</td>';
+                    if (canManageArchive) {
                         html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-2">';
                         html += '<button type="button" onclick="openEditArchiveModal(\'' + arc.id + '\', ' + arc.qty + ')" class="text-blue-600 hover:text-blue-800 font-semibold text-[11px]"><i class="fa-solid fa-pen-to-square"></i> Edit</button>';
                         html += '<button type="button" onclick="deleteArchiveRecord(\'' + arc.id + '\')" class="text-red-600 hover:text-red-800 font-semibold text-[11px]"><i class="fa-solid fa-trash-can"></i> Delete</button>';
@@ -5508,29 +5639,45 @@
             return html;
         }
 
+        function sortStaffSupervisorFirst(list) {
+            if (!Array.isArray(list)) return [];
+            return list.slice().sort(function(a, b) {
+                var aIsSup = a && String(a.role || '').toLowerCase().indexOf('supervisor') !== -1;
+                var bIsSup = b && String(b.role || '').toLowerCase().indexOf('supervisor') !== -1;
+                if (aIsSup && !bIsSup) return -1;
+                if (!aIsSup && bIsSup) return 1;
+                return 0;
+            });
+        }
+
         function renderStaffTableForArea(areaName, staffList, showActions) {
             var isAdmin = currentUser.role === 'Administrator';
             var isExec = currentUser.role.indexOf('Executive') === 0;
+            var sortedStaffList = sortStaffSupervisorFirst(staffList);
 
             var html = '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-4 py-3 bg-slate-100 font-bold text-xs text-slate-800 border-b border-slate-200 flex justify-between items-center">';
-            html += '<span>Staff Directory — ' + areaName + ' (' + staffList.length + ' Members)</span>';
-            html += '<span class="text-[11px] font-normal text-slate-500">Area Store & Deployment Records</span></div>';
+            html += '<span>Staff Directory — ' + areaName + ' (' + sortedStaffList.length + ' Members)</span>';
+            html += '<span class="text-[11px] font-normal text-slate-500">Supervisor Listed First &bull; Area Store &amp; Deployment Records</span></div>';
 
             html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs whitespace-nowrap"><thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
             html += '<th class="p-3 sticky left-0 z-20 bg-slate-50 border-r border-slate-200 shadow-sm min-w-[130px] sm:min-w-[160px]">Staff Name</th><th class="p-3 font-mono">Staff ID</th><th class="p-3">Role</th><th class="p-3">Contact</th><th class="p-3">Locker No</th><th class="p-3">Category</th><th class="p-3">Uniform Issued</th><th class="p-3">Uniform Date</th>';
             if (showActions) html += '<th class="p-3 text-center">Actions</th>';
             html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
-            if (staffList.length === 0) {
+            if (sortedStaffList.length === 0) {
                 html += '<tr><td colspan="9" class="p-5 text-center text-slate-400 italic">No staff members found for ' + areaName + ' matching criteria.</td></tr>';
             } else {
-                staffList.forEach(function(stf) {
+                sortedStaffList.forEach(function(stf) {
+                    var isSupRow = String(stf.role || '').toLowerCase().indexOf('supervisor') !== -1;
                     var isConditionalCat = (stf.category === 'Aljamea' || stf.category === 'Swar Group');
                     var uniformBadge = stf.uniformIssued === 'Yes' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-red-100 text-red-800 border-red-300';
-                    var roleBadge = stf.role === 'Supervisor' ? 'bg-indigo-100 text-indigo-800 border-indigo-200' : 'bg-slate-100 text-slate-700 border-slate-200';
+                    var roleBadge = isSupRow ? 'bg-indigo-100 text-indigo-800 border-indigo-300' : 'bg-slate-100 text-slate-700 border-slate-200';
+                    var rowHighlight = isSupRow ? 'bg-indigo-50/40 hover:bg-indigo-50/70' : 'hover:bg-slate-50';
+                    var stickyBg = isSupRow ? 'bg-indigo-50/90' : 'bg-white';
+                    var supIcon = isSupRow ? '<i class="fa-solid fa-user-shield text-indigo-600 mr-1.5" title="Designated Area Supervisor"></i>' : '';
 
-                    html += '<tr class="hover:bg-slate-50 transition"><td class="p-3 sticky left-0 z-10 bg-white border-r border-slate-200 shadow-sm font-bold text-slate-900 leading-snug"><div>' + stf.name + '</div><div class="text-[10px] text-slate-400 font-mono sm:hidden">' + stf.staffCode + ' &bull; ' + stf.role + '</div></td>';
+                    html += '<tr class="' + rowHighlight + ' transition"><td class="p-3 sticky left-0 z-10 ' + stickyBg + ' border-r border-slate-200 shadow-sm font-bold text-slate-900 leading-snug"><div>' + supIcon + stf.name + '</div><div class="text-[10px] text-slate-400 font-mono sm:hidden">' + stf.staffCode + ' &bull; ' + stf.role + '</div></td>';
                     html += '<td class="p-3 font-mono font-bold text-slate-800">' + stf.staffCode + '</td>';
                     html += '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + roleBadge + '">' + stf.role + '</span></td>';
                     html += '<td class="p-3 text-slate-600">' + stf.contact + '</td>';
@@ -5571,7 +5718,7 @@
         }
 
         function getFilteredStaffByArea(areaName) {
-            return dbData.hrStaff.filter(function(stf) { return stf.area === areaName; });
+            return sortStaffSupervisorFirst(dbData.hrStaff.filter(function(stf) { return stf.area === areaName; }));
         }
 
         function getFilteredStaffByAreas(areasList) {
@@ -6574,6 +6721,7 @@
                             area: rep.area || rep.block,
                             commentId: cmt.commentId,
                             userEmail: cmt.userEmail || 'Unknown',
+                            userName: getUserDisplayName(cmt.userEmail, cmt.userName),
                             userRole: cmt.userRole || 'Executive',
                             commentText: cmt.commentText,
                             timestamp: cmt.timestamp || ''
@@ -6610,7 +6758,7 @@
             unreadEntries.forEach(function(entry) {
                 var safeRepId = String(entry.reportId).replace(/'/g, "\\'");
                 var safeCmtId = String(entry.commentId).replace(/'/g, "\\'");
-                var authorDisp = entry.userRole + ' - ' + entry.userEmail;
+                var authorDisp = entry.userRole + ' - ' + getUserDisplayName(entry.userEmail, entry.userName);
                 var timeLabel = entry.timestamp ? entry.timestamp.replace('T', ' ').substring(0, 16) : entry.date;
 
                 html += '<div class="p-4 rounded-xl bg-amber-50/90 border border-amber-300 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-amber-400 transition">';
@@ -6752,12 +6900,17 @@
 
             // Count monthly stats for visible areas
             var monthFilledCount = 0;
+            var monthSavedDraftCount = 0;
             var monthCommentsCount = 0;
             (dbDailyWorkReports || []).forEach(function(r) {
                 if (r && r.date && r.date.indexOf(monthPrefix) === 0) {
                     var isVisible = isAdmin || assignedAreas.some(function(a) { return doAreasMatch(a, r.area) || doAreasMatch(a, r.block); });
                     if (isVisible) {
-                        monthFilledCount++;
+                        if (isDwrReportSavedDraft(r)) {
+                            monthSavedDraftCount++;
+                        } else {
+                            monthFilledCount++;
+                        }
                         monthCommentsCount += (Array.isArray(r.comments) ? r.comments.length : 0);
                     }
                 }
@@ -6800,8 +6953,9 @@
             html += '</div>';
 
             html += '<div class="flex items-center space-x-3 flex-wrap gap-y-2">';
-            html += '<div class="flex items-center space-x-2 text-xs font-semibold text-slate-600">';
-            html += '<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Filled (' + monthFilledCount + ')</span></span>';
+            html += '<div class="flex items-center flex-wrap gap-2 text-xs font-semibold text-slate-600">';
+            html += '<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Submitted (' + monthFilledCount + ')</span></span>';
+            html += '<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-300"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Saved Draft (' + monthSavedDraftCount + ')</span></span>';
             html += '<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-md bg-rose-50 text-rose-700 border border-rose-200"><span class="w-2 h-2 rounded-full bg-rose-500"></span><span>Not Filled</span></span>';
             html += '</div>';
 
@@ -6866,6 +7020,27 @@
             renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
         }
 
+        function isDwrReportSavedDraft(rep) {
+            if (!rep) return false;
+            var st = String(rep.status || '').toLowerCase();
+            return st === 'saved' || st === 'draft' || rep.isDraft === true;
+        }
+
+        function canUserFillOrCompleteDwr(dateIso, existingRep) {
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var todayIso = getTodayLocalIsoDate();
+            if (isAdmin) return true;
+            if (existingRep && isDwrReportSavedDraft(existingRep)) {
+                // Partially filled & saved form can be revisited, completed, and submitted on future dates also
+                return true;
+            }
+            if (dateIso === todayIso) {
+                return true;
+            }
+            // If date has passed and form was NOT partially filled & saved, Supervisors cannot fill it
+            return false;
+        }
+
         // ================= SECTION 5A: SUPERVISOR MONTHLY CALENDAR GRID VIEW =================
         function renderSupervisorMonthlyCalendarGrid(targetArea, assignedAreas, isSup, isAdmin) {
             var firstDayOfWeek = new Date(dwrSelectedYear, dwrSelectedMonth, 1).getDay(); // 0 (Sun) to 6 (Sat)
@@ -6880,7 +7055,7 @@
             html += '<div class="w-8 h-8 rounded-lg bg-emerald-600/30 border border-emerald-400/40 flex items-center justify-center text-emerald-300"><i class="fa-solid fa-calendar-check"></i></div>';
             html += '<div>';
             html += '<h4 class="text-sm font-extrabold text-white">Monthly DWR Calendar Grid — ' + formatAreaDisplayLabel(targetArea) + '</h4>';
-            html += '<p class="text-[11px] text-slate-300">Click any green <strong>Filled</strong> status or <strong>View Response</strong> button to inspect tasks, remarks, photos &amp; comments.</p>';
+            html += '<p class="text-[11px] text-slate-300">Click any <strong>Filled</strong> or <strong>Saved Draft</strong> status to inspect or complete tasks, remarks, photos &amp; comments.</p>';
             html += '</div></div>';
 
             if (!isSup && assignedAreas.length > 1) {
@@ -6915,27 +7090,35 @@
             for (var day = 1; day <= daysInMonth; day++) {
                 var dateIso = monthPrefix + '-' + String(day).padStart(2, '0');
                 var rep = findDwrReportByDateAndArea(dateIso, targetArea);
+                var isDraft = isDwrReportSavedDraft(rep);
                 var isToday = dateIso === todayIso;
+                var isPast = dateIso < todayIso;
                 var isPastOrToday = dateIso <= todayIso;
 
                 var cellBg = rep
-                    ? 'bg-emerald-50/40 hover:bg-emerald-50/80'
+                    ? (isDraft ? 'bg-amber-50/50 hover:bg-amber-50/90' : 'bg-emerald-50/40 hover:bg-emerald-50/80')
                     : (isToday ? 'bg-amber-50/40' : 'bg-white hover:bg-slate-50');
 
-                html += '<div class="min-h-[118px] p-2.5 flex flex-col justify-between transition ' + cellBg + '">';
+                html += '<div class="min-h-[124px] p-2.5 flex flex-col justify-between transition ' + cellBg + '">';
                 html += '<div class="flex items-center justify-between gap-1">';
                 html += '<span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-extrabold ' + (isToday ? 'bg-teal-700 text-white shadow-2xs' : 'text-slate-700') + '">' + day + '</span>';
 
                 if (rep) {
                     var safeRepId = String(rep.reportId || rep.id).replace(/'/g, "\\'");
-                    html += '<button type="button" onclick="openDwrDetailModal(\'' + safeRepId + '\')" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 transition cursor-pointer flex items-center space-x-1" title="Click to View DWR Response">';
-                    html += '<i class="fa-solid fa-circle-check text-emerald-600 text-[9px]"></i><span>Filled</span>';
-                    html += '</button>';
+                    if (isDraft) {
+                        html += '<button type="button" onclick="openAddDwrPage(\'' + dateIso + '\', \'' + safeTargetArea + '\', \'' + safeRepId + '\')" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition cursor-pointer flex items-center space-x-1" title="Partially Filled & Saved — Click to Complete & Submit">';
+                        html += '<i class="fa-solid fa-pen-to-square text-amber-700 text-[9px]"></i><span>Saved Draft</span>';
+                        html += '</button>';
+                    } else {
+                        html += '<button type="button" onclick="openDwrDetailModal(\'' + safeRepId + '\')" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 transition cursor-pointer flex items-center space-x-1" title="Click to View DWR Response">';
+                        html += '<i class="fa-solid fa-circle-check text-emerald-600 text-[9px]"></i><span>Filled</span>';
+                        html += '</button>';
+                    }
                 } else {
                     var notFilledCls = isPastOrToday
                         ? 'bg-rose-100 text-rose-800 border-rose-300'
                         : 'bg-slate-100 text-slate-500 border-slate-200';
-                    html += '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + notFilledCls + '">Not Filled</span>';
+                    html += '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + notFilledCls + '">' + (isPast ? 'Not Filled' : (isToday ? 'Pending' : 'Upcoming')) + '</span>';
                 }
                 html += '</div>';
 
@@ -6951,7 +7134,7 @@
 
                     html += '<div class="my-1.5 space-y-1">';
                     html += '<div class="text-[11px] font-semibold text-slate-700 flex items-center justify-between">';
-                    html += '<span><i class="fa-solid fa-list-check text-emerald-600 mr-1"></i>' + tasksCount + ' Tasks</span>';
+                    html += '<span><i class="fa-solid fa-list-check ' + (isDraft ? 'text-amber-600' : 'text-emerald-600') + ' mr-1"></i>' + tasksCount + ' Tasks</span>';
                     if (photosCount > 0) {
                         html += '<span class="text-[10px] text-sky-700 font-bold"><i class="fa-solid fa-camera mr-0.5"></i>' + photosCount + '</span>';
                     }
@@ -6967,17 +7150,30 @@
                     }
                     html += '</div>';
 
-                    html += '<button type="button" onclick="openDwrDetailModal(\'' + safeRepId2 + '\')" class="w-full mt-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1 px-2 rounded-lg shadow-2xs transition flex items-center justify-center space-x-1">';
-                    html += '<i class="fa-solid fa-eye"></i><span>View Response</span>';
-                    html += '</button>';
+                    if (isDraft) {
+                        html += '<div class="flex items-center gap-1 mt-1">';
+                        html += '<button type="button" onclick="openAddDwrPage(\'' + dateIso + '\', \'' + safeTargetArea + '\', \'' + safeRepId2 + '\')" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold py-1 px-1.5 rounded-lg shadow-2xs transition flex items-center justify-center space-x-1" title="Continue filling and submit saved report">';
+                        html += '<i class="fa-solid fa-pen-to-square"></i><span>Complete</span>';
+                        html += '</button>';
+                        html += '<button type="button" onclick="openDwrDetailModal(\'' + safeRepId2 + '\')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold py-1 px-2 rounded-lg transition" title="View Saved Draft">';
+                        html += '<i class="fa-solid fa-eye"></i>';
+                        html += '</button>';
+                        html += '</div>';
+                    } else {
+                        html += '<button type="button" onclick="openDwrDetailModal(\'' + safeRepId2 + '\')" class="w-full mt-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold py-1 px-2 rounded-lg shadow-2xs transition flex items-center justify-center space-x-1">';
+                        html += '<i class="fa-solid fa-eye"></i><span>View Response</span>';
+                        html += '</button>';
+                    }
                 } else {
                     html += '<div class="my-auto text-center">';
                     if (isToday || isAdmin) {
                         html += '<button type="button" onclick="openAddDwrPage(\'' + dateIso + '\', \'' + safeTargetArea + '\')" class="text-[10px] font-bold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2 py-1 rounded-md transition inline-flex items-center space-x-1">';
                         html += '<i class="fa-solid fa-plus"></i><span>' + (isToday ? 'Fill Today\'s DWR' : 'Fill DWR') + '</span>';
                         html += '</button>';
+                    } else if (isPast) {
+                        html += '<span class="text-[10px] text-rose-400 font-medium italic flex items-center justify-center space-x-1"><i class="fa-solid fa-lock text-[9px]"></i><span>Date Passed</span></span>';
                     } else {
-                        html += '<span class="text-[10px] text-slate-400 italic">' + (isPastOrToday ? 'No report submitted' : 'Upcoming') + '</span>';
+                        html += '<span class="text-[10px] text-slate-400 italic">Upcoming</span>';
                     }
                     html += '</div>';
                 }
@@ -7005,7 +7201,7 @@
             html += '<div class="px-5 py-3.5 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
             html += '<div>';
             html += '<h4 class="text-sm font-extrabold flex items-center space-x-2"><i class="fa-solid fa-table-cells text-emerald-400"></i><span>Monthly DWR Status Matrix — ' + monthName + '</span></h4>';
-            html += '<p class="text-[11px] text-slate-300 mt-0.5">Columns show each assigned Area. Click any green <strong>Filled</strong> hyperlink to open the detailed report &amp; add Executive/Admin comments.</p>';
+            html += '<p class="text-[11px] text-slate-300 mt-0.5">Columns show each assigned Area. Click any <strong>Filled</strong> or <strong>Saved Draft</strong> hyperlink to open or complete the report.</p>';
             html += '</div>';
             html += '<span class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-900/90 text-emerald-200 border border-emerald-700 self-start sm:self-auto">' + assignedAreas.length + ' Assigned Area(s)</span>';
             html += '</div>';
@@ -7042,6 +7238,7 @@
 
                 assignedAreas.forEach(function(areaName) {
                     var rep = findDwrReportByDateAndArea(dateIso, areaName);
+                    var isDraft = isDwrReportSavedDraft(rep);
                     var safeArea = areaName.replace(/'/g, "\\'");
 
                     html += '<td class="p-2.5 text-center border-r last:border-r-0 border-slate-100 align-middle">';
@@ -7056,11 +7253,21 @@
                         });
 
                         html += '<div class="inline-flex flex-col items-center space-y-1">';
-                        // Interactive Hyperlink on the word "Filled"
-                        html += '<a href="javascript:void(0)" onclick="openDwrDetailModal(\'' + safeRepId + '\')" class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 font-extrabold text-xs underline decoration-emerald-600 decoration-2 underline-offset-2 transition shadow-2xs" title="Click to open DWR details &amp; comments">';
-                        html += '<i class="fa-solid fa-circle-check text-emerald-600 text-[10px]"></i>';
-                        html += '<span>Filled</span>';
-                        html += '</a>';
+                        if (isDraft) {
+                            html += '<div class="flex items-center space-x-1">';
+                            html += '<a href="javascript:void(0)" onclick="openDwrDetailModal(\'' + safeRepId + '\')" class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-extrabold text-[11px] transition shadow-2xs" title="View Saved Draft">';
+                            html += '<i class="fa-solid fa-clock-rotate-left text-amber-700 text-[9px]"></i>';
+                            html += '<span>Saved Draft</span>';
+                            html += '</a>';
+                            html += '<button type="button" onclick="openAddDwrPage(\'' + dateIso + '\', \'' + safeArea + '\', \'' + safeRepId + '\')" class="text-[10px] text-amber-700 hover:text-amber-900 underline font-bold" title="Complete & Submit">+ Complete</button>';
+                            html += '</div>';
+                        } else {
+                            // Interactive Hyperlink on the word "Filled"
+                            html += '<a href="javascript:void(0)" onclick="openDwrDetailModal(\'' + safeRepId + '\')" class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 font-extrabold text-xs underline decoration-emerald-600 decoration-2 underline-offset-2 transition shadow-2xs" title="Click to open DWR details &amp; comments">';
+                            html += '<i class="fa-solid fa-circle-check text-emerald-600 text-[10px]"></i>';
+                            html += '<span>Filled</span>';
+                            html += '</a>';
+                        }
 
                         html += '<div class="flex items-center space-x-1.5 text-[10px] text-slate-500 font-semibold">';
                         html += '<span>' + tasksCount + ' tasks</span>';
@@ -7103,9 +7310,14 @@
             if (editReportId) {
                 var existingById = findDwrReportById(editReportId);
                 if (existingById) {
+                    var canEditExisting = isAdmin || existingById.date === todayIso || isDwrReportSavedDraft(existingById);
+                    if (!canEditExisting && isSup) {
+                        showAppNotification('This report has already been submitted for a past date and is locked for Supervisors.', 'error');
+                        return;
+                    }
                     dwrFormState = {
                         editReportId: existingById.reportId || existingById.id,
-                        date: isAdmin ? (existingById.date || todayIso) : todayIso,
+                        date: existingById.date || todayIso,
                         area: existingById.area || existingById.block || assignedAreas[0],
                         tasksCompleted: Array.isArray(existingById.tasksCompleted) ? existingById.tasksCompleted.slice() : [],
                         remarks: existingById.remarks || '',
@@ -7118,10 +7330,8 @@
                 }
             }
 
-            var initialDate = (isAdmin && prefillDate) ? prefillDate : todayIso;
             var initialArea = '';
             if (isSup) {
-                // Supervisor: Automatically select and show their designated Area form based on logged-in user profile/permissions
                 initialArea = assignedAreas[0] || 'Admin Phase 1';
             } else if (prefillArea && assignedAreas.some(function(a) { return doAreasMatch(a, prefillArea); })) {
                 initialArea = prefillArea;
@@ -7129,15 +7339,31 @@
                 initialArea = assignedAreas[0] || ALL_AREAS[0];
             }
 
-            // Check if a DWR already exists for (initialDate, initialArea) so user can edit/update seamlessly
-            var existingRep = findDwrReportByDateAndArea(initialDate, initialArea);
+            var targetDate = prefillDate || todayIso;
+            var existingForTarget = findDwrReportByDateAndArea(targetDate, initialArea);
+
+            if (!isAdmin) {
+                if (targetDate < todayIso) {
+                    // Past date: allowed ONLY if the form was partially filled and saved earlier
+                    if (existingForTarget && isDwrReportSavedDraft(existingForTarget)) {
+                        // Allowed to revisit and complete saved partial form on a future date
+                    } else {
+                        showAppNotification('Date has passed (' + targetDate + '). Because no partially filled form was saved on that date, Supervisors cannot fill it now.', 'error');
+                        return;
+                    }
+                } else if (targetDate > todayIso) {
+                    targetDate = todayIso;
+                    existingForTarget = findDwrReportByDateAndArea(targetDate, initialArea);
+                }
+            }
+
             dwrFormState = {
-                editReportId: existingRep ? (existingRep.reportId || existingRep.id) : '',
-                date: initialDate,
+                editReportId: existingForTarget ? (existingForTarget.reportId || existingForTarget.id) : '',
+                date: targetDate,
                 area: initialArea,
-                tasksCompleted: existingRep && Array.isArray(existingRep.tasksCompleted) ? existingRep.tasksCompleted.slice() : [],
-                remarks: existingRep ? (existingRep.remarks || '') : '',
-                photoURLs: existingRep && Array.isArray(existingRep.photoURLs) ? existingRep.photoURLs.slice() : [],
+                tasksCompleted: existingForTarget && Array.isArray(existingForTarget.tasksCompleted) ? existingForTarget.tasksCompleted.slice() : [],
+                remarks: existingForTarget ? (existingForTarget.remarks || '') : '',
+                photoURLs: existingForTarget && Array.isArray(existingForTarget.photoURLs) ? existingForTarget.photoURLs.slice() : [],
                 taskSearchFilter: ''
             };
 
@@ -7151,10 +7377,23 @@
             var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
             var isSup = currentUser && currentUser.role === 'Supervisor';
             var assignedAreas = getUserAssignedDwrAreas();
+            var todayIso = getTodayLocalIsoDate();
 
-            if (!dwrFormState.date) dwrFormState.date = getTodayLocalIsoDate();
-            if (!isAdmin) dwrFormState.date = getTodayLocalIsoDate(); // Lock to today's date for non-Admins
             if (!dwrFormState.area) dwrFormState.area = assignedAreas[0] || ALL_AREAS[0];
+            if (!dwrFormState.date) dwrFormState.date = todayIso;
+
+            var activeExistingRep = dwrFormState.editReportId
+                ? findDwrReportById(dwrFormState.editReportId)
+                : findDwrReportByDateAndArea(dwrFormState.date, dwrFormState.area);
+
+            if (!isAdmin) {
+                if (activeExistingRep && isDwrReportSavedDraft(activeExistingRep)) {
+                    dwrFormState.date = activeExistingRep.date || dwrFormState.date;
+                    dwrFormState.editReportId = activeExistingRep.reportId || activeExistingRep.id;
+                } else {
+                    dwrFormState.date = todayIso;
+                }
+            }
 
             var subAreasMap = getScopeSubAreasForArea(dwrFormState.area);
             var subAreaNames = getOrderedSubAreaKeys(dwrFormState.area);
@@ -7175,6 +7414,7 @@
 
             var html = '<div class="space-y-6">';
 
+            var isEditingSavedDraft = activeExistingRep && isDwrReportSavedDraft(activeExistingRep);
             // Top Bar: Back Button & Form Header
             html += '<div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
             html += '<div class="flex items-center space-x-3">';
@@ -7182,8 +7422,13 @@
             html += '<i class="fa-solid fa-arrow-left"></i><span>Back to Calendar Dashboard</span>';
             html += '</button>';
             html += '<div>';
-            html += '<h3 class="text-base font-extrabold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-clipboard-check text-teal-600"></i><span>' + (dwrFormState.editReportId ? 'Update Daily Work Report (DWR)' : 'Add Daily Work Report (DWR)') + '</span></h3>';
-            html += '<p class="text-xs text-slate-500">Complete the area-wise Sub-area checklist, add supervisor/executive remarks, and attach inspection photos.</p>';
+            html += '<div class="flex items-center space-x-2 flex-wrap gap-y-1">';
+            html += '<h3 class="text-base font-extrabold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-clipboard-check text-teal-600"></i><span>' + (isEditingSavedDraft ? 'Complete Saved Daily Work Report (DWR)' : (dwrFormState.editReportId ? 'Update Daily Work Report (DWR)' : 'Add Daily Work Report (DWR)')) + '</span></h3>';
+            if (isEditingSavedDraft) {
+                html += '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Saved Draft (' + dwrFormState.date + ')</span>';
+            }
+            html += '</div>';
+            html += '<p class="text-xs text-slate-500">You can <strong>Save (Complete Later)</strong> a partially filled form to finish on a future date, or <strong>Submit Directly</strong> when finished.</p>';
             html += '</div></div></div>';
 
             // Main DWR Form Card
@@ -7332,13 +7577,21 @@
 
             html += '</div>';
 
-            // Form Submit Footer
-            html += '<div class="pt-4 border-t border-slate-200 flex items-center justify-end space-x-3">';
-            html += '<button type="button" onclick="switchCleaningSubPage(\'dashboard\')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl transition">Cancel</button>';
-            html += '<button type="submit" id="dwrSubmitBtn" class="bg-[#004d3d] hover:bg-[#00382c] text-white text-xs font-extrabold px-6 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2">';
-            html += '<i class="fa-solid fa-floppy-disk text-emerald-300"></i><span>' + (dwrFormState.editReportId ? 'Update Daily Work Report' : 'Submit Daily Work Report') + '</span>';
-            html += '</button>';
+            // Form Submit Footer (Save Partial Form vs Submit Directly)
+            html += '<div class="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">';
+            html += '<div class="text-[11px] text-slate-500 flex items-center space-x-1.5">';
+            html += '<i class="fa-solid fa-circle-info text-amber-600"></i>';
+            html += '<span><strong>Save (Complete Later):</strong> Saves partial progress so you can revisit and finish even after the date passes.</span>';
             html += '</div>';
+            html += '<div class="flex flex-wrap items-center justify-end gap-2.5 ml-auto">';
+            html += '<button type="button" onclick="switchCleaningSubPage(\'dashboard\')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-xl transition">Cancel</button>';
+            html += '<button type="button" id="dwrSaveDraftBtn" onclick="handleSaveDailyWorkReport(event, \'Saved\')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2" title="Save partially filled form to revisit and complete later">';
+            html += '<i class="fa-solid fa-bookmark text-amber-200"></i><span>Save (Complete Later)</span>';
+            html += '</button>';
+            html += '<button type="submit" id="dwrSubmitBtn" class="bg-[#004d3d] hover:bg-[#00382c] text-white text-xs font-extrabold px-6 py-2.5 rounded-xl shadow-md transition flex items-center space-x-2" title="Submit completed Daily Work Report">';
+            html += '<i class="fa-solid fa-paper-plane text-emerald-300"></i><span>' + (isEditingSavedDraft ? 'Submit Completed Report' : (dwrFormState.editReportId ? 'Update & Submit Report' : 'Submit Directly')) + '</span>';
+            html += '</button>';
+            html += '</div></div>';
 
             html += '</form></div>';
             var uiSnap = captureContainerUIState(container);
@@ -7559,32 +7812,60 @@
             }
         }
 
-        async function handleSaveDailyWorkReport(e) {
-            e.preventDefault();
+        async function handleSaveDailyWorkReport(e, saveMode) {
+            if (e && typeof e.preventDefault === 'function') e.preventDefault();
             var isAdmin = currentUser && currentUser.role === 'Administrator';
-            var reportDate = isAdmin ? (dwrFormState.date || getTodayLocalIsoDate()) : getTodayLocalIsoDate();
+            var isSup = currentUser && currentUser.role === 'Supervisor';
+            var todayIso = getTodayLocalIsoDate();
+            var targetStatus = (saveMode === 'Saved') ? 'Saved' : 'Submitted';
+            var isSavingDraft = (targetStatus === 'Saved');
+
             var reportArea = dwrFormState.area || getUserAssignedDwrAreas()[0];
+            var candidateDate = dwrFormState.date || todayIso;
+
+            var existingRep = dwrFormState.editReportId
+                ? findDwrReportById(dwrFormState.editReportId)
+                : findDwrReportByDateAndArea(candidateDate, reportArea);
+
+            var reportDate = todayIso;
+            if (isAdmin) {
+                reportDate = candidateDate;
+            } else if (existingRep && isDwrReportSavedDraft(existingRep)) {
+                // Allow revisiting and completing/saving a previously saved partial form even on a future date
+                reportDate = existingRep.date || candidateDate;
+            } else if (candidateDate < todayIso && isSup) {
+                showAppNotification('Cannot fill report for ' + candidateDate + ': The date has passed and no partially filled form was saved.', 'error');
+                return;
+            } else {
+                reportDate = todayIso;
+            }
+
             var remarksEl = document.getElementById('dwrRemarksInput');
             var remarksVal = remarksEl ? remarksEl.value.trim() : (dwrFormState.remarks || '').trim();
 
-            if (!Array.isArray(dwrFormState.tasksCompleted) || dwrFormState.tasksCompleted.length === 0) {
-                showAppNotification('Please check at least one completed task in the checklist before submitting.', 'error');
+            if (!isSavingDraft && (!Array.isArray(dwrFormState.tasksCompleted) || dwrFormState.tasksCompleted.length === 0)) {
+                showAppNotification('Please check at least one completed task in the checklist before final submission, or click "Save (Complete Later)" to save a partial draft.', 'error');
                 return;
             }
 
             var submitBtn = document.getElementById('dwrSubmitBtn');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Saving DWR...</span>';
+            var draftBtn = document.getElementById('dwrSaveDraftBtn');
+            if (submitBtn) submitBtn.disabled = true;
+            if (draftBtn) draftBtn.disabled = true;
+            if (isSavingDraft && draftBtn) {
+                draftBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Saving Draft...</span>';
+            } else if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Submitting DWR...</span>';
             }
-
-            var existingRep = dwrFormState.editReportId
-                ? findDwrReportById(dwrFormState.editReportId)
-                : findDwrReportByDateAndArea(reportDate, reportArea);
 
             var reportId = existingRep
                 ? (existingRep.reportId || existingRep.id)
                 : ('DWR-' + reportDate + '-' + normalizeAreaAlias(reportArea).replace(/[^a-zA-Z0-9]/g, '') + '-' + Date.now());
+
+            var creatorEmail = existingRep ? (existingRep.createdBy || (currentUser ? currentUser.email : 'System')) : (currentUser ? currentUser.email : 'System');
+            var creatorName = existingRep && existingRep.createdByName
+                ? existingRep.createdByName
+                : getUserDisplayName(creatorEmail, currentUser ? currentUser.name : '');
 
             var dwrDocument = {
                 id: reportId,
@@ -7592,9 +7873,12 @@
                 date: reportDate,
                 block: reportArea,
                 area: reportArea,
-                createdBy: existingRep ? (existingRep.createdBy || (currentUser ? currentUser.email : 'System')) : (currentUser ? currentUser.email : 'System'),
+                status: targetStatus,
+                isDraft: isSavingDraft,
+                createdBy: creatorEmail,
+                createdByName: creatorName,
                 userRole: existingRep ? (existingRep.userRole || (currentUser ? currentUser.role : 'Supervisor')) : (currentUser ? currentUser.role : 'Supervisor'),
-                tasksCompleted: dwrFormState.tasksCompleted.slice(),
+                tasksCompleted: Array.isArray(dwrFormState.tasksCompleted) ? dwrFormState.tasksCompleted.slice() : [],
                 remarks: remarksVal,
                 photoURLs: Array.isArray(dwrFormState.photoURLs) ? dwrFormState.photoURLs.slice() : [],
                 comments: existingRep && Array.isArray(existingRep.comments) ? existingRep.comments : [],
@@ -7615,7 +7899,7 @@
                 await window.saveDailyWorkReportToFirestore(dwrDocument);
             }
 
-            // Set dashboard month/year to the submitted report's date so the user immediately sees it marked "Filled"
+            // Set dashboard month/year to the report's date so the user immediately sees its status
             var dParts = reportDate.split('-');
             if (dParts.length === 3) {
                 dwrSelectedYear = parseInt(dParts[0], 10) || dwrSelectedYear;
@@ -7624,7 +7908,11 @@
 
             cleaningSubPage = 'dashboard';
             switchModule('cleaning');
-            showAppNotification('Daily Work Report for ' + reportArea + ' (' + reportDate + ') saved to Firestore!', 'success');
+            if (isSavingDraft) {
+                showAppNotification('DWR for ' + reportArea + ' (' + reportDate + ') saved as draft! You can revisit and submit it later (even on a future date).', 'info');
+            } else {
+                showAppNotification('Daily Work Report for ' + reportArea + ' (' + reportDate + ') submitted to Firestore!', 'success');
+            }
         }
 
         // ================= SECTION 3: ADMIN DWR FORM BUILDER & SCOPE OF WORK EXCEL/CSV IMPORT ENGINE =================
@@ -9051,13 +9339,18 @@
             var bodyEl = document.getElementById('dwrDetailModalBody');
 
             var areaDisp = formatAreaDisplayLabel(rep.area || rep.block || '');
-            if (titleEl) titleEl.innerText = areaDisp + ' — ' + rep.date;
-            if (subEl) subEl.innerText = 'Submitted by: ' + (rep.createdBy || 'Supervisor') + ' (' + (rep.userRole || 'Supervisor') + ')';
-            if (footerIdEl) footerIdEl.innerText = 'Report ID: ' + (rep.reportId || rep.id);
+            var isRepDraft = isDwrReportSavedDraft(rep);
+            var creatorDisp = getUserDisplayName(rep.createdBy, rep.createdByName);
+            if (titleEl) titleEl.innerText = areaDisp + ' — ' + rep.date + (isRepDraft ? ' (Saved Draft)' : '');
+            if (subEl) subEl.innerText = (isRepDraft ? 'Saved (Partially Filled) by: ' : 'Submitted by: ') + creatorDisp + ' (' + (rep.userRole || 'Supervisor') + ')';
+            if (footerIdEl) footerIdEl.innerText = 'Report ID: ' + (rep.reportId || rep.id) + (isRepDraft ? ' • Status: Saved Draft' : ' • Status: Submitted');
 
             if (editBtn) {
-                if (isAdmin || (rep.date === getTodayLocalIsoDate())) {
+                if (isAdmin || (rep.date === getTodayLocalIsoDate()) || isRepDraft) {
                     editBtn.classList.remove('hidden');
+                    editBtn.innerHTML = isRepDraft
+                        ? '<i class="fa-solid fa-pen-to-square"></i><span>Complete &amp; Submit DWR</span>'
+                        : '<i class="fa-solid fa-pen-to-square"></i><span>Edit DWR</span>';
                     editBtn.onclick = function() {
                         closeModal('dwrDetailModal');
                         openAddDwrPage(rep.date, rep.area || rep.block, rep.reportId || rep.id);
@@ -9211,10 +9504,12 @@
                     var timeStr = cmt.timestamp ? cmt.timestamp.replace('T', ' ').substring(0, 16) : '';
                     var viewedList = Array.isArray(cmt.viewedBy) ? cmt.viewedBy : [];
 
+                    var cmtAuthorName = getUserDisplayName(cmt.userEmail, cmt.userName);
+                    var viewedNames = viewedList.map(function(v) { return getUserDisplayName(v); });
                     html += '<div class="p-3.5 rounded-xl border shadow-2xs space-y-1.5 ' + cmtCardCls + '">';
                     html += '<div class="flex flex-wrap items-center justify-between gap-2">';
                     html += '<div class="flex items-center space-x-2">';
-                    html += '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-100 text-indigo-900 border border-indigo-200">' + (cmt.userRole || 'Executive') + ' - ' + (cmt.userEmail || '') + '</span>';
+                    html += '<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-100 text-indigo-900 border border-indigo-200">' + (cmt.userRole || 'Executive') + ' - ' + cmtAuthorName + '</span>';
                     if (isTargetCmt) {
                         html += '<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-500 text-white uppercase">New</span>';
                     }
@@ -9224,7 +9519,7 @@
                     html += '<p class="text-xs text-slate-800 font-medium leading-relaxed whitespace-pre-line">' + cmt.commentText + '</p>';
                     html += '<div class="text-[10px] text-slate-400 flex items-center space-x-1 pt-1 border-t border-slate-100">';
                     html += '<i class="fa-solid fa-check-double text-emerald-600"></i>';
-                    html += '<span>Viewed by: ' + (viewedList.length > 0 ? viewedList.join(', ') : 'Author') + '</span>';
+                    html += '<span>Viewed by: ' + (viewedNames.length > 0 ? viewedNames.join(', ') : 'Author') + '</span>';
                     html += '</div></div>';
                 });
                 html += '</div>';
@@ -9285,6 +9580,7 @@
                 commentId: 'CMT-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
                 userId: currentUser.uid || currentUser.email,
                 userEmail: currentUser.email,
+                userName: getUserDisplayName(currentUser.email, currentUser.name),
                 userRole: currentUser.role,
                 commentText: commentText,
                 timestamp: new Date().toISOString(),
@@ -9367,7 +9663,7 @@
                     html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + statusBadge + '">' + log.status + '</span></td>';
                     html += '<td class="p-3 text-slate-600 max-w-xs truncate">' + (log.remarks || '-') + '</td>';
                     html += '<td class="p-3 text-center">' + mediaCell + '</td>';
-                    html += '<td class="p-3 text-slate-500">' + (log.loggedBy || 'System') + '</td>';
+                    html += '<td class="p-3 text-slate-500">' + getUserDisplayName(log.loggedBy, log.loggedByName) + '</td>';
                     if (isAdmin || isExec) {
                         html += '<td class="p-3 text-center"><button type="button" onclick="deleteCleaningLogRecord(\'' + log.id + '\')" class="text-red-600 hover:text-red-800 font-semibold text-xs"><i class="fa-solid fa-trash-can"></i></button></td>';
                     }
@@ -9813,7 +10109,7 @@
                     if (!hideFinancials) {
                         html += '<td class="p-3 font-mono font-bold text-emerald-700 whitespace-nowrap">₹' + formatIndianNumber(off.totalAmt || 0, 2) + '</td>';
                     }
-                    html += '<td class="p-3 text-slate-500">' + (off.loggedBy || 'System') + '</td>';
+                    html += '<td class="p-3 text-slate-500">' + getUserDisplayName(off.loggedBy, off.loggedByName) + '</td>';
 
                     if (!hideFinancials) {
                         html += '<td class="p-3 text-center"><div class="flex items-center justify-center space-x-3">';
@@ -12220,7 +12516,7 @@
                 if (agencyBadge) html += agencyBadge;
                 html += '</div>';
                 html += '<div class="flex items-center space-x-2 text-[11px] text-slate-400">';
-                html += '<span>Logged by: <strong class="text-slate-600">' + (log.loggedBy || 'System') + '</strong></span>';
+                html += '<span>Logged by: <strong class="text-slate-600">' + getUserDisplayName(log.loggedBy, log.loggedByName) + '</strong></span>';
                 html += '<button type="button" onclick="editSumpCleaningReport(\'' + log.id + '\', \'' + sump.id + '\')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 rounded text-[11px] font-semibold transition flex items-center space-x-1" title="Edit this report"><i class="fa-solid fa-pen-to-square text-[10px]"></i><span>Edit</span></button>';
                 if (isAdmin || isExec) {
                     html += '<button type="button" onclick="deleteSumpCleaningReport(\'' + log.id + '\', \'' + sump.id + '\')" class="text-red-500 hover:text-red-700 px-1 py-0.5 text-xs font-semibold" title="Delete report"><i class="fa-solid fa-trash-can"></i></button>';
@@ -12743,7 +13039,7 @@
                 if (agencyBadge) html += agencyBadge;
                 html += '</div>';
                 html += '<div class="flex items-center space-x-2 text-[11px] text-slate-400">';
-                html += '<span>Logged by: <strong class="text-slate-600">' + (log.loggedBy || 'System') + '</strong></span>';
+                html += '<span>Logged by: <strong class="text-slate-600">' + getUserDisplayName(log.loggedBy, log.loggedByName) + '</strong></span>';
                 html += '<button type="button" onclick="editTankCleaningReport(\'' + log.id + '\', \'' + tank.id + '\')" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 px-2.5 py-0.5 rounded text-[11px] font-semibold transition flex items-center space-x-1" title="Edit this report"><i class="fa-solid fa-pen-to-square text-[10px]"></i><span>Edit</span></button>';
                 if (isAdmin || isExec) {
                     html += '<button type="button" onclick="deleteTankCleaningReport(\'' + log.id + '\', \'' + tank.id + '\')" class="text-red-500 hover:text-red-700 px-1 py-0.5 text-xs font-semibold" title="Delete report"><i class="fa-solid fa-trash-can"></i></button>';
@@ -13422,7 +13718,7 @@
                     html += '<tr class="hover:bg-slate-50 transition">';
                     html += '<td class="p-3.5 font-mono font-bold text-purple-700">' + reqId + '</td>';
                     html += '<td class="p-3.5 font-mono text-slate-800">' + (req.date || '-') + '</td>';
-                    html += '<td class="p-3.5"><div class="font-bold text-slate-900">' + (req.requestedBy || '-') + '</div><div class="text-[10px] text-slate-500">' + (req.requestedRole || '') + '</div></td>';
+                    html += '<td class="p-3.5"><div class="font-bold text-slate-900">' + getUserDisplayName(req.requestedBy, req.requestedByName) + '</div><div class="text-[10px] text-slate-500">' + (req.requestedRole || '') + '</div></td>';
                     html += '<td class="p-3.5 font-semibold text-slate-700">' + (req.area || req.department || req.requestedRole || '-') + '</td>';
                     html += '<td class="p-3.5 whitespace-normal max-w-md">' + (summaryPills || '<span class="text-slate-400 italic">No items listed</span>') + '</td>';
                     html += '<td class="p-3.5 text-center">' + statusBadge + '</td>';
@@ -13527,7 +13823,7 @@
                     html += '<td class="p-3.5"><div class="font-mono font-extrabold text-purple-700">' + reqId + '</div>';
                     html += '<div class="text-[10px] text-slate-400">' + activeItems.length + ' item(s) requested</div></td>';
                     html += '<td class="p-3.5 font-mono font-bold text-slate-800">' + (req.date || '-') + '</td>';
-                    html += '<td class="p-3.5"><div class="font-bold text-slate-900">' + (req.requestedBy || '-') + '</div><div class="text-[10px] text-slate-500 font-medium">' + (req.requestedRole || '') + '</div></td>';
+                    html += '<td class="p-3.5"><div class="font-bold text-slate-900">' + getUserDisplayName(req.requestedBy, req.requestedByName) + '</div><div class="text-[10px] text-slate-500 font-medium">' + (req.requestedRole || '') + '</div></td>';
                     html += '<td class="p-3.5"><span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 font-semibold">' + areaDeptLabel + '</span>';
                     if (isApproved && uniqueVendors.length > 0) {
                         html += '<div class="text-[10px] text-emerald-700 font-bold mt-1"><i class="fa-solid fa-truck-field mr-1"></i>' + uniqueVendors.join(', ') + ' (₹' + formatIndianNumber(grandWithGst, 2) + ' incl. GST)</div>';
@@ -13702,7 +13998,7 @@
                 titleEl.innerText = (isEditMode ? 'Edit Approved Request — ' : 'Approve Material Request — ') + (req.requestId || req.id);
             }
             if (subEl) {
-                subEl.innerText = 'Date: ' + (req.date || '-') + ' | Requested By: ' + (req.requestedBy || '-') + ' (' + (req.requestedRole || '-') + ') | Area/Dept: ' + (req.area || req.department || req.requestedRole || '-');
+                subEl.innerText = 'Date: ' + (req.date || '-') + ' | Requested By: ' + getUserDisplayName(req.requestedBy, req.requestedByName) + ' (' + (req.requestedRole || '-') + ') | Area/Dept: ' + (req.area || req.department || req.requestedRole || '-');
             }
 
             var searchInp = document.getElementById('approveCatalogSearchInput');
@@ -16844,7 +17140,7 @@
             doc.text("Dry Waste Offloading Receipt", 40, 40);
             doc.setFontSize(10);
             doc.text("Receipt Date: " + rec.date, 40, 58);
-            doc.text("Logged By: " + (rec.loggedBy || "System"), 40, 72);
+            doc.text("Logged By: " + getUserDisplayName(rec.loggedBy, rec.loggedByName), 40, 72);
 
             var rows = [];
             if (rec.breakdown) {
@@ -16932,7 +17228,7 @@
                         'Receipt Date': r.date,
                         'Total Weight (KG)': formatIndianNumber(r.totalQty || 0, 1),
                         'Grand Total Amount (Rs)': formatIndianNumber(r.totalAmt || 0, 2),
-                        'Logged By': r.loggedBy || 'System'
+                        'Logged By': getUserDisplayName(r.loggedBy, r.loggedByName)
                     };
                 });
                 var periodLabel = wasteViewType === 'Monthly' ? (wasteSelectedMonth + '-' + wasteSelectedYear) : (wasteViewType === 'Quarterly' ? (wasteSelectedQuarter + '-' + wasteSelectedYear) : wasteSelectedYear);
@@ -17040,7 +17336,7 @@
                             'Cleaning Type': l.type,
                             'Status': l.status,
                             'Remarks': l.remarks || '',
-                            'Logged By': l.loggedBy || ''
+                            'Logged By': getUserDisplayName(l.loggedBy, l.loggedByName)
                         });
                     });
                     sheetName = "Deep Cleaning Logs";
@@ -17055,9 +17351,10 @@
                             'Tasks Completed Count': Array.isArray(r.tasksCompleted) ? r.tasksCompleted.length : 0,
                             'Completed Tasks': Array.isArray(r.tasksCompleted) ? r.tasksCompleted.join(' | ') : '',
                             'Remarks': r.remarks || '',
+                            'Status': isDwrReportSavedDraft(r) ? 'Saved Draft' : 'Submitted',
                             'Photos Count': Array.isArray(r.photoURLs) ? r.photoURLs.length : 0,
                             'Comments Count': Array.isArray(r.comments) ? r.comments.length : 0,
-                            'Created By': (r.createdBy || '') + ' (' + (r.userRole || '') + ')'
+                            'Created By': getUserDisplayName(r.createdBy, r.createdByName) + ' (' + (r.userRole || '') + ')'
                         });
                     });
                     sheetName = "Daily Work Reports";
@@ -17115,7 +17412,7 @@
                         exportRows.push({
                             'Request ID': r.requestId || r.id,
                             'Date': r.date || '-',
-                            'Requested By': r.requestedBy || '-',
+                            'Requested By': getUserDisplayName(r.requestedBy, r.requestedByName),
                             'Role': r.requestedRole || '-',
                             'Area / Department': r.area || r.department || r.requestedRole || '-',
                             'Items Requested': itemCount,
@@ -17134,7 +17431,7 @@
                             'Vendor Name': ord.vendorName,
                             'Total Items': Array.isArray(ord.items) ? ord.items.length : (ord.totalItems || 0),
                             'Grand Total (Rs)': formatIndianNumber(parseFloat(ord.grandTotal) || 0, 2),
-                            'Logged By': ord.loggedBy || 'System'
+                            'Logged By': getUserDisplayName(ord.loggedBy, ord.loggedByName)
                         });
                     });
                     sheetName = "Procurement Orders";
@@ -19467,7 +19764,7 @@
                     window.handleUserAuthenticated(userEmail);
                 }
                 closeModal('authModal');
-                showAppNotification("Signed in as " + userEmail + "! Real-time Cloud Sync active.", "success");
+                showAppNotification("Signed in as " + (window.getUserDisplayName ? window.getUserDisplayName(userEmail) : userEmail) + "! Real-time Cloud Sync active.", "success");
                 window.autoSyncPendingLocalVaultToFirestore();
             }
         }).catch((err) => {
@@ -19501,7 +19798,7 @@
                         window.handleUserAuthenticated(userEmail);
                     }
                     closeModal('authModal');
-                    showAppNotification("Signed in with Google as " + userEmail + "! Real-time Cloud Sync active.", "success");
+                    showAppNotification("Signed in with Google as " + (window.getUserDisplayName ? window.getUserDisplayName(userEmail) : userEmail) + "! Real-time Cloud Sync active.", "success");
                     window.autoSyncPendingLocalVaultToFirestore();
                 }
             } catch (error) {
@@ -19546,7 +19843,7 @@
                     window.handleUserAuthenticated(normalized);
                 }
                 closeModal('authModal');
-                showAppNotification("Signed in as " + normalized + "! Real-time Cloud Sync active.", "success");
+                showAppNotification("Signed in as " + (window.getUserDisplayName ? window.getUserDisplayName(normalized) : normalized) + "! Real-time Cloud Sync active.", "success");
 
                 window.autoSyncPendingLocalVaultToFirestore();
             } catch (error) {
