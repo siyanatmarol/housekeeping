@@ -662,16 +662,17 @@
 
     <!-- MODULE 4: PEST CONTROL TREATMENT MODAL -->
     <div id="pestControlModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
                 <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
                     <i class="fa-solid fa-bug text-amber-600"></i>
-                    <span>Add Pest Control Treatment</span>
+                    <span id="pestModalTitle">Add Pest Control Treatment</span>
                 </h3>
-                <button onclick="closeModal('pestControlModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button type="button" onclick="closeModal('pestControlModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
             <form onsubmit="handleSavePestControl(event)" class="space-y-3.5">
+                <input type="hidden" id="pestEditId" value="">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Date</label>
                     <input type="date" id="pestDate" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:outline-none">
@@ -687,6 +688,40 @@
                         <label class="flex items-center space-x-1.5 text-xs font-medium text-slate-700 cursor-pointer">
                             <input type="radio" name="pestTreatmentType" value="Against Complaint" onchange="togglePestControlFields()" class="text-amber-600 focus:ring-amber-500">
                             <span>Against Complaint</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Type of Pest <span class="font-normal text-slate-400">(select one or more)</span></label>
+                    <div id="pestTypeCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                        <label class="cursor-pointer">
+                            <input type="checkbox" name="pestTypeOption" value="Cockroach" class="sr-only peer">
+                            <span class="flex items-center justify-center px-2.5 py-1.5 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 peer-checked:bg-amber-100 peer-checked:text-amber-900 peer-checked:border-amber-400 peer-checked:font-semibold transition">Cockroach</span>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="checkbox" name="pestTypeOption" value="Ants" class="sr-only peer">
+                            <span class="flex items-center justify-center px-2.5 py-1.5 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 peer-checked:bg-amber-100 peer-checked:text-amber-900 peer-checked:border-amber-400 peer-checked:font-semibold transition">Ants</span>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="checkbox" name="pestTypeOption" value="Flies" class="sr-only peer">
+                            <span class="flex items-center justify-center px-2.5 py-1.5 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 peer-checked:bg-amber-100 peer-checked:text-amber-900 peer-checked:border-amber-400 peer-checked:font-semibold transition">Flies</span>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="checkbox" name="pestTypeOption" value="Rats" class="sr-only peer">
+                            <span class="flex items-center justify-center px-2.5 py-1.5 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 peer-checked:bg-amber-100 peer-checked:text-amber-900 peer-checked:border-amber-400 peer-checked:font-semibold transition">Rats</span>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="checkbox" name="pestTypeOption" value="Termites" class="sr-only peer">
+                            <span class="flex items-center justify-center px-2.5 py-1.5 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 peer-checked:bg-amber-100 peer-checked:text-amber-900 peer-checked:border-amber-400 peer-checked:font-semibold transition">Termites</span>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="checkbox" name="pestTypeOption" value="Bedbugs" class="sr-only peer">
+                            <span class="flex items-center justify-center px-2.5 py-1.5 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 peer-checked:bg-amber-100 peer-checked:text-amber-900 peer-checked:border-amber-400 peer-checked:font-semibold transition">Bedbugs</span>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="checkbox" name="pestTypeOption" value="Insects" class="sr-only peer">
+                            <span class="flex items-center justify-center px-2.5 py-1.5 rounded-md text-xs font-medium border border-slate-200 bg-white text-slate-700 peer-checked:bg-amber-100 peer-checked:text-amber-900 peer-checked:border-amber-400 peer-checked:font-semibold transition">Insects</span>
                         </label>
                     </div>
                 </div>
@@ -710,6 +745,12 @@
                     <select id="pestArea" required class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white"></select>
                 </div>
 
+                <!-- Room Number (placed right before Location Details) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Room Number</label>
+                    <input type="text" id="pestRoomNo" placeholder="e.g. 2071, Room 104, Hall 2" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+
                 <!-- Conditional Field for Against Complaint -->
                 <div id="pestComplaintFields" class="hidden space-y-3">
                     <div>
@@ -720,7 +761,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Remarks</label>
-                    <textarea id="pestRemarks" rows="2" placeholder="Enter treatment details or pest observation notes..." class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-amber-500"></textarea>
+                    <textarea id="pestRemarks" rows="3" placeholder="Enter treatment details or pest observation notes..." class="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-amber-500"></textarea>
                 </div>
 
                 <div>
@@ -738,10 +779,11 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Photos / Videos / Documents</label>
-                    <input type="file" id="pestPhotoInput" accept="image/*,video/*,.pdf,.doc,.docx" onchange="previewPestPhoto(this)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Photos / Videos / Documents <span class="font-normal text-slate-400">(multiple allowed)</span></label>
+                    <input type="file" id="pestPhotoInput" multiple accept="image/*,video/*,.pdf,.doc,.docx" onchange="previewPestPhoto(this)" class="w-full text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-white">
+                    <p class="text-[11px] text-slate-400 mt-1">Select one or more files at once, or add additional files in separate selections.</p>
                     <input type="hidden" id="pestPhotoData">
-                    <div id="pestPhotoPreview" class="hidden mt-2"><img id="pestPhotoImg" src="" class="hidden"><div id="pestMediaPreviewHolder"></div></div>
+                    <div id="pestPhotoPreview" class="hidden mt-2.5"><img id="pestPhotoImg" src="" class="hidden"><div id="pestMediaPreviewHolder" class="flex flex-wrap gap-2"></div></div>
                 </div>
 
                 <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
@@ -10702,74 +10744,346 @@
         }
 
         // ================= MODULE 4: PEST CONTROL DETAILS =================
+        var PEST_TYPES_LIST = ['Cockroach', 'Ants', 'Flies', 'Rats', 'Termites', 'Bedbugs', 'Insects'];
+        var PEST_PERFORMED_BY_LIST = ['In-House', 'Company Professional'];
+        var currentPestPhotos = [];
+        var pestOverviewFilter = { pestType: null, doneBy: null, area: null };
+
+        function escapePestHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function escapePestJs(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+
+        function getRecordPestTypes(rec) {
+            if (!rec) return [];
+            if (Array.isArray(rec.pestTypes) && rec.pestTypes.length > 0) {
+                return rec.pestTypes.filter(Boolean);
+            }
+            if (typeof rec.pestType === 'string' && rec.pestType.trim()) {
+                return rec.pestType.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+            }
+            return [];
+        }
+
+        function getRecordPestPhotos(rec) {
+            if (!rec) return [];
+            if (Array.isArray(rec.photos) && rec.photos.length > 0) {
+                return rec.photos.filter(Boolean);
+            }
+            if (rec.photo && typeof rec.photo === 'string' && rec.photo.trim()) {
+                return [rec.photo.trim()];
+            }
+            return [];
+        }
+
+        function togglePestOverviewFilter(dimension, value) {
+            if (pestOverviewFilter[dimension] === value) {
+                pestOverviewFilter[dimension] = null;
+            } else {
+                pestOverviewFilter[dimension] = value;
+            }
+            switchModule('pest');
+        }
+
+        function clearPestOverviewFilters() {
+            pestOverviewFilter = { pestType: null, doneBy: null, area: null };
+            switchModule('pest');
+        }
+
+        function renderPestRecordRow(rec, areaLabel, isAdmin, isExec, includeAreaCol) {
+            var typeBadge = rec.treatmentType === 'Recurring'
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                : 'bg-rose-100 text-rose-800 border-rose-300';
+
+            var performerBadge = rec.doneBy === 'Company Professional'
+                ? 'bg-purple-100 text-purple-800 border-purple-300'
+                : 'bg-blue-100 text-blue-800 border-blue-300';
+
+            var pestTypes = getRecordPestTypes(rec);
+            var pestBadgesHtml = pestTypes.length > 0
+                ? '<div class="flex flex-wrap gap-1">' + pestTypes.map(function(pt) {
+                    return '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">' + escapePestHtml(pt) + '</span>';
+                }).join('') + '</div>'
+                : '<span class="text-slate-400 italic text-[11px]">Unspecified</span>';
+
+            var detailsParts = [];
+            if (rec.roomNo && rec.roomNo.trim()) {
+                detailsParts.push('<div><span class="font-semibold text-slate-800">Room No:</span> ' + escapePestHtml(rec.roomNo.trim()) + '</div>');
+            }
+            if (rec.treatmentType === 'Recurring') {
+                detailsParts.push('<div><span class="font-semibold text-slate-800">Timeline:</span> ' + escapePestHtml(rec.timeline || 'N/A') + '</div>');
+            } else {
+                detailsParts.push('<div><span class="font-semibold text-slate-800">Location:</span> ' + escapePestHtml(rec.location || 'N/A') + '</div>');
+            }
+            var detailText = detailsParts.join('');
+
+            var photos = getRecordPestPhotos(rec);
+            var photoBtn = '';
+            if (photos.length > 0) {
+                photoBtn = '<div class="flex flex-wrap items-center justify-center gap-1.5">';
+                photos.forEach(function(src, idx) {
+                    var caption = 'Pest Control — ' + areaLabel + ' (' + rec.date + ')' + (photos.length > 1 ? ' #' + (idx + 1) : '');
+                    photoBtn += '<div class="inline-block">' + renderInlineMediaThumbnail(src, caption, 'h-12 w-16') + '</div>';
+                });
+                photoBtn += '</div>';
+                if (photos.length > 1) {
+                    photoBtn += '<div class="text-[10px] font-semibold text-slate-500 mt-1">' + photos.length + ' files</div>';
+                }
+            } else {
+                photoBtn = '<span class="text-slate-400 italic">No Media</span>';
+            }
+
+            var remarksHtml = rec.remarks && rec.remarks.trim()
+                ? escapePestHtml(rec.remarks.trim())
+                : '<span class="text-slate-400">-</span>';
+
+            var row = '<tr class="hover:bg-slate-50 transition">';
+            row += '<td class="p-3 font-mono font-semibold text-slate-800 whitespace-nowrap align-top">' + escapePestHtml(rec.date || '') + '</td>';
+            if (includeAreaCol) {
+                row += '<td class="p-3 font-semibold text-slate-800 whitespace-nowrap align-top"><span class="inline-flex items-center space-x-1"><i class="fa-solid fa-location-dot text-amber-600 text-[10px]"></i><span>' + escapePestHtml(areaLabel) + '</span></span></td>';
+            }
+            row += '<td class="p-3 align-top">' + pestBadgesHtml + '</td>';
+            row += '<td class="p-3 align-top"><span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ' + typeBadge + '">' + escapePestHtml(rec.treatmentType || '') + '</span></td>';
+            row += '<td class="p-3 text-slate-700 min-w-[160px] whitespace-normal break-words align-top">' + detailText + '</td>';
+            row += '<td class="p-3 align-top"><span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border whitespace-nowrap ' + performerBadge + '">' + escapePestHtml(rec.doneBy || '') + '</span></td>';
+            row += '<td class="p-3 text-slate-600 min-w-[220px] max-w-md whitespace-pre-wrap break-words leading-relaxed align-top">' + remarksHtml + '</td>';
+            row += '<td class="p-3 text-center align-top">' + photoBtn + '</td>';
+
+            row += '<td class="p-3 text-center whitespace-nowrap align-top"><div class="inline-flex items-center space-x-2">';
+            row += '<button type="button" onclick="editPestControlRecord(\'' + escapePestJs(rec.id) + '\')" title="Edit treatment" class="inline-flex items-center space-x-1 px-2 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold text-[11px] transition"><i class="fa-solid fa-pen-to-square"></i><span>Edit</span></button>';
+            if (isAdmin || isExec) {
+                row += '<button type="button" onclick="deletePestControlRecord(\'' + escapePestJs(rec.id) + '\')" title="Delete treatment" class="p-1.5 rounded-md text-red-600 hover:bg-red-50 hover:text-red-800 font-semibold text-xs transition"><i class="fa-solid fa-trash-can"></i></button>';
+            }
+            row += '</div></td>';
+            row += '</tr>';
+            return row;
+        }
+
         function renderPestControlModule(container, actions) {
             var isAdmin = currentUser.role === 'Administrator';
             var isExec = currentUser.role.indexOf('Executive') === 0;
 
             actions.innerHTML = '<button onclick="openPestControlModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-bug"></i><span>Add Pest Control Treatment</span></button>';
 
-            var visibleAreas = (isAdmin || isExec) ? ALL_AREAS : currentUser.areas;
+            var visibleAreas = (isAdmin || isExec) ? ALL_AREAS : (currentUser.areas || []);
+            var visibleRecords = dbPestControlRecords.filter(function(r) {
+                return visibleAreas.indexOf(r.area) !== -1;
+            });
+
+            // Compute overview counts across visible records
+            var pestTypeCounts = {};
+            PEST_TYPES_LIST.forEach(function(pt) { pestTypeCounts[pt] = 0; });
+            var unspecifiedPestCount = 0;
+            var doneByCounts = {};
+            PEST_PERFORMED_BY_LIST.forEach(function(p) { doneByCounts[p] = 0; });
+            var areaCounts = {};
+            visibleAreas.forEach(function(a) { areaCounts[a] = 0; });
+
+            visibleRecords.forEach(function(rec) {
+                var pts = getRecordPestTypes(rec);
+                if (pts.length === 0) {
+                    unspecifiedPestCount++;
+                } else {
+                    pts.forEach(function(pt) {
+                        if (pestTypeCounts.hasOwnProperty(pt)) {
+                            pestTypeCounts[pt]++;
+                        } else {
+                            pestTypeCounts[pt] = (pestTypeCounts[pt] || 0) + 1;
+                        }
+                    });
+                }
+                if (rec.doneBy) {
+                    doneByCounts[rec.doneBy] = (doneByCounts[rec.doneBy] || 0) + 1;
+                }
+                if (rec.area && areaCounts.hasOwnProperty(rec.area)) {
+                    areaCounts[rec.area]++;
+                }
+            });
+
+            var hasActiveFilter = !!(pestOverviewFilter.pestType || pestOverviewFilter.doneBy || pestOverviewFilter.area);
 
             var html = '<div class="space-y-6">';
 
+            // Header Banner
             html += '<div class="bg-amber-950 text-white rounded-2xl p-5 shadow-sm border border-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4">';
             html += '<div><h3 class="text-base font-bold text-amber-300 flex items-center space-x-2"><i class="fa-solid fa-shield-virus"></i><span>Pest Control Management Overview</span></h3>';
-            html += '<p class="text-xs text-amber-200/80 mt-1">Area-wise log showing latest Recurring treatment followed by latest Against Complaint treatment.</p></div>';
-            html += '<div class="px-3 py-1.5 bg-amber-900/80 rounded-lg border border-amber-700/60 text-xs font-bold text-amber-200">Total Entries Logged: ' + dbPestControlRecords.length + '</div></div>';
+            html += '<p class="text-xs text-amber-200/80 mt-1">Click any overview card option below to view matching treatments first, or browse the complete area-wise log by default.</p></div>';
+            html += '<div class="px-3 py-1.5 bg-amber-900/80 rounded-lg border border-amber-700/60 text-xs font-bold text-amber-200 whitespace-nowrap">Total Entries Logged: ' + visibleRecords.length + '</div></div>';
+
+            // Clickable Overview Cards (By Pest Type, By Performed By, By Area)
+            html += '<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">';
+
+            // Card 1: By Pest Type
+            html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col">';
+            html += '<div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">';
+            html += '<h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center space-x-1.5"><i class="fa-solid fa-bug text-amber-600"></i><span>By Pest Type</span></h4>';
+            if (pestOverviewFilter.pestType) {
+                html += '<button type="button" onclick="togglePestOverviewFilter(\'pestType\', \'' + escapePestJs(pestOverviewFilter.pestType) + '\')" class="text-[10px] font-semibold text-amber-700 hover:underline">Clear</button>';
+            }
+            html += '</div>';
+            html += '<div class="flex flex-wrap gap-1.5">';
+            PEST_TYPES_LIST.forEach(function(pt) {
+                var count = pestTypeCounts[pt] || 0;
+                var active = pestOverviewFilter.pestType === pt;
+                var btnCls = active
+                    ? 'bg-amber-600 text-white border-amber-600 ring-2 ring-amber-200'
+                    : (count > 0 ? 'bg-amber-50/70 hover:bg-amber-100 text-slate-800 border-amber-200' : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200');
+                var badgeCls = active ? 'bg-white/25 text-white' : (count > 0 ? 'bg-amber-200/80 text-amber-900' : 'bg-slate-200 text-slate-600');
+                html += '<button type="button" onclick="togglePestOverviewFilter(\'pestType\', \'' + escapePestJs(pt) + '\')" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ' + btnCls + '">';
+                html += '<span>' + escapePestHtml(pt) + '</span><span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold ' + badgeCls + '">' + count + '</span></button>';
+            });
+            if (unspecifiedPestCount > 0) {
+                var unspecActive = pestOverviewFilter.pestType === 'Unspecified';
+                var unspecCls = unspecActive
+                    ? 'bg-slate-700 text-white border-slate-700 ring-2 ring-slate-200'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300';
+                var unspecBadge = unspecActive ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-700';
+                html += '<button type="button" onclick="togglePestOverviewFilter(\'pestType\', \'Unspecified\')" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ' + unspecCls + '">';
+                html += '<span>Unspecified</span><span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold ' + unspecBadge + '">' + unspecifiedPestCount + '</span></button>';
+            }
+            html += '</div></div>';
+
+            // Card 2: By Performed By
+            html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col">';
+            html += '<div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">';
+            html += '<h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center space-x-1.5"><i class="fa-solid fa-user-shield text-indigo-600"></i><span>By Performed By</span></h4>';
+            if (pestOverviewFilter.doneBy) {
+                html += '<button type="button" onclick="togglePestOverviewFilter(\'doneBy\', \'' + escapePestJs(pestOverviewFilter.doneBy) + '\')" class="text-[10px] font-semibold text-indigo-700 hover:underline">Clear</button>';
+            }
+            html += '</div>';
+            html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 flex-1">';
+            PEST_PERFORMED_BY_LIST.forEach(function(perf) {
+                var count = doneByCounts[perf] || 0;
+                var active = pestOverviewFilter.doneBy === perf;
+                var isPro = perf === 'Company Professional';
+                var cardCls = active
+                    ? (isPro ? 'bg-purple-600 text-white border-purple-600 ring-2 ring-purple-200' : 'bg-blue-600 text-white border-blue-600 ring-2 ring-blue-200')
+                    : (isPro ? 'bg-purple-50/70 hover:bg-purple-100 text-purple-900 border-purple-200' : 'bg-blue-50/70 hover:bg-blue-100 text-blue-900 border-blue-200');
+                var subCls = active ? 'text-white/85' : (isPro ? 'text-purple-700' : 'text-blue-700');
+                html += '<button type="button" onclick="togglePestOverviewFilter(\'doneBy\', \'' + escapePestJs(perf) + '\')" class="p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ' + cardCls + '">';
+                html += '<span class="text-[11px] font-semibold ' + subCls + '">' + escapePestHtml(perf) + '</span>';
+                html += '<span class="text-2xl font-extrabold mt-1">' + count + '</span></button>';
+            });
+            html += '</div></div>';
+
+            // Card 3: By Area
+            html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col">';
+            html += '<div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">';
+            html += '<h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center space-x-1.5"><i class="fa-solid fa-location-dot text-emerald-600"></i><span>By Area</span></h4>';
+            if (pestOverviewFilter.area) {
+                html += '<button type="button" onclick="togglePestOverviewFilter(\'area\', \'' + escapePestJs(pestOverviewFilter.area) + '\')" class="text-[10px] font-semibold text-emerald-700 hover:underline">Clear</button>';
+            }
+            html += '</div>';
+            html += '<div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto custom-scrollbar pr-1">';
+            visibleAreas.forEach(function(areaName) {
+                var count = areaCounts[areaName] || 0;
+                var active = pestOverviewFilter.area === areaName;
+                var btnCls = active
+                    ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-200'
+                    : (count > 0 ? 'bg-emerald-50/70 hover:bg-emerald-100 text-slate-800 border-emerald-200' : 'bg-slate-50 hover:bg-slate-100 text-slate-500 border-slate-200');
+                var badgeCls = active ? 'bg-white/25 text-white' : (count > 0 ? 'bg-emerald-200/80 text-emerald-900' : 'bg-slate-200 text-slate-600');
+                html += '<button type="button" onclick="togglePestOverviewFilter(\'area\', \'' + escapePestJs(areaName) + '\')" class="inline-flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition cursor-pointer ' + btnCls + '">';
+                html += '<span>' + escapePestHtml(areaName) + '</span><span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold ' + badgeCls + '">' + count + '</span></button>';
+            });
+            html += '</div></div>';
+
+            html += '</div>'; // End overview cards grid
+
+            // If any overview option is selected, show matching treatments FIRST
+            if (hasActiveFilter) {
+                var filteredRecords = visibleRecords.filter(function(rec) {
+                    if (pestOverviewFilter.pestType) {
+                        var pts = getRecordPestTypes(rec);
+                        if (pestOverviewFilter.pestType === 'Unspecified') {
+                            if (pts.length > 0) return false;
+                        } else if (pts.indexOf(pestOverviewFilter.pestType) === -1) {
+                            return false;
+                        }
+                    }
+                    if (pestOverviewFilter.doneBy && rec.doneBy !== pestOverviewFilter.doneBy) {
+                        return false;
+                    }
+                    if (pestOverviewFilter.area && rec.area !== pestOverviewFilter.area) {
+                        return false;
+                    }
+                    return true;
+                }).sort(function(a, b) {
+                    return new Date(b.date) - new Date(a.date);
+                });
+
+                var activeFilterChips = [];
+                if (pestOverviewFilter.pestType) activeFilterChips.push('Pest: ' + pestOverviewFilter.pestType);
+                if (pestOverviewFilter.doneBy) activeFilterChips.push('Performed By: ' + pestOverviewFilter.doneBy);
+                if (pestOverviewFilter.area) activeFilterChips.push('Area: ' + pestOverviewFilter.area);
+
+                html += '<div class="bg-white rounded-xl border-2 border-amber-300 shadow-sm overflow-hidden">';
+                html += '<div class="px-5 py-3.5 bg-amber-50 border-b border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
+                html += '<div class="flex flex-wrap items-center gap-2">';
+                html += '<h4 class="font-bold text-sm text-amber-950 flex items-center space-x-1.5"><i class="fa-solid fa-filter text-amber-600"></i><span>Filtered Treatments</span></h4>';
+                activeFilterChips.forEach(function(chip) {
+                    html += '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-200/80 text-amber-950">' + escapePestHtml(chip) + '</span>';
+                });
+                html += '<span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-white border border-amber-300 text-amber-900">' + filteredRecords.length + ' Matching</span>';
+                html += '</div>';
+                html += '<button type="button" onclick="clearPestOverviewFilters()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-semibold transition self-start sm:self-auto"><i class="fa-solid fa-rotate-left"></i><span>Clear Filter (Show All)</span></button>';
+                html += '</div>';
+
+                if (filteredRecords.length === 0) {
+                    html += '<div class="p-6 text-xs text-slate-500 italic text-center">No pest control treatments match the selected filter criteria.</div>';
+                } else {
+                    html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
+                    html += '<th class="p-3">Date</th><th class="p-3">Area</th><th class="p-3">Pest Type</th><th class="p-3">Treatment Type</th><th class="p-3">Room & Details / Timeline</th><th class="p-3">Performed By</th><th class="p-3">Remarks</th><th class="p-3 text-center">Photos</th><th class="p-3 text-center">Action</th>';
+                    html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
+                    filteredRecords.forEach(function(rec) {
+                        html += renderPestRecordRow(rec, rec.area || 'Unknown', isAdmin, isExec, true);
+                    });
+                    html += '</tbody></table></div>';
+                }
+                html += '</div>';
+            }
+
+            // Default Area-wise View (always shown by default; when filtered, shown below filtered results)
+            if (hasActiveFilter) {
+                html += '<div class="flex items-center justify-between pt-2">';
+                html += '<h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">All Area-Wise Records (Default View)</h4>';
+                html += '</div>';
+            }
 
             visibleAreas.forEach(function(areaName) {
-                var areaRecords = dbPestControlRecords.filter(r => r.area === areaName);
+                var areaRecords = visibleRecords.filter(function(r) { return r.area === areaName; });
 
-                var recurringRecords = areaRecords.filter(r => r.treatmentType === 'Recurring')
-                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                var recurringRecords = areaRecords.filter(function(r) { return r.treatmentType === 'Recurring'; })
+                    .sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
 
-                var complaintRecords = areaRecords.filter(r => r.treatmentType === 'Against Complaint')
-                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                var complaintRecords = areaRecords.filter(function(r) { return r.treatmentType === 'Against Complaint'; })
+                    .sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
 
-                var sortedAreaRecords = [...recurringRecords, ...complaintRecords];
+                var sortedAreaRecords = recurringRecords.concat(complaintRecords);
 
                 html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
                 html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">';
-                html += '<h4 class="font-bold text-sm text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-location-dot text-amber-600"></i><span>' + areaName + '</span></h4>';
+                html += '<h4 class="font-bold text-sm text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-location-dot text-amber-600"></i><span>' + escapePestHtml(areaName) + '</span></h4>';
                 html += '<span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">' + areaRecords.length + ' Records</span></div>';
 
                 if (sortedAreaRecords.length === 0) {
-                    html += '<div class="p-4 text-xs text-slate-400 italic text-center">No pest control treatments logged for ' + areaName + '.</div>';
+                    html += '<div class="p-4 text-xs text-slate-400 italic text-center">No pest control treatments logged for ' + escapePestHtml(areaName) + '.</div>';
                 } else {
                     html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
-                    html += '<th class="p-3">Date</th><th class="p-3">Treatment Type</th><th class="p-3">Details / Timeline</th><th class="p-3">Performed By</th><th class="p-3">Remarks</th><th class="p-3 text-center">Photo</th>';
-                    if (isAdmin || isExec) html += '<th class="p-3 text-center">Action</th>';
+                    html += '<th class="p-3">Date</th><th class="p-3">Pest Type</th><th class="p-3">Treatment Type</th><th class="p-3">Room & Details / Timeline</th><th class="p-3">Performed By</th><th class="p-3">Remarks</th><th class="p-3 text-center">Photos</th><th class="p-3 text-center">Action</th>';
                     html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
                     sortedAreaRecords.forEach(function(rec) {
-                        var typeBadge = rec.treatmentType === 'Recurring' 
-                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
-                            : 'bg-rose-100 text-rose-800 border-rose-300';
-
-                        var performerBadge = rec.doneBy === 'Company Professional' 
-                            ? 'bg-purple-100 text-purple-800 border-purple-300' 
-                            : 'bg-blue-100 text-blue-800 border-blue-300';
-
-                        var detailText = rec.treatmentType === 'Recurring' 
-                            ? '<span class="font-semibold text-slate-800">Timeline:</span> ' + (rec.timeline || 'N/A')
-                            : '<span class="font-semibold text-slate-800">Location:</span> ' + (rec.location || 'N/A');
-
-                        var photoBtn = rec.photo 
-                            ? '<div class="inline-block">' + renderInlineMediaThumbnail(rec.photo, 'Pest Control — ' + areaName + ' (' + rec.date + ')', 'h-12 w-16') + '</div>'
-                            : '<span class="text-slate-400 italic">No Media</span>';
-
-                        html += '<tr class="hover:bg-slate-50 transition">';
-                        html += '<td class="p-3 font-mono font-semibold text-slate-800">' + rec.date + '</td>';
-                        html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + typeBadge + '">' + rec.treatmentType + '</span></td>';
-                        html += '<td class="p-3 text-slate-700">' + detailText + '</td>';
-                        html += '<td class="p-3"><span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + performerBadge + '">' + rec.doneBy + '</span></td>';
-                        html += '<td class="p-3 text-slate-600 max-w-xs truncate">' + (rec.remarks || '-') + '</td>';
-                        html += '<td class="p-3 text-center">' + photoBtn + '</td>';
-
-                        if (isAdmin || isExec) {
-                            html += '<td class="p-3 text-center"><button onclick="deletePestControlRecord(\'' + rec.id + '\')" class="text-red-600 hover:text-red-800 font-semibold text-xs"><i class="fa-solid fa-trash-can"></i></button></td>';
-                        }
-                        html += '</tr>';
+                        html += renderPestRecordRow(rec, areaName, isAdmin, isExec, false);
                     });
 
                     html += '</tbody></table></div>';
@@ -10781,27 +11095,93 @@
             container.innerHTML = html;
         }
 
-        function openPestControlModal() {
+        function openPestControlModal(editRecord) {
+            var isAdmin = currentUser.role === 'Administrator';
+            var isExec = currentUser.role.indexOf('Executive') === 0;
             var areaSelect = document.getElementById('pestArea');
-            var visibleAreas = (currentUser.role === 'Administrator') ? ALL_AREAS : currentUser.areas;
-            areaSelect.innerHTML = visibleAreas.map(a => '<option value="' + a + '">' + a + '</option>').join('');
+            var visibleAreas = (isAdmin || isExec) ? ALL_AREAS.slice() : (currentUser.areas ? currentUser.areas.slice() : []);
+            if (editRecord && editRecord.area && visibleAreas.indexOf(editRecord.area) === -1) {
+                visibleAreas.push(editRecord.area);
+            }
+            areaSelect.innerHTML = visibleAreas.map(function(a) {
+                return '<option value="' + escapePestHtml(a) + '">' + escapePestHtml(a) + '</option>';
+            }).join('');
 
-            document.getElementById('pestDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('pestRemarks').value = '';
-            document.getElementById('pestLocation').value = '';
-            document.getElementById('pestPhotoData').value = '';
+            var titleEl = document.getElementById('pestModalTitle');
+            var submitBtn = document.getElementById('pestSubmitBtn');
+            var editIdEl = document.getElementById('pestEditId');
+
+            // Reset pest type checkboxes
+            var pestChecks = document.querySelectorAll('input[name="pestTypeOption"]');
+            pestChecks.forEach(function(cb) { cb.checked = false; });
+
+            if (editRecord) {
+                if (titleEl) titleEl.innerText = 'Edit Pest Control Treatment';
+                if (submitBtn) submitBtn.innerText = 'Update Pest Treatment';
+                if (editIdEl) editIdEl.value = editRecord.id || '';
+
+                document.getElementById('pestDate').value = editRecord.date || new Date().toISOString().split('T')[0];
+
+                var tType = editRecord.treatmentType || 'Recurring';
+                var typeRadio = document.querySelector('input[name="pestTreatmentType"][value="' + tType + '"]');
+                if (typeRadio) typeRadio.checked = true;
+
+                if (editRecord.timeline) {
+                    document.getElementById('pestTimeline').value = editRecord.timeline;
+                }
+                if (editRecord.area) {
+                    areaSelect.value = editRecord.area;
+                }
+                document.getElementById('pestRoomNo').value = editRecord.roomNo || '';
+                document.getElementById('pestLocation').value = editRecord.location || '';
+                document.getElementById('pestRemarks').value = editRecord.remarks || '';
+
+                var doneByVal = editRecord.doneBy || 'In-House';
+                var doneByRadio = document.querySelector('input[name="pestDoneBy"][value="' + doneByVal + '"]');
+                if (doneByRadio) doneByRadio.checked = true;
+
+                var existingPestTypes = getRecordPestTypes(editRecord);
+                pestChecks.forEach(function(cb) {
+                    if (existingPestTypes.indexOf(cb.value) !== -1) cb.checked = true;
+                });
+
+                currentPestPhotos = getRecordPestPhotos(editRecord).slice();
+            } else {
+                if (titleEl) titleEl.innerText = 'Add Pest Control Treatment';
+                if (submitBtn) submitBtn.innerText = 'Save Pest Treatment';
+                if (editIdEl) editIdEl.value = '';
+
+                document.getElementById('pestDate').value = new Date().toISOString().split('T')[0];
+                var defaultTypeRadio = document.querySelector('input[name="pestTreatmentType"][value="Recurring"]');
+                if (defaultTypeRadio) defaultTypeRadio.checked = true;
+                var defaultDoneByRadio = document.querySelector('input[name="pestDoneBy"][value="In-House"]');
+                if (defaultDoneByRadio) defaultDoneByRadio.checked = true;
+
+                document.getElementById('pestRoomNo').value = '';
+                document.getElementById('pestLocation').value = '';
+                document.getElementById('pestRemarks').value = '';
+                currentPestPhotos = [];
+            }
+
             document.getElementById('pestPhotoInput').value = '';
-            var pestHolder = document.getElementById('pestMediaPreviewHolder');
-            var pestPrev = document.getElementById('pestPhotoPreview');
-            if (pestHolder) pestHolder.innerHTML = '';
-            if (pestPrev) pestPrev.classList.add('hidden');
-
+            document.getElementById('pestPhotoData').value = currentPestPhotos[0] || '';
+            renderPestPhotoPreviews();
             togglePestControlFields();
             openModal('pestControlModal');
         }
 
+        function editPestControlRecord(docId) {
+            var rec = dbPestControlRecords.find(function(r) { return r.id === docId; });
+            if (!rec) {
+                showAppNotification('Pest control record not found.', 'error');
+                return;
+            }
+            openPestControlModal(rec);
+        }
+
         function togglePestControlFields() {
-            var selectedType = document.querySelector('input[name="pestTreatmentType"]:checked').value;
+            var checkedEl = document.querySelector('input[name="pestTreatmentType"]:checked');
+            var selectedType = checkedEl ? checkedEl.value : 'Recurring';
             var recurringFields = document.getElementById('pestRecurringFields');
             var complaintFields = document.getElementById('pestComplaintFields');
 
@@ -10814,51 +11194,131 @@
             }
         }
 
-        async function previewPestPhoto(inputEl) {
-            var file = inputEl.files[0];
-            if (!file) return;
-            var uploadedUrl = await processAndUploadImageFile(file, 'PestControl');
-            if (!uploadedUrl) return;
-            document.getElementById('pestPhotoData').value = uploadedUrl;
+        function renderPestPhotoPreviews() {
             var prevHolder = document.getElementById('pestMediaPreviewHolder');
             var prevBox = document.getElementById('pestPhotoPreview');
-            if (prevHolder && prevBox) {
-                prevHolder.innerHTML = renderInlineMediaThumbnail(uploadedUrl, 'Pest Control Media', 'h-20 w-24');
-                prevBox.classList.remove('hidden');
+            var hiddenInput = document.getElementById('pestPhotoData');
+            if (hiddenInput) hiddenInput.value = currentPestPhotos[0] || '';
+            if (!prevHolder || !prevBox) return;
+
+            if (currentPestPhotos.length === 0) {
+                prevHolder.innerHTML = '';
+                prevBox.classList.add('hidden');
+                return;
+            }
+
+            prevHolder.innerHTML = currentPestPhotos.map(function(url, idx) {
+                return '<div class="relative inline-block group">' +
+                    renderInlineMediaThumbnail(url, 'Pest Control Media #' + (idx + 1), 'h-20 w-24') +
+                    '<button type="button" onclick="removePestPhoto(' + idx + ')" title="Remove file" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold flex items-center justify-center shadow">' +
+                    '<i class="fa-solid fa-xmark"></i></button></div>';
+            }).join('');
+            prevBox.classList.remove('hidden');
+        }
+
+        function removePestPhoto(idx) {
+            currentPestPhotos.splice(idx, 1);
+            renderPestPhotoPreviews();
+        }
+
+        async function previewPestPhoto(inputEl) {
+            var files = inputEl && inputEl.files ? Array.from(inputEl.files) : [];
+            if (files.length === 0) return;
+
+            var submitBtn = document.getElementById('pestSubmitBtn');
+            var prevText = submitBtn ? submitBtn.innerText : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerText = 'Uploading ' + files.length + ' file' + (files.length > 1 ? 's' : '') + '...';
+            }
+
+            try {
+                for (var i = 0; i < files.length; i++) {
+                    var uploadedUrl = await processAndUploadImageFile(files[i], 'PestControl');
+                    if (uploadedUrl) {
+                        currentPestPhotos.push(uploadedUrl);
+                    }
+                }
+            } finally {
+                inputEl.value = '';
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = prevText || (document.getElementById('pestEditId').value ? 'Update Pest Treatment' : 'Save Pest Treatment');
+                }
+                renderPestPhotoPreviews();
             }
         }
 
         async function handleSavePestControl(e) {
             e.preventDefault();
             var submitBtn = document.getElementById('pestSubmitBtn');
+            var editId = document.getElementById('pestEditId') ? document.getElementById('pestEditId').value.trim() : '';
+            var isEditing = !!editId;
+
             submitBtn.disabled = true;
-            submitBtn.innerText = 'Saving to Firestore...';
+            submitBtn.innerText = isEditing ? 'Updating in Firestore...' : 'Saving to Firestore...';
 
             var date = document.getElementById('pestDate').value;
             var treatmentType = document.querySelector('input[name="pestTreatmentType"]:checked').value;
             var timeline = treatmentType === 'Recurring' ? document.getElementById('pestTimeline').value : '';
             var area = document.getElementById('pestArea').value;
+            var roomNo = document.getElementById('pestRoomNo').value.trim();
             var location = treatmentType === 'Against Complaint' ? document.getElementById('pestLocation').value.trim() : '';
             var remarks = document.getElementById('pestRemarks').value.trim();
             var doneBy = document.querySelector('input[name="pestDoneBy"]:checked').value;
-            var photo = document.getElementById('pestPhotoData').value;
+            var selectedPestTypes = Array.from(document.querySelectorAll('input[name="pestTypeOption"]:checked')).map(function(cb) { return cb.value; });
+            var photosArr = currentPestPhotos.slice();
+            var primaryPhoto = photosArr[0] || '';
 
-            var recordData = {
-                id: 'PST-' + Date.now(),
-                date: date,
-                treatmentType: treatmentType,
-                timeline: timeline,
-                area: area,
-                location: location,
-                remarks: remarks,
-                doneBy: doneBy,
-                photo: photo,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                loggedBy: currentUser ? currentUser.email : 'System'
-            };
+            var recordData;
+            if (isEditing) {
+                var existingIdx = dbPestControlRecords.findIndex(function(r) { return r.id === editId; });
+                var existingRec = existingIdx !== -1 ? dbPestControlRecords[existingIdx] : null;
+                recordData = Object.assign({}, existingRec || {}, {
+                    id: editId,
+                    date: date,
+                    treatmentType: treatmentType,
+                    pestTypes: selectedPestTypes,
+                    pestType: selectedPestTypes.join(', '),
+                    timeline: timeline,
+                    area: area,
+                    roomNo: roomNo,
+                    location: location,
+                    remarks: remarks,
+                    doneBy: doneBy,
+                    photos: photosArr,
+                    photo: primaryPhoto,
+                    createdAt: (existingRec && existingRec.createdAt) ? existingRec.createdAt : new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    loggedBy: (existingRec && existingRec.loggedBy) ? existingRec.loggedBy : (currentUser ? currentUser.email : 'System')
+                });
+                if (existingIdx !== -1) {
+                    dbPestControlRecords[existingIdx] = recordData;
+                } else {
+                    dbPestControlRecords.unshift(recordData);
+                }
+            } else {
+                recordData = {
+                    id: 'PST-' + Date.now(),
+                    date: date,
+                    treatmentType: treatmentType,
+                    pestTypes: selectedPestTypes,
+                    pestType: selectedPestTypes.join(', '),
+                    timeline: timeline,
+                    area: area,
+                    roomNo: roomNo,
+                    location: location,
+                    remarks: remarks,
+                    doneBy: doneBy,
+                    photos: photosArr,
+                    photo: primaryPhoto,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    loggedBy: currentUser ? currentUser.email : 'System'
+                };
+                dbPestControlRecords.unshift(recordData);
+            }
 
-            dbPestControlRecords.unshift(recordData);
             saveStateToLocalBackup();
 
             if (window.savePestRecordToFirestore) {
@@ -10869,7 +11329,7 @@
             submitBtn.innerText = 'Save Pest Treatment';
             closeModal('pestControlModal');
             switchModule('pest');
-            showAppNotification('Pest control treatment saved!', 'success');
+            showAppNotification(isEditing ? 'Pest control treatment updated!' : 'Pest control treatment saved!', 'success');
         }
 
         async function deletePestControlRecord(docId) {
@@ -18276,13 +18736,18 @@
                 reportTitle = "Siyanat Marol - Live Inventory Stock Report";
             } else if (activeModule === 'pest') {
                 dbPestControlRecords.forEach(function(r) {
+                    var pts = getRecordPestTypes(r);
+                    var pPhotos = getRecordPestPhotos(r);
                     exportRows.push({
                         'Date': r.date,
                         'Area': r.area,
+                        'Pest Type': pts.length > 0 ? pts.join(', ') : '',
                         'Treatment Type': r.treatmentType,
+                        'Room Number': r.roomNo || '',
                         'Timeline / Location': r.treatmentType === 'Recurring' ? (r.timeline || '') : (r.location || ''),
                         'Performed By': r.doneBy,
-                        'Remarks': r.remarks || ''
+                        'Remarks': r.remarks || '',
+                        'Photos Attached': pPhotos.length
                     });
                 });
                 sheetName = "Pest Control";
