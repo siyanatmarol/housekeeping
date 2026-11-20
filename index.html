@@ -92,6 +92,7 @@
 <body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
     <!-- TOP HEADER -->
+    <div id="appShell" style="display:none;" class="hidden min-h-screen flex flex-col">
     <header class="bg-[#004d3d] text-white sticky top-0 z-40 shadow-md">
         <div class="max-w-[98%] 2xl:max-w-[96%] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between py-3">
@@ -204,6 +205,7 @@
     <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 mt-auto">
         <p>&copy; 2026 Siyanat Marol Housekeeping Department. Managed under <span class="font-semibold text-slate-700">siyanatmarol</span>.</p>
     </footer>
+    </div>
 
     <!-- GLOBAL MODALS CONTAINER -->
 
@@ -272,20 +274,38 @@
         </div>
     </div>
 
-    <!-- 1. AUTH MODAL -->
-    <div id="authModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100">
+    <!-- 1. AUTH MODAL (FULL-SCREEN OPAQUE LOGIN GATE) -->
+    <div id="authModal" class="fixed inset-0 bg-gradient-to-br from-[#003328] via-[#004d3d] to-slate-900 z-[9999] flex flex-col items-center justify-center p-4 overflow-y-auto">
+        <div class="mb-6 text-center max-w-md">
+            <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-[#006e57] border border-emerald-400/30 flex items-center justify-center text-2xl text-emerald-300 shadow-lg">
+                <i class="fa-solid fa-building-user"></i>
+            </div>
+            <h1 class="font-bold text-base sm:text-lg text-white tracking-tight">Aljamea-tus-Saifiyah Facilities Management (Marol)</h1>
+            <p class="text-xs text-emerald-200/90 font-semibold mt-0.5">Housekeeping Management Portal</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
                     <i class="fa-solid fa-lock text-emerald-600"></i>
                     <span>Authorized Sign In Required</span>
                 </h3>
-                <button onclick="closeModal('authModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <button id="authModalCloseBtn" type="button" onclick="closeModal('authModal')" class="hidden text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
-            <p class="text-xs text-slate-500 mb-6">Sign in with any authorized account configured by Administrator.</p>
+            <div id="authRestrictedBanner" class="hidden mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs leading-relaxed">
+                <div class="flex items-start space-x-2">
+                    <i class="fa-solid fa-circle-exclamation text-red-600 mt-0.5"></i>
+                    <div>
+                        <p class="font-bold text-red-900">Access Restricted</p>
+                        <p id="authRestrictedMessage" class="mt-0.5 text-red-700">Your account is not registered in the Admin Access Panel. Please contact the Administrator for access.</p>
+                    </div>
+                </div>
+            </div>
 
-            <button onclick="loginWithGoogle()" class="w-full bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm py-2.5 px-4 rounded-xl border border-slate-300 shadow-sm flex items-center justify-center space-x-3 mb-4 transition">
+            <p class="text-xs text-slate-500 mb-6">Sign in with an authorized account configured by the Administrator in the Admin Access Panel.</p>
+
+            <button type="button" onclick="loginWithGoogle()" class="w-full bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm py-2.5 px-4 rounded-xl border border-slate-300 shadow-sm flex items-center justify-center space-x-3 mb-4 transition">
                 <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
                 <span>Continue with Google</span>
             </button>
@@ -1094,23 +1114,42 @@
         </div>
     </div>
 
-    <!-- EDIT ARCHIVE QUANTITY MODAL -->
+    <!-- EDIT ARCHIVE TRANSACTION MODAL -->
     <div id="editArchiveModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 border border-slate-100">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-5 border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
                 <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
                     <i class="fa-solid fa-pen-to-square text-blue-600"></i>
-                    <span>Correction Log Entry</span>
+                    <span>Edit Transaction Log Entry</span>
                 </h3>
-                <button onclick="closeModal('editArchiveModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeModal('editArchiveModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form onsubmit="saveArchiveCorrection(event)" class="space-y-3">
                 <input type="hidden" id="editArchiveId">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Corrected Quantity</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Type of Transaction</label>
+                    <select id="editArchiveType" required onchange="onEditArchiveTypeChange()" class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="PURCHASE">PURCHASE (Main Store In)</option>
+                        <option value="ISSUE">ISSUE (Main Store to Area)</option>
+                        <option value="OUT">OUT (Area Consumption / Out)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Area / Store Name</label>
+                    <select id="editArchiveArea" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Item Name</label>
+                    <select id="editArchiveItem" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-medium text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Quantity</label>
                     <input type="number" id="editArchiveQty" min="1" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 font-mono">
                 </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 rounded-lg shadow transition">Update Log Entry</button>
+                <div class="pt-2 flex justify-end space-x-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('editArchiveModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow transition">Update Log Entry</button>
+                </div>
             </form>
         </div>
     </div>
@@ -3332,12 +3371,50 @@
             return src;
         }
 
-       window.handleUserAuthenticated = async function(email) {
+       var PRIMARY_SUPER_ADMIN_EMAILS = [
+            'murtaza.kheraluwala@jameasaifiyah.edu',
+            'fm.marol@jameasaifiyah.edu'
+        ];
+
+        function showAuthRestrictedBanner(message) {
+            var banner = document.getElementById('authRestrictedBanner');
+            var msgEl = document.getElementById('authRestrictedMessage');
+            if (banner) {
+                if (message) {
+                    if (msgEl) msgEl.textContent = message;
+                    banner.classList.remove('hidden');
+                } else {
+                    banner.classList.add('hidden');
+                }
+            }
+        }
+
+        function setAppShellVisible(isVisible) {
+            var shell = document.getElementById('appShell');
+            var closeBtn = document.getElementById('authModalCloseBtn');
+            if (shell) {
+                if (isVisible) {
+                    shell.classList.remove('hidden');
+                    shell.style.display = '';
+                } else {
+                    shell.classList.add('hidden');
+                    shell.style.display = 'none';
+                }
+            }
+            if (closeBtn) {
+                if (isVisible) closeBtn.classList.remove('hidden');
+                else closeBtn.classList.add('hidden');
+            }
+        }
+
+        window.handleUserAuthenticated = async function(email) {
             if (!email) {
                 currentUser = null;
+                setAppShellVisible(false);
+                updateUserDisplay();
                 renderUnauthenticatedGate();
                 openModal('authModal');
-                return;
+                return false;
             }
 
             var normalizedEmail = email.toLowerCase().trim();
@@ -3347,37 +3424,40 @@
                 await window.forceSyncAllFromFirestore();
             }
 
-            // 2. Check if the logged-in email exists in the updated user registry
-            var matchedUser = userRegistry.find(function(u) {
-                return u.email.toLowerCase().trim() === normalizedEmail;
+            // 2. Strictly verify the logged-in email exists in the Admin Access Panel userRegistry
+            var matchedUser = (userRegistry || []).find(function(u) {
+                return u && u.email && u.email.toLowerCase().trim() === normalizedEmail;
             });
 
             if (matchedUser) {
                 // User permissions found in Registry (configured via Admin Access Panel)
                 currentUser = matchedUser;
+            } else if (PRIMARY_SUPER_ADMIN_EMAILS.indexOf(normalizedEmail) !== -1) {
+                // Safety net exclusively for the exact primary department super-admin accounts
+                currentUser = {
+                    name: normalizedEmail === 'murtaza.kheraluwala@jameasaifiyah.edu' ? 'Murtaza Kheraluwala' : 'FM Marol Admin',
+                    email: normalizedEmail,
+                    role: 'Administrator',
+                    areas: ALL_AREAS,
+                    allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery']
+                };
             } else {
-                // Fallback for primary department super-admin accounts only
-                var isSystemSuperAdmin = normalizedEmail.includes('fm.marol') || normalizedEmail.includes('murtaza');
-
-                if (isSystemSuperAdmin) {
-                    currentUser = {
-                        name: normalizedEmail.includes('murtaza') ? 'Murtaza Kheraluwala' : 'FM Marol Admin',
-                        email: normalizedEmail,
-                        role: 'Administrator',
-                        areas: ALL_AREAS,
-                        allowedModules: ['inventory', 'hr', 'cleaning', 'pest', 'waste', 'compost', 'water', 'procurement', 'machinery']
-                    };
-                } else {
-                    // Default fallback for any newly registered unrecognized email
-                    currentUser = {
-                        name: normalizedEmail.split('@')[0].replace(/[._]/g, ' '),
-                        email: normalizedEmail,
-                        role: 'Supervisor',
-                        areas: ['Admin Phase 1'],
-                        allowedModules: ['inventory', 'hr', 'cleaning', 'procurement']
-                    };
+                // STRICT RESTRICTION: Any user not in Admin Access Panel is denied access
+                currentUser = null;
+                try { localStorage.removeItem('siyanat_marol_last_user_email'); } catch (e) {}
+                if (typeof window.revokeUnauthorizedFirebaseSession === 'function') {
+                    await window.revokeUnauthorizedFirebaseSession();
                 }
+                setAppShellVisible(false);
+                updateUserDisplay();
+                renderUnauthenticatedGate();
+                showAuthRestrictedBanner('Access denied for "' + normalizedEmail + '". This account is not registered in the Admin Access Panel. Please contact the Administrator.');
+                openModal('authModal');
+                showAppNotification('Access Restricted: "' + normalizedEmail + '" is not authorized in Admin Access Panel.', 'error');
+                return false;
             }
+
+            showAuthRestrictedBanner('');
 
             if (currentUser && currentUser.role === 'Waste Management Supervisor') {
                 currentUser.allowedModules = ['waste', 'compost'];
@@ -3386,6 +3466,7 @@
                 }
             }
 
+            setAppShellVisible(true);
             updateUserDisplay();
 
             if (currentUser) {
@@ -3395,7 +3476,9 @@
                 } else {
                     switchModule(activeModule || (currentUser.role === 'Waste Management Supervisor' ? 'waste' : 'inventory'));
                 }
+                return true;
             }
+            return false;
         };
 
         function switchPrimaryTab(tabName) {
@@ -4479,13 +4562,11 @@
         }
 
         function renderUnauthenticatedGate() {
+            setAppShellVisible(false);
             var container = document.getElementById('moduleContainer');
             var subNavbar = document.getElementById('housekeepingSubTabs');
             if (subNavbar) subNavbar.innerHTML = '';
-
-            if (container) {
-                container.innerHTML = '<div class="flex flex-col items-center justify-center p-12 bg-white rounded-2xl border border-slate-200 text-center shadow-sm my-8"><div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mb-4"><i class="fa-solid fa-lock"></i></div><h3 class="text-xl font-bold text-slate-900 mb-2">Access Restricted</h3><p class="text-sm text-slate-500 max-w-md mb-6">Please sign in with an authorized account.</p><button onclick="openModal(\'authModal\')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow transition flex items-center space-x-2"><i class="fa-solid fa-right-to-bracket"></i><span>Sign In to Access Portal</span></button></div>';
-            }
+            if (container) container.innerHTML = '';
         }
 
         function formatIndianNumber(val, decimals) {
@@ -5456,29 +5537,146 @@
             );
         }
 
+        function populateEditArchiveAreas(selectedType, currentArea) {
+            var areaSelect = document.getElementById('editArchiveArea');
+            if (!areaSelect) return;
+
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var allowedAreas = isAdmin ? ALL_AREAS.slice() : ((currentUser && currentUser.areas) ? currentUser.areas.slice() : []);
+            var options = [];
+
+            if (selectedType === 'PURCHASE') {
+                options.push('Main Store');
+                allowedAreas.forEach(function(a) {
+                    if (options.indexOf(a) === -1) options.push(a);
+                });
+            } else {
+                allowedAreas.forEach(function(a) {
+                    if (options.indexOf(a) === -1) options.push(a);
+                });
+                if (options.indexOf('Main Store') === -1) options.unshift('Main Store');
+            }
+
+            if (currentArea && options.indexOf(currentArea) === -1) {
+                options.push(currentArea);
+            }
+
+            areaSelect.innerHTML = options.map(function(a) {
+                return '<option value="' + escapePestHtml(a) + '">' + escapePestHtml(a) + '</option>';
+            }).join('');
+
+            if (currentArea && options.indexOf(currentArea) !== -1) {
+                areaSelect.value = currentArea;
+            } else if (selectedType === 'PURCHASE') {
+                areaSelect.value = 'Main Store';
+            }
+        }
+
+        function onEditArchiveTypeChange() {
+            var typeEl = document.getElementById('editArchiveType');
+            var areaEl = document.getElementById('editArchiveArea');
+            if (!typeEl) return;
+            var newType = typeEl.value;
+            var prevArea = areaEl ? areaEl.value : '';
+            if (newType === 'PURCHASE') {
+                populateEditArchiveAreas(newType, 'Main Store');
+            } else {
+                populateEditArchiveAreas(newType, prevArea === 'Main Store' ? '' : prevArea);
+            }
+        }
+
         function openEditArchiveModal(arcId, currentQty) {
+            var record = null;
+            for (var i = 0; i < dbData.inventoryArchive.length; i++) {
+                if (dbData.inventoryArchive[i].id === arcId) { record = dbData.inventoryArchive[i]; break; }
+            }
+            if (!record) {
+                showAppNotification('Transaction record not found.', 'error');
+                return;
+            }
+
             document.getElementById('editArchiveId').value = arcId;
-            document.getElementById('editArchiveQty').value = currentQty;
+            document.getElementById('editArchiveQty').value = record.qty !== undefined ? record.qty : currentQty;
+
+            var typeSelect = document.getElementById('editArchiveType');
+            var recType = String(record.type || 'ISSUE').toUpperCase();
+            if (typeSelect) {
+                var hasTypeOpt = Array.from(typeSelect.options).some(function(o) { return o.value === recType; });
+                if (!hasTypeOpt && recType) {
+                    var extraOpt = document.createElement('option');
+                    extraOpt.value = recType;
+                    extraOpt.textContent = recType;
+                    typeSelect.appendChild(extraOpt);
+                }
+                typeSelect.value = recType;
+            }
+
+            populateEditArchiveAreas(recType, record.area || 'Main Store');
+
+            var itemSelect = document.getElementById('editArchiveItem');
+            if (itemSelect) {
+                var invItems = (dbData.inventory || []).slice().sort(function(a, b) {
+                    return String(a.name || '').localeCompare(String(b.name || ''));
+                });
+                var hasCurrentItem = invItems.some(function(it) {
+                    return (record.itemCode && it.code === record.itemCode) || (!record.itemCode && it.name === record.itemName);
+                });
+                var itemOptsHtml = invItems.map(function(it) {
+                    var label = it.name + (it.code ? ' (' + it.code + ')' : '');
+                    return '<option value="' + escapePestHtml(it.code) + '" data-name="' + escapePestHtml(it.name) + '">' + escapePestHtml(label) + '</option>';
+                }).join('');
+                if (!hasCurrentItem && (record.itemName || record.itemCode)) {
+                    var legacyVal = record.itemCode || record.itemName;
+                    var legacyLabel = (record.itemName || legacyVal) + (record.itemCode ? ' (' + record.itemCode + ')' : '');
+                    itemOptsHtml = '<option value="' + escapePestHtml(legacyVal) + '" data-name="' + escapePestHtml(record.itemName || legacyVal) + '">' + escapePestHtml(legacyLabel) + '</option>' + itemOptsHtml;
+                }
+                itemSelect.innerHTML = itemOptsHtml;
+                if (record.itemCode) {
+                    itemSelect.value = record.itemCode;
+                } else {
+                    var matchByName = invItems.find(function(it) { return it.name === record.itemName; });
+                    if (matchByName) itemSelect.value = matchByName.code;
+                }
+            }
+
             openModal('editArchiveModal');
         }
 
         function saveArchiveCorrection(e) {
             e.preventDefault();
             var arcId = document.getElementById('editArchiveId').value;
-            var newQty = parseInt(document.getElementById('editArchiveQty').value) || 0;
+            var newType = document.getElementById('editArchiveType').value;
+            var newArea = document.getElementById('editArchiveArea').value;
+            var itemSelect = document.getElementById('editArchiveItem');
+            var selectedItemCode = itemSelect ? itemSelect.value : '';
+            var selectedOpt = itemSelect && itemSelect.selectedIndex >= 0 ? itemSelect.options[itemSelect.selectedIndex] : null;
+            var selectedItemName = selectedOpt ? (selectedOpt.getAttribute('data-name') || selectedOpt.textContent) : '';
+            var newQty = parseInt(document.getElementById('editArchiveQty').value, 10) || 0;
+
+            if (newQty <= 0) {
+                showAppNotification('Please enter a valid quantity greater than 0.', 'error');
+                return;
+            }
 
             var record = null;
             for (var i = 0; i < dbData.inventoryArchive.length; i++) {
                 if (dbData.inventoryArchive[i].id === arcId) { record = dbData.inventoryArchive[i]; break; }
             }
             if (record) {
+                record.type = newType;
+                record.area = newArea;
+                if (selectedItemCode) {
+                    var matchedInv = (dbData.inventory || []).find(function(it) { return it.code === selectedItemCode; });
+                    record.itemCode = selectedItemCode;
+                    record.itemName = matchedInv ? matchedInv.name : (selectedItemName || record.itemName);
+                }
                 record.qty = newQty;
                 record.updatedAt = new Date().toISOString();
                 saveStateToLocalBackup();
                 if (window.saveInventoryArchiveToFirestore) {
                     window.saveInventoryArchiveToFirestore(record);
                 }
-                showAppNotification("Archive record successfully updated.", "success");
+                showAppNotification("Transaction record updated and stock recalculated.", "success");
                 closeModal('editArchiveModal');
                 var arcModal = document.getElementById('invArchiveModal');
                 if (arcModal && !arcModal.classList.contains('hidden')) {
@@ -21235,19 +21433,30 @@
             }
         };
 
+        window.revokeUnauthorizedFirebaseSession = async function() {
+            try { stopAllFirestoreListeners(); } catch (e) {}
+            try { localStorage.removeItem('siyanat_marol_last_user_email'); } catch (e) {}
+            try { await signOut(auth); } catch (e) {}
+            const authBtnText = document.getElementById('authBtnText');
+            const authBtn = document.getElementById('authBtn');
+            if (authBtnText) authBtnText.innerText = 'Sign In';
+            if (authBtn) authBtn.onclick = () => openModal('authModal');
+        };
+
         // Capture mobile redirect sign-in return (essential for Firefox mobile & Safari)
-        getRedirectResult(auth).then((result) => {
+        getRedirectResult(auth).then(async (result) => {
             if (result && result.user && result.user.email) {
-                const userEmail = result.user.email.toLowerCase();
-                try { localStorage.setItem('siyanat_marol_last_user_email', userEmail); } catch (e) {}
-                stopAllFirestoreListeners();
-                startFirestoreListeners(true);
-                if (typeof window.handleUserAuthenticated === 'function') {
-                    window.handleUserAuthenticated(userEmail);
+                const userEmail = result.user.email.toLowerCase().trim();
+                const isAllowed = (typeof window.handleUserAuthenticated === 'function')
+                    ? await window.handleUserAuthenticated(userEmail)
+                    : false;
+                if (isAllowed) {
+                    try { localStorage.setItem('siyanat_marol_last_user_email', userEmail); } catch (e) {}
+                    stopAllFirestoreListeners();
+                    startFirestoreListeners(true);
+                    showAppNotification("Signed in as " + (window.getUserDisplayName ? window.getUserDisplayName(userEmail) : userEmail) + "! Real-time Cloud Sync active.", "success");
+                    window.autoSyncPendingLocalVaultToFirestore();
                 }
-                closeModal('authModal');
-                showAppNotification("Signed in as " + (window.getUserDisplayName ? window.getUserDisplayName(userEmail) : userEmail) + "! Real-time Cloud Sync active.", "success");
-                window.autoSyncPendingLocalVaultToFirestore();
             }
         }).catch((err) => {
             console.warn("Redirect sign-in notice:", err);
@@ -21272,16 +21481,17 @@
                     result = await signInWithPopup(auth, provider);
                 }
                 if (result && result.user && result.user.email) {
-                    const userEmail = result.user.email.toLowerCase();
-                    try { localStorage.setItem('siyanat_marol_last_user_email', userEmail); } catch (e) {}
-                    stopAllFirestoreListeners();
-                    startFirestoreListeners(true);
-                    if (typeof window.handleUserAuthenticated === 'function') {
-                        window.handleUserAuthenticated(userEmail);
+                    const userEmail = result.user.email.toLowerCase().trim();
+                    const isAllowed = (typeof window.handleUserAuthenticated === 'function')
+                        ? await window.handleUserAuthenticated(userEmail)
+                        : false;
+                    if (isAllowed) {
+                        try { localStorage.setItem('siyanat_marol_last_user_email', userEmail); } catch (e) {}
+                        stopAllFirestoreListeners();
+                        startFirestoreListeners(true);
+                        showAppNotification("Signed in with Google as " + (window.getUserDisplayName ? window.getUserDisplayName(userEmail) : userEmail) + "! Real-time Cloud Sync active.", "success");
+                        window.autoSyncPendingLocalVaultToFirestore();
                     }
-                    closeModal('authModal');
-                    showAppNotification("Signed in with Google as " + (window.getUserDisplayName ? window.getUserDisplayName(userEmail) : userEmail) + "! Real-time Cloud Sync active.", "success");
-                    window.autoSyncPendingLocalVaultToFirestore();
                 }
             } catch (error) {
                 showAppNotification("Google Sign-In: " + error.message, "error");
@@ -21296,38 +21506,53 @@
             const password = passInput ? passInput.value : '';
 
             if (!email) return;
-            showAppNotification("Connecting to secure cloud session...", "info");
+            const normalized = email.toLowerCase().trim();
+            showAppNotification("Verifying authorized account...", "info");
 
             try {
-                let userCredential = null;
+                // Ensure we have the latest Admin Access user registry before allowing sign-in
+                try {
+                    await window.ensureFirebaseAuthSession();
+                    if (window.forceSyncAllFromFirestore) {
+                        await window.forceSyncAllFromFirestore();
+                    }
+                } catch (syncErr) {}
+
+                const isInRegistry = (window.userRegistry || []).some(function(u) {
+                    return u && u.email && u.email.toLowerCase().trim() === normalized;
+                });
+                const isPrimaryAdmin = (normalized === 'murtaza.kheraluwala@jameasaifiyah.edu' || normalized === 'fm.marol@jameasaifiyah.edu');
+
+                if (!isInRegistry && !isPrimaryAdmin) {
+                    await window.handleUserAuthenticated(normalized);
+                    return;
+                }
+
                 const safePass = (password && password.length >= 6) ? password : (password + "_siyanat2026");
                 try {
-                    userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    await signInWithEmailAndPassword(auth, email, password);
                 } catch (authErr) {
                     try {
-                        userCredential = await signInWithEmailAndPassword(auth, email, safePass);
+                        await signInWithEmailAndPassword(auth, email, safePass);
                     } catch (authErr2) {
                         try {
-                            userCredential = await createUserWithEmailAndPassword(auth, email, safePass);
+                            await createUserWithEmailAndPassword(auth, email, safePass);
                         } catch (createErr) {
                             await window.ensureFirebaseAuthSession();
                         }
                     }
                 }
 
-                const normalized = email.toLowerCase();
-                try { localStorage.setItem('siyanat_marol_last_user_email', normalized); } catch (e) {}
-
-                stopAllFirestoreListeners();
-                startFirestoreListeners(true);
-
-                if (typeof window.handleUserAuthenticated === 'function') {
-                    window.handleUserAuthenticated(normalized);
+                const isAllowed = (typeof window.handleUserAuthenticated === 'function')
+                    ? await window.handleUserAuthenticated(normalized)
+                    : false;
+                if (isAllowed) {
+                    try { localStorage.setItem('siyanat_marol_last_user_email', normalized); } catch (e) {}
+                    stopAllFirestoreListeners();
+                    startFirestoreListeners(true);
+                    showAppNotification("Signed in as " + (window.getUserDisplayName ? window.getUserDisplayName(normalized) : normalized) + "! Real-time Cloud Sync active.", "success");
+                    window.autoSyncPendingLocalVaultToFirestore();
                 }
-                closeModal('authModal');
-                showAppNotification("Signed in as " + (window.getUserDisplayName ? window.getUserDisplayName(normalized) : normalized) + "! Real-time Cloud Sync active.", "success");
-
-                window.autoSyncPendingLocalVaultToFirestore();
             } catch (error) {
                 showAppNotification("Authentication Error: " + error.message, "error");
             }
@@ -21356,57 +21581,61 @@
 
             if (user) {
                 let storedEmail = '';
-                try { storedEmail = (localStorage.getItem('siyanat_marol_last_user_email') || '').toLowerCase(); } catch (e) {}
-                let activeEmail = (user.email || '').toLowerCase();
+                try { storedEmail = (localStorage.getItem('siyanat_marol_last_user_email') || '').toLowerCase().trim(); } catch (e) {}
+                let activeEmail = (user.email || '').toLowerCase().trim();
                 if (!activeEmail || activeEmail === 'portal.sync@siyanatmarol.org') {
-                    activeEmail = storedEmail || 'fm.marol@jameasaifiyah.edu';
+                    activeEmail = storedEmail;
                 }
-                try { localStorage.setItem('siyanat_marol_last_user_email', activeEmail); } catch (e) {}
 
-                stopAllFirestoreListeners();
-                startFirestoreListeners(true);
-
-                if (typeof window.handleUserAuthenticated === 'function') {
-                    window.handleUserAuthenticated(activeEmail);
-                }
-                if (authBtnText) authBtnText.innerText = 'Sign Out';
-                if (authBtn) authBtn.onclick = () => window.logoutUser();
-
-                window.autoSyncPendingLocalVaultToFirestore();
-            } else {
-                let savedEmail = null;
-                try { savedEmail = localStorage.getItem('siyanat_marol_last_user_email'); } catch (e) {}
-                const host = window.location.hostname || '';
-                const isProductionHost = host.includes('github.io') || host.includes('firebaseapp.com') || host.includes('web.app');
-
-                if (savedEmail || !isProductionHost) {
-                    const targetEmail = savedEmail || 'fm.marol@jameasaifiyah.edu';
+                if (!activeEmail) {
                     if (typeof window.handleUserAuthenticated === 'function') {
-                        window.handleUserAuthenticated(targetEmail);
-                    }
-                    if (authBtnText) authBtnText.innerText = savedEmail ? 'Sign Out' : 'Switch User';
-                    if (authBtn) authBtn.onclick = savedEmail ? () => window.logoutUser() : () => openModal('authModal');
-
-                    try {
-                        await window.ensureFirebaseAuthSession();
-                        stopAllFirestoreListeners();
-                        startFirestoreListeners(true);
-                        window.autoSyncPendingLocalVaultToFirestore();
-                    } catch (anonErr) {
-                        console.log("Waiting for user manual sign-in:", anonErr.message);
-                    }
-                } else {
-                    if (typeof window.handleUserAuthenticated === 'function') {
-                        window.handleUserAuthenticated(null);
+                        await window.handleUserAuthenticated(null);
                     }
                     if (authBtnText) authBtnText.innerText = 'Sign In';
                     if (authBtn) authBtn.onclick = () => openModal('authModal');
+                    return;
+                }
 
-                    try {
-                        await window.ensureFirebaseAuthSession();
+                const isAllowed = (typeof window.handleUserAuthenticated === 'function')
+                    ? await window.handleUserAuthenticated(activeEmail)
+                    : false;
+
+                if (isAllowed) {
+                    try { localStorage.setItem('siyanat_marol_last_user_email', activeEmail); } catch (e) {}
+                    stopAllFirestoreListeners();
+                    startFirestoreListeners(true);
+                    if (authBtnText) authBtnText.innerText = 'Sign Out';
+                    if (authBtn) authBtn.onclick = () => window.logoutUser();
+                    window.autoSyncPendingLocalVaultToFirestore();
+                } else {
+                    if (authBtnText) authBtnText.innerText = 'Sign In';
+                    if (authBtn) authBtn.onclick = () => openModal('authModal');
+                }
+            } else {
+                let savedEmail = '';
+                try { savedEmail = (localStorage.getItem('siyanat_marol_last_user_email') || '').toLowerCase().trim(); } catch (e) {}
+
+                if (savedEmail) {
+                    try { await window.ensureFirebaseAuthSession(); } catch (e) {}
+                    const isAllowed = (typeof window.handleUserAuthenticated === 'function')
+                        ? await window.handleUserAuthenticated(savedEmail)
+                        : false;
+                    if (isAllowed) {
                         stopAllFirestoreListeners();
                         startFirestoreListeners(true);
-                    } catch (e) {}
+                        if (authBtnText) authBtnText.innerText = 'Sign Out';
+                        if (authBtn) authBtn.onclick = () => window.logoutUser();
+                        window.autoSyncPendingLocalVaultToFirestore();
+                    } else {
+                        if (authBtnText) authBtnText.innerText = 'Sign In';
+                        if (authBtn) authBtn.onclick = () => openModal('authModal');
+                    }
+                } else {
+                    if (typeof window.handleUserAuthenticated === 'function') {
+                        await window.handleUserAuthenticated(null);
+                    }
+                    if (authBtnText) authBtnText.innerText = 'Sign In';
+                    if (authBtn) authBtn.onclick = () => openModal('authModal');
                 }
             }
         });
