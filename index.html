@@ -30,6 +30,8 @@
     <!-- JSZip & html2canvas for Multi-Vendor PO PDF & ZIP Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Chart.js for Cleaning Reports Comparative Analysis Visualizations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
     <script>
         tailwind.config = {
@@ -7233,6 +7235,17 @@
         };
         var activeDwrModalReportId = '';
         var dwrIntimationCheckedKey = '';
+        var dwrAnalysisState = {
+            area: '',
+            period: 'monthly', // 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+            anchorDate: '',    // YYYY-MM-DD inside the active period
+            subAreaFilter: 'ALL',
+            subAreaChartMetric: 'rate', // 'rate' | 'count'
+            taskSort: 'default', // 'default' | 'most' | 'least'
+            includeDrafts: false
+        };
+        var dwrSubAreaChartInstance = null;
+        var dwrTaskChartInstance = null;
 
         function getTodayLocalIsoDate() {
             var now = new Date();
@@ -8067,12 +8080,20 @@
             // - "Add Deep Cleaning Reports"
             var dwrBtnActive = cleaningSubPage === 'add_dwr' ? 'ring-2 ring-offset-1 ring-teal-500 bg-[#00382c]' : 'bg-[#004d3d] hover:bg-[#00382c]';
             var builderBtnActive = cleaningSubPage === 'manage_dwr_form' ? 'ring-2 ring-offset-1 ring-indigo-500 bg-indigo-800' : 'bg-indigo-600 hover:bg-indigo-700';
+            var analysisBtnActive = cleaningSubPage === 'comparative_analysis' ? 'ring-2 ring-offset-1 ring-violet-500 bg-violet-800' : 'bg-violet-600 hover:bg-violet-700';
             var actionsHtml = '<div class="flex items-center space-x-2 flex-wrap gap-y-2">';
             if (isAdmin) {
                 actionsHtml +=
                     '<button type="button" onclick="openManageDwrFormPage()" class="' + builderBtnActive + ' text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
                         '<i class="fa-solid fa-sliders text-indigo-200"></i>' +
                         '<span>Create / Manage DWR Form</span>' +
+                    '</button>';
+            }
+            if (isAdmin || isExec) {
+                actionsHtml +=
+                    '<button type="button" onclick="openDwrComparativeAnalysisPage()" class="' + analysisBtnActive + ' text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                        '<i class="fa-solid fa-chart-column text-violet-200"></i>' +
+                        '<span>Comparative Analysis</span>' +
                     '</button>';
             }
             actionsHtml +=
@@ -8096,6 +8117,11 @@
 
             if (cleaningSubPage === 'manage_dwr_form' && isAdmin) {
                 renderManageDwrFormPageView(container);
+                return;
+            }
+
+            if (cleaningSubPage === 'comparative_analysis' && (isAdmin || isExec)) {
+                renderDwrComparativeAnalysisView(container);
                 return;
             }
 
@@ -8409,6 +8435,754 @@
 
             html += '</div></div>';
             return html;
+        }
+
+        // ================= SECTION 5A: COMPARATIVE ANALYSIS (ADMINS & EXECUTIVES ONLY) =================
+        function openDwrComparativeAnalysisPage() {
+            var isAdmin = currentUser && currentUser.role === 'Administrator';
+            var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
+            if (!isAdmin && !isExec) {
+                showAppNotification('Comparative Analysis is restricted to Administrators and Executives.', 'error');
+                return;
+            }
+            var assignedAreas = getUserAssignedDwrAreas();
+            if (!dwrAnalysisState.area || assignedAreas.indexOf(dwrAnalysisState.area) === -1) {
+                dwrAnalysisState.area = assignedAreas[0] || '';
+            }
+            if (!dwrAnalysisState.anchorDate) {
+                dwrAnalysisState.anchorDate = getTodayLocalIsoDate();
+            }
+            cleaningSubPage = 'comparative_analysis';
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function setDwrAnalysisArea(areaVal) {
+            dwrAnalysisState.area = areaVal;
+            dwrAnalysisState.subAreaFilter = 'ALL';
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function setDwrAnalysisPeriod(periodVal) {
+            dwrAnalysisState.period = periodVal || 'monthly';
+            if (!dwrAnalysisState.anchorDate) dwrAnalysisState.anchorDate = getTodayLocalIsoDate();
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function setDwrAnalysisSubArea(subAreaVal) {
+            dwrAnalysisState.subAreaFilter = subAreaVal || 'ALL';
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function setDwrAnalysisMetric(metricVal) {
+            dwrAnalysisState.subAreaChartMetric = metricVal === 'count' ? 'count' : 'rate';
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function setDwrAnalysisTaskSort(sortVal) {
+            dwrAnalysisState.taskSort = sortVal || 'default';
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function toggleDwrAnalysisDrafts(checked) {
+            dwrAnalysisState.includeDrafts = !!checked;
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function formatIsoLocalDate(dObj) {
+            return dObj.getFullYear() + '-' + String(dObj.getMonth() + 1).padStart(2, '0') + '-' + String(dObj.getDate()).padStart(2, '0');
+        }
+
+        function shiftDwrAnalysisPeriod(delta) {
+            var baseIso = dwrAnalysisState.anchorDate || getTodayLocalIsoDate();
+            var d = new Date(baseIso + 'T00:00:00');
+            if (isNaN(d.getTime())) d = new Date();
+            if (dwrAnalysisState.period === 'weekly') {
+                d.setDate(d.getDate() + (delta * 7));
+            } else if (dwrAnalysisState.period === 'monthly') {
+                d = new Date(d.getFullYear(), d.getMonth() + delta, 1);
+            } else if (dwrAnalysisState.period === 'quarterly') {
+                d = new Date(d.getFullYear(), d.getMonth() + (delta * 3), 1);
+            } else {
+                d = new Date(d.getFullYear() + delta, 0, 1);
+            }
+            dwrAnalysisState.anchorDate = formatIsoLocalDate(d);
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function resetDwrAnalysisToCurrent() {
+            dwrAnalysisState.anchorDate = getTodayLocalIsoDate();
+            renderCleaningModule(document.getElementById('moduleContainer'), document.getElementById('modulePrimaryActions'), true);
+        }
+
+        function getDwrAnalysisDateRange(period, anchorIso) {
+            var base = new Date((anchorIso || getTodayLocalIsoDate()) + 'T00:00:00');
+            if (isNaN(base.getTime())) base = new Date();
+            var start, end, label;
+            var fmtShort = function(dt) {
+                return dt.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+            };
+
+            if (period === 'weekly') {
+                // Monday to Sunday week window
+                var dayOfWeek = base.getDay(); // 0=Sun..6=Sat
+                var diffToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+                start = new Date(base.getFullYear(), base.getMonth(), base.getDate() + diffToMon);
+                end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+                label = 'Week: ' + fmtShort(start) + ' – ' + fmtShort(end);
+            } else if (period === 'quarterly') {
+                var qIdx = Math.floor(base.getMonth() / 3); // 0..3
+                start = new Date(base.getFullYear(), qIdx * 3, 1);
+                end = new Date(base.getFullYear(), qIdx * 3 + 3, 0);
+                var qNames = ['Q1 (Jan – Mar)', 'Q2 (Apr – Jun)', 'Q3 (Jul – Sep)', 'Q4 (Oct – Dec)'];
+                label = qNames[qIdx] + ' ' + base.getFullYear();
+            } else if (period === 'yearly') {
+                start = new Date(base.getFullYear(), 0, 1);
+                end = new Date(base.getFullYear(), 11, 31);
+                label = 'Year ' + base.getFullYear();
+            } else {
+                start = new Date(base.getFullYear(), base.getMonth(), 1);
+                end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+                label = start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            }
+
+            var startIso = formatIsoLocalDate(start);
+            var endIso = formatIsoLocalDate(end);
+            var todayIso = getTodayLocalIsoDate();
+            var effectiveEndIso = endIso > todayIso ? todayIso : endIso;
+            var totalDaysInWindow = Math.max(1, Math.round((end - start) / 86400000) + 1);
+            var elapsedDays = 0;
+            if (effectiveEndIso >= startIso) {
+                var effEndDate = new Date(effectiveEndIso + 'T00:00:00');
+                elapsedDays = Math.max(1, Math.round((effEndDate - start) / 86400000) + 1);
+            }
+            return {
+                startIso: startIso,
+                endIso: endIso,
+                label: label,
+                totalDays: totalDaysInWindow,
+                elapsedDays: elapsedDays
+            };
+        }
+
+        function escapeAnalysisHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function computeDwrComparativeAnalysisData(areaName, period, anchorIso, includeDrafts) {
+            var range = getDwrAnalysisDateRange(period, anchorIso);
+            var subAreasMap = getScopeSubAreasForArea(areaName);
+            var orderedSubAreas = getOrderedSubAreaKeys(areaName);
+
+            // Filter matching DWR reports for the selected area & date range
+            var matchingReports = (dbDailyWorkReports || []).filter(function(r) {
+                if (!r || !r.date || isRecordDeleted(r.reportId || r.id)) return false;
+                if (r.date < range.startIso || r.date > range.endIso) return false;
+                if (!doAreasMatch(areaName, r.area) && !doAreasMatch(areaName, r.block)) return false;
+                if (!includeDrafts && isDwrReportSavedDraft(r)) return false;
+                return true;
+            });
+
+            // Deduplicate by date (keep latest updatedAt if duplicate date exists)
+            var byDate = {};
+            matchingReports.forEach(function(r) {
+                if (!byDate[r.date] || String(r.updatedAt || '') > String(byDate[r.date].updatedAt || '')) {
+                    byDate[r.date] = r;
+                }
+            });
+            var uniqueReports = Object.keys(byDate).sort().map(function(k) { return byDate[k]; });
+            var reportsCount = uniqueReports.length;
+
+            // Also discover any legacy/extra sub-areas or tasks recorded in reports
+            var extraTasksBySub = {};
+            uniqueReports.forEach(function(rep) {
+                var comp = Array.isArray(rep.tasksCompleted) ? rep.tasksCompleted : [];
+                comp.forEach(function(itemStr) {
+                    var str = String(itemStr || '');
+                    var sub = '';
+                    var tName = '';
+                    if (str.indexOf(' :: ') !== -1) {
+                        var p = str.split(' :: ');
+                        sub = p[0].trim();
+                        tName = p.slice(1).join(' :: ').trim();
+                    } else if (str.indexOf(': ') !== -1) {
+                        var p2 = str.split(': ');
+                        sub = p2[0].trim();
+                        tName = p2.slice(1).join(': ').trim();
+                    }
+                    if (sub && tName && !isReservedScopeMetadataKey(sub)) {
+                        if (!extraTasksBySub[sub]) extraTasksBySub[sub] = [];
+                        if (extraTasksBySub[sub].indexOf(tName) === -1) extraTasksBySub[sub].push(tName);
+                    }
+                });
+            });
+
+            var allSubAreas = orderedSubAreas.slice();
+            Object.keys(extraTasksBySub).forEach(function(sk) {
+                if (allSubAreas.indexOf(sk) === -1) allSubAreas.push(sk);
+            });
+
+            var subAreaStats = [];
+            var grandTotalDone = 0;
+            var grandTotalPossible = 0;
+            var grandConfiguredTasks = 0;
+
+            allSubAreas.forEach(function(subName) {
+                var configuredTasks = Array.isArray(subAreasMap[subName]) ? subAreasMap[subName].slice() : [];
+                var seenNorm = {};
+                var taskList = [];
+
+                configuredTasks.forEach(function(tName) {
+                    var norm = String(tName).trim().toLowerCase();
+                    if (!norm || seenNorm[norm]) return;
+                    seenNorm[norm] = true;
+                    taskList.push(tName);
+                });
+                (extraTasksBySub[subName] || []).forEach(function(exName) {
+                    var norm = String(exName).trim().toLowerCase();
+                    if (!norm || seenNorm[norm]) return;
+                    seenNorm[norm] = true;
+                    taskList.push(exName);
+                });
+
+                if (taskList.length === 0) return;
+
+                var taskStats = [];
+                var subDoneTotal = 0;
+                var subPossibleTotal = taskList.length * reportsCount;
+
+                taskList.forEach(function(taskName) {
+                    var doneTimes = 0;
+                    uniqueReports.forEach(function(rep) {
+                        if (isTaskMarkedCompleted(rep.tasksCompleted, subName, taskName)) {
+                            doneTimes++;
+                        }
+                    });
+                    var missedTimes = Math.max(0, reportsCount - doneTimes);
+                    var pct = reportsCount > 0 ? Math.round((doneTimes / reportsCount) * 100) : 0;
+                    subDoneTotal += doneTimes;
+                    taskStats.push({
+                        subArea: subName,
+                        taskName: taskName,
+                        doneCount: doneTimes,
+                        missedCount: missedTimes,
+                        reportsCount: reportsCount,
+                        pct: pct
+                    });
+                });
+
+                var subPct = subPossibleTotal > 0 ? Math.round((subDoneTotal / subPossibleTotal) * 100) : 0;
+                grandTotalDone += subDoneTotal;
+                grandTotalPossible += subPossibleTotal;
+                grandConfiguredTasks += taskList.length;
+
+                subAreaStats.push({
+                    subName: subName,
+                    tasksCount: taskList.length,
+                    totalDone: subDoneTotal,
+                    totalPossible: subPossibleTotal,
+                    pct: subPct,
+                    tasks: taskStats
+                });
+            });
+
+            var overallPct = grandTotalPossible > 0 ? Math.round((grandTotalDone / grandTotalPossible) * 100) : 0;
+            var bestSub = null;
+            var attentionSub = null;
+            if (subAreaStats.length > 0 && reportsCount > 0) {
+                var sortedByPct = subAreaStats.slice().sort(function(a, b) {
+                    if (b.pct !== a.pct) return b.pct - a.pct;
+                    return b.totalDone - a.totalDone;
+                });
+                bestSub = sortedByPct[0];
+                attentionSub = sortedByPct[sortedByPct.length - 1];
+            }
+
+            return {
+                area: areaName,
+                period: period,
+                range: range,
+                reportsCount: reportsCount,
+                uniqueReports: uniqueReports,
+                subAreaStats: subAreaStats,
+                grandTotalDone: grandTotalDone,
+                grandTotalPossible: grandTotalPossible,
+                grandConfiguredTasks: grandConfiguredTasks,
+                overallPct: overallPct,
+                bestSub: bestSub,
+                attentionSub: attentionSub
+            };
+        }
+
+        function exportDwrComparativeAnalysisExcel() {
+            var assignedAreas = getUserAssignedDwrAreas();
+            var area = dwrAnalysisState.area && assignedAreas.indexOf(dwrAnalysisState.area) !== -1 ? dwrAnalysisState.area : (assignedAreas[0] || '');
+            if (!area) return;
+            var data = computeDwrComparativeAnalysisData(area, dwrAnalysisState.period, dwrAnalysisState.anchorDate, dwrAnalysisState.includeDrafts);
+            var rows = [];
+            data.subAreaStats.forEach(function(sub) {
+                if (dwrAnalysisState.subAreaFilter !== 'ALL' && sub.subName !== dwrAnalysisState.subAreaFilter) return;
+                sub.tasks.forEach(function(t) {
+                    rows.push({
+                        'Area': formatAreaDisplayLabel(area),
+                        'Period': data.range.label,
+                        'Sub-Area': sub.subName,
+                        'Task': t.taskName,
+                        'Times Done': t.doneCount,
+                        'Times Missed': t.missedCount,
+                        'DWR Reports in Period': data.reportsCount,
+                        'Completion Rate (%)': t.pct + '%'
+                    });
+                });
+            });
+            if (rows.length === 0) {
+                showAppNotification('No task data available to export for this selection.', 'info');
+                return;
+            }
+            var ws = XLSX.utils.json_to_sheet(rows);
+            var wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Comparative Analysis');
+            var safeArea = area.replace(/[^a-zA-Z0-9]+/g, '_');
+            XLSX.writeFile(wb, 'DWR_Comparative_Analysis_' + safeArea + '_' + data.period + '.xlsx');
+            showAppNotification('Exported Comparative Analysis to Excel!', 'success');
+        }
+
+        function renderDwrComparativeAnalysisView(container) {
+            var assignedAreas = getUserAssignedDwrAreas();
+            if (assignedAreas.length === 0) {
+                container.innerHTML = '<div class="bg-white p-8 rounded-2xl border border-slate-200 text-center text-sm text-slate-500">No areas are assigned to your account for Comparative Analysis.</div>';
+                return;
+            }
+            if (!dwrAnalysisState.area || assignedAreas.indexOf(dwrAnalysisState.area) === -1) {
+                dwrAnalysisState.area = assignedAreas[0];
+            }
+            if (!dwrAnalysisState.anchorDate) {
+                dwrAnalysisState.anchorDate = getTodayLocalIsoDate();
+            }
+
+            var data = computeDwrComparativeAnalysisData(
+                dwrAnalysisState.area,
+                dwrAnalysisState.period,
+                dwrAnalysisState.anchorDate,
+                dwrAnalysisState.includeDrafts
+            );
+
+            var validSubNames = data.subAreaStats.map(function(s) { return s.subName; });
+            if (dwrAnalysisState.subAreaFilter !== 'ALL' && validSubNames.indexOf(dwrAnalysisState.subAreaFilter) === -1) {
+                dwrAnalysisState.subAreaFilter = 'ALL';
+            }
+
+            var html = '<div class="space-y-5">';
+
+            // Header Banner
+            html += '<div class="bg-gradient-to-r from-slate-900 via-violet-950 to-slate-900 text-white p-5 rounded-2xl shadow-sm border border-violet-800/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">';
+            html += '<div>';
+            html += '<div class="flex items-center space-x-2 flex-wrap gap-y-1">';
+            html += '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-violet-500/25 text-violet-200 border border-violet-400/40"><i class="fa-solid fa-chart-column mr-1"></i>Admin &amp; Executive Analytics</span>';
+            html += '<h3 class="text-base sm:text-lg font-extrabold text-white">Cleaning Reports — Comparative Task Analysis</h3>';
+            html += '</div>';
+            html += '<p class="text-xs text-slate-300 mt-1">Analyze sub-area performance and exact task execution counts across Weekly, Monthly, Quarterly, or Yearly windows.</p>';
+            html += '</div>';
+            html += '<div class="flex items-center space-x-2 flex-wrap gap-y-2">';
+            html += '<button type="button" onclick="exportDwrComparativeAnalysisExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5 shadow-sm"><i class="fa-solid fa-file-excel"></i><span>Export Excel</span></button>';
+            html += '<button type="button" onclick="switchCleaningSubPage(\'dashboard\')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5"><i class="fa-solid fa-arrow-left"></i><span>Back to DWR Matrix</span></button>';
+            html += '</div></div>';
+
+            // Interactive Filter & Period Control Bar
+            html += '<div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">';
+            html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">';
+
+            // 1. Area Dropdown (scoped to user authentication)
+            html += '<div>';
+            html += '<label class="block text-[11px] font-bold uppercase text-slate-500 mb-1"><i class="fa-solid fa-building text-violet-600 mr-1"></i>Select Area</label>';
+            html += '<select onchange="setDwrAnalysisArea(this.value)" class="w-full text-xs font-bold text-slate-800 px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500 focus:outline-none">';
+            assignedAreas.forEach(function(a) {
+                html += '<option value="' + escapeAnalysisHtml(a) + '" ' + (dwrAnalysisState.area === a ? 'selected' : '') + '>' + escapeAnalysisHtml(formatAreaDisplayLabel(a)) + '</option>';
+            });
+            html += '</select></div>';
+
+            // 2. Timeframe Dropdown
+            html += '<div>';
+            html += '<label class="block text-[11px] font-bold uppercase text-slate-500 mb-1"><i class="fa-solid fa-calendar-week text-violet-600 mr-1"></i>Time Period</label>';
+            html += '<select onchange="setDwrAnalysisPeriod(this.value)" class="w-full text-xs font-bold text-slate-800 px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500 focus:outline-none">';
+            html += '<option value="weekly" ' + (dwrAnalysisState.period === 'weekly' ? 'selected' : '') + '>Weekly</option>';
+            html += '<option value="monthly" ' + (dwrAnalysisState.period === 'monthly' ? 'selected' : '') + '>Monthly</option>';
+            html += '<option value="quarterly" ' + (dwrAnalysisState.period === 'quarterly' ? 'selected' : '') + '>Quarterly</option>';
+            html += '<option value="yearly" ' + (dwrAnalysisState.period === 'yearly' ? 'selected' : '') + '>Yearly</option>';
+            html += '</select></div>';
+
+            // 3. Sub-Area Filter Dropdown
+            html += '<div>';
+            html += '<label class="block text-[11px] font-bold uppercase text-slate-500 mb-1"><i class="fa-solid fa-layer-group text-violet-600 mr-1"></i>Sub-Area Focus</label>';
+            html += '<select onchange="setDwrAnalysisSubArea(this.value)" class="w-full text-xs font-bold text-slate-800 px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500 focus:outline-none">';
+            html += '<option value="ALL" ' + (dwrAnalysisState.subAreaFilter === 'ALL' ? 'selected' : '') + '>All Sub-Areas (' + data.subAreaStats.length + ')</option>';
+            data.subAreaStats.forEach(function(s) {
+                html += '<option value="' + escapeAnalysisHtml(s.subName) + '" ' + (dwrAnalysisState.subAreaFilter === s.subName ? 'selected' : '') + '>' + escapeAnalysisHtml(s.subName) + ' (' + s.pct + '%)</option>';
+            });
+            html += '</select></div>';
+
+            // 4. Task Sort Dropdown
+            html += '<div>';
+            html += '<label class="block text-[11px] font-bold uppercase text-slate-500 mb-1"><i class="fa-solid fa-arrow-down-wide-short text-violet-600 mr-1"></i>Sort Tasks By</label>';
+            html += '<select onchange="setDwrAnalysisTaskSort(this.value)" class="w-full text-xs font-bold text-slate-800 px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-violet-500 focus:outline-none">';
+            html += '<option value="default" ' + (dwrAnalysisState.taskSort === 'default' ? 'selected' : '') + '>Checklist Order</option>';
+            html += '<option value="most" ' + (dwrAnalysisState.taskSort === 'most' ? 'selected' : '') + '>Most Frequently Done First</option>';
+            html += '<option value="least" ' + (dwrAnalysisState.taskSort === 'least' ? 'selected' : '') + '>Least Done / Needs Attention First</option>';
+            html += '</select></div>';
+
+            html += '</div>'; // end grid
+
+            // Period Navigator + Drafts Toggle
+            html += '<div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
+            html += '<div class="flex items-center space-x-2 flex-wrap gap-y-2">';
+            html += '<button type="button" onclick="shiftDwrAnalysisPeriod(-1)" class="px-2.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition" title="Previous Period"><i class="fa-solid fa-chevron-left"></i></button>';
+            html += '<div class="px-3.5 py-1.5 rounded-lg bg-violet-950 text-white font-extrabold text-xs min-w-[200px] text-center"><i class="fa-regular fa-calendar text-violet-300 mr-1.5"></i>' + escapeAnalysisHtml(data.range.label) + '</div>';
+            html += '<button type="button" onclick="shiftDwrAnalysisPeriod(1)" class="px-2.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition" title="Next Period"><i class="fa-solid fa-chevron-right"></i></button>';
+            html += '<button type="button" onclick="resetDwrAnalysisToCurrent()" class="px-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-800 border border-violet-200 text-xs font-bold transition">Current ' + (dwrAnalysisState.period.charAt(0).toUpperCase() + dwrAnalysisState.period.slice(1).replace('ly', '')) + '</button>';
+            html += '</div>';
+
+            html += '<label class="inline-flex items-center space-x-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">';
+            html += '<input type="checkbox" onchange="toggleDwrAnalysisDrafts(this.checked)" ' + (dwrAnalysisState.includeDrafts ? 'checked' : '') + ' class="rounded text-violet-600 focus:ring-violet-500">';
+            html += '<span>Include Saved Drafts</span>';
+            html += '</label>';
+            html += '</div></div>';
+
+            // KPI Summary Cards
+            var rateColor = data.overallPct >= 80 ? 'text-emerald-700' : (data.overallPct >= 50 ? 'text-amber-600' : 'text-rose-600');
+            var rateBorder = data.overallPct >= 80 ? 'border-emerald-200' : (data.overallPct >= 50 ? 'border-amber-200' : 'border-rose-200');
+            html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">';
+
+            html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">';
+            html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">DWR Reports Analyzed</span>';
+            html += '<div class="text-2xl font-extrabold text-slate-900 font-mono mt-1">' + data.reportsCount + ' <span class="text-xs font-sans font-semibold text-slate-400">/ ' + data.range.elapsedDays + ' elapsed days</span></div>';
+            html += '<span class="text-[11px] text-slate-400">' + escapeAnalysisHtml(formatAreaDisplayLabel(data.area)) + '</span>';
+            html += '</div>';
+
+            html += '<div class="bg-white p-4 rounded-xl border border-violet-200 shadow-sm">';
+            html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Total Task Completions</span>';
+            html += '<div class="text-2xl font-extrabold text-violet-700 font-mono mt-1">' + formatIndianNumber(data.grandTotalDone, 0) + '</div>';
+            html += '<span class="text-[11px] text-slate-400">Out of ' + formatIndianNumber(data.grandTotalPossible, 0) + ' scheduled checks (' + data.grandConfiguredTasks + ' tasks)</span>';
+            html += '</div>';
+
+            html += '<div class="bg-white p-4 rounded-xl border ' + rateBorder + ' shadow-sm">';
+            html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Overall Completion Rate</span>';
+            html += '<div class="text-2xl font-extrabold ' + rateColor + ' font-mono mt-1">' + (data.reportsCount > 0 ? (data.overallPct + '%') : '—') + '</div>';
+            html += '<span class="text-[11px] text-slate-400">' + (data.reportsCount > 0 ? (data.overallPct >= 80 ? 'Strong consistency' : (data.overallPct >= 50 ? 'Moderate consistency' : 'Needs supervisor follow-up')) : 'No DWRs in this period') + '</span>';
+            html += '</div>';
+
+            html += '<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">';
+            html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Sub-Area Highlights</span>';
+            if (data.bestSub && data.attentionSub) {
+                html += '<div class="mt-1 space-y-1 text-xs">';
+                html += '<div class="flex items-center justify-between gap-2"><span class="text-emerald-700 font-bold truncate" title="' + escapeAnalysisHtml(data.bestSub.subName) + '"><i class="fa-solid fa-trophy mr-1"></i>' + escapeAnalysisHtml(data.bestSub.subName) + '</span><span class="font-mono font-extrabold text-emerald-700">' + data.bestSub.pct + '%</span></div>';
+                if (data.attentionSub.subName !== data.bestSub.subName) {
+                    html += '<div class="flex items-center justify-between gap-2"><span class="text-rose-700 font-bold truncate" title="' + escapeAnalysisHtml(data.attentionSub.subName) + '"><i class="fa-solid fa-triangle-exclamation mr-1"></i>' + escapeAnalysisHtml(data.attentionSub.subName) + '</span><span class="font-mono font-extrabold text-rose-700">' + data.attentionSub.pct + '%</span></div>';
+                }
+                html += '</div>';
+            } else {
+                html += '<div class="text-xs text-slate-400 italic mt-2">Submit DWRs to compare sub-areas</div>';
+            }
+            html += '</div>';
+
+            html += '</div>'; // end KPI cards
+
+            if (data.subAreaStats.length === 0) {
+                html += '<div class="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-2">';
+                html += '<i class="fa-solid fa-chart-simple text-3xl text-slate-300"></i>';
+                html += '<p class="text-sm font-bold text-slate-700">No checklist tasks configured for ' + escapeAnalysisHtml(formatAreaDisplayLabel(data.area)) + '.</p>';
+                html += '<p class="text-xs text-slate-500">Add sub-areas and tasks in "Create / Manage DWR Form" to track comparative performance.</p>';
+                html += '</div>';
+                html += '</div>';
+                container.innerHTML = html;
+                return;
+            }
+
+            if (data.reportsCount === 0) {
+                html += '<div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-center space-x-3 text-xs text-amber-900">';
+                html += '<i class="fa-solid fa-circle-info text-amber-600 text-lg flex-shrink-0"></i>';
+                html += '<div><strong>No submitted DWR reports found for ' + escapeAnalysisHtml(formatAreaDisplayLabel(data.area)) + ' in ' + escapeAnalysisHtml(data.range.label) + '.</strong> Try navigating to a previous period, switching to Monthly/Quarterly/Yearly, or enabling "Include Saved Drafts".</div>';
+                html += '</div>';
+            }
+
+            // CHART 1: Sub-Area Comparative Overview Chart
+            html += '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">';
+            html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">';
+            html += '<div>';
+            html += '<h4 class="text-sm font-extrabold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-chart-bar text-violet-600"></i><span>Sub-Area Comparative Overview — ' + escapeAnalysisHtml(formatAreaDisplayLabel(data.area)) + '</span></h4>';
+            html += '<p class="text-[11px] text-slate-500 mt-0.5">Click any sub-area bar to focus the task frequency chart below. Color key: <span class="text-emerald-700 font-bold">Green &ge;80%</span> • <span class="text-amber-600 font-bold">Amber 50–79%</span> • <span class="text-rose-600 font-bold">Red &lt;50%</span></p>';
+            html += '</div>';
+            html += '<div class="inline-flex items-center rounded-lg border border-slate-200 p-0.5 bg-slate-100 self-start sm:self-auto">';
+            html += '<button type="button" onclick="setDwrAnalysisMetric(\'rate\')" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition ' + (dwrAnalysisState.subAreaChartMetric === 'rate' ? 'bg-violet-700 text-white' : 'text-slate-600 hover:bg-slate-200') + '">Completion %</button>';
+            html += '<button type="button" onclick="setDwrAnalysisMetric(\'count\')" class="px-2.5 py-1 rounded-md text-[11px] font-bold transition ' + (dwrAnalysisState.subAreaChartMetric === 'count' ? 'bg-violet-700 text-white' : 'text-slate-600 hover:bg-slate-200') + '">Total Times Done</button>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div id="dwrSubAreaChartWrapper" class="relative w-full" style="height: 270px;"><canvas id="dwrSubAreaComparisonChart"></canvas></div>';
+            html += '</div>';
+
+            // CHART 2: Task-Wise Execution Frequency Chart
+            var focusedSubAreas = dwrAnalysisState.subAreaFilter === 'ALL'
+                ? data.subAreaStats
+                : data.subAreaStats.filter(function(s) { return s.subName === dwrAnalysisState.subAreaFilter; });
+
+            var flattenedTasks = [];
+            focusedSubAreas.forEach(function(sub) {
+                var sortedTasks = sub.tasks.slice();
+                if (dwrAnalysisState.taskSort === 'most') {
+                    sortedTasks.sort(function(a, b) { return b.doneCount - a.doneCount || a.taskName.localeCompare(b.taskName); });
+                } else if (dwrAnalysisState.taskSort === 'least') {
+                    sortedTasks.sort(function(a, b) { return a.doneCount - b.doneCount || a.taskName.localeCompare(b.taskName); });
+                }
+                sortedTasks.forEach(function(t) {
+                    flattenedTasks.push(t);
+                });
+            });
+
+            var taskChartHeight = Math.max(240, Math.min(1400, flattenedTasks.length * 32 + 60));
+            html += '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">';
+            html += '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">';
+            html += '<div>';
+            html += '<h4 class="text-sm font-extrabold text-slate-900 flex items-center space-x-2"><i class="fa-solid fa-bars-progress text-teal-600"></i><span>Task Execution Frequency — ' + (dwrAnalysisState.subAreaFilter === 'ALL' ? 'All Sub-Areas' : escapeAnalysisHtml(dwrAnalysisState.subAreaFilter)) + '</span></h4>';
+            html += '<p class="text-[11px] text-slate-500 mt-0.5">Shows how many times each task was completed out of <strong>' + data.reportsCount + ' DWR report(s)</strong> submitted in ' + escapeAnalysisHtml(data.range.label) + '.</p>';
+            html += '</div>';
+            if (dwrAnalysisState.subAreaFilter !== 'ALL') {
+                html += '<button type="button" onclick="setDwrAnalysisSubArea(\'ALL\')" class="text-xs font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-lg transition self-start sm:self-auto">Show All Sub-Areas</button>';
+            }
+            html += '</div>';
+            html += '<div id="dwrTaskChartWrapper" class="relative w-full overflow-y-auto custom-scrollbar" style="max-height: 540px;"><div style="height: ' + taskChartHeight + 'px; position: relative;"><canvas id="dwrTaskFrequencyChart"></canvas></div></div>';
+            html += '</div>';
+
+            // Detailed Sub-Area Wise Task Breakdown Cards
+            html += '<div class="space-y-3">';
+            html += '<div class="flex items-center justify-between">';
+            html += '<h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-600 flex items-center space-x-2"><i class="fa-solid fa-list-check text-emerald-600"></i><span>Sub-Area Wise Task Breakdown (' + focusedSubAreas.length + ' Sub-Area' + (focusedSubAreas.length === 1 ? '' : 's') + ')</span></h4>';
+            html += '</div>';
+
+            html += '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">';
+            focusedSubAreas.forEach(function(sub) {
+                var subTasks = sub.tasks.slice();
+                if (dwrAnalysisState.taskSort === 'most') {
+                    subTasks.sort(function(a, b) { return b.doneCount - a.doneCount || a.taskName.localeCompare(b.taskName); });
+                } else if (dwrAnalysisState.taskSort === 'least') {
+                    subTasks.sort(function(a, b) { return a.doneCount - b.doneCount || a.taskName.localeCompare(b.taskName); });
+                }
+                var subBadgeCls = data.reportsCount === 0
+                    ? 'bg-slate-100 text-slate-600 border-slate-200'
+                    : (sub.pct >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : (sub.pct >= 50 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'));
+
+                html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">';
+                html += '<div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-2">';
+                html += '<div>';
+                html += '<h5 class="text-xs font-extrabold text-slate-900">' + escapeAnalysisHtml(sub.subName) + '</h5>';
+                html += '<span class="text-[10px] text-slate-500">' + sub.tasksCount + ' tasks • ' + sub.totalDone + ' / ' + sub.totalPossible + ' checks done</span>';
+                html += '</div>';
+                html += '<span class="text-xs font-mono font-extrabold px-2.5 py-0.5 rounded-full border ' + subBadgeCls + '">' + (data.reportsCount > 0 ? (sub.pct + '%') : '0 DWRs') + '</span>';
+                html += '</div>';
+
+                html += '<div class="divide-y divide-slate-100 p-3 space-y-2">';
+                subTasks.forEach(function(t) {
+                    var barColor = data.reportsCount === 0
+                        ? 'bg-slate-300'
+                        : (t.pct >= 80 ? 'bg-emerald-500' : (t.pct >= 50 ? 'bg-amber-500' : 'bg-rose-500'));
+                    var countCls = data.reportsCount === 0
+                        ? 'text-slate-500'
+                        : (t.pct >= 80 ? 'text-emerald-700' : (t.pct >= 50 ? 'text-amber-700' : 'text-rose-700'));
+                    html += '<div class="pt-2 first:pt-0 space-y-1">';
+                    html += '<div class="flex items-start justify-between gap-2 text-xs">';
+                    html += '<span class="text-slate-700 font-medium leading-snug">' + escapeAnalysisHtml(t.taskName) + '</span>';
+                    html += '<div class="flex items-center space-x-1.5 flex-shrink-0 font-mono text-[11px]">';
+                    html += '<span class="font-extrabold ' + countCls + '">' + t.doneCount + 'x</span>';
+                    html += '<span class="text-slate-400">/ ' + data.reportsCount + '</span>';
+                    html += '<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">' + t.pct + '%</span>';
+                    html += '</div></div>';
+                    html += '<div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full transition-all ' + barColor + '" style="width: ' + t.pct + '%;"></div></div>';
+                    html += '</div>';
+                });
+                html += '</div></div>';
+            });
+            html += '</div></div>';
+
+            html += '</div>';
+            container.innerHTML = html;
+
+            // Render Chart.js visualizations (with graceful offline fallback)
+            setTimeout(function() {
+                renderDwrAnalysisCharts(data, flattenedTasks);
+            }, 20);
+        }
+
+        function renderDwrAnalysisCharts(data, flattenedTasks) {
+            if (dwrSubAreaChartInstance) {
+                try { dwrSubAreaChartInstance.destroy(); } catch (e) {}
+                dwrSubAreaChartInstance = null;
+            }
+            if (dwrTaskChartInstance) {
+                try { dwrTaskChartInstance.destroy(); } catch (e) {}
+                dwrTaskChartInstance = null;
+            }
+
+            var subCanvas = document.getElementById('dwrSubAreaComparisonChart');
+            var taskCanvas = document.getElementById('dwrTaskFrequencyChart');
+            if (!subCanvas || !taskCanvas) return;
+
+            var pickColor = function(pct, alpha) {
+                var a = alpha === undefined ? 0.85 : alpha;
+                if (data.reportsCount === 0) return 'rgba(148, 163, 184, ' + a + ')';
+                if (pct >= 80) return 'rgba(16, 185, 129, ' + a + ')';
+                if (pct >= 50) return 'rgba(245, 158, 11, ' + a + ')';
+                return 'rgba(244, 63, 94, ' + a + ')';
+            };
+
+            // Offline fallback if Chart.js CDN is unreachable
+            if (typeof window.Chart === 'undefined') {
+                var subWrap = document.getElementById('dwrSubAreaChartWrapper');
+                if (subWrap) {
+                    subWrap.style.height = 'auto';
+                    subWrap.innerHTML = '<div class="space-y-2">' + data.subAreaStats.map(function(s) {
+                        var barCls = s.pct >= 80 ? 'bg-emerald-500' : (s.pct >= 50 ? 'bg-amber-500' : 'bg-rose-500');
+                        return '<div class="text-xs space-y-1"><div class="flex justify-between font-bold"><span>' + escapeAnalysisHtml(s.subName) + '</span><span>' + s.totalDone + ' done (' + s.pct + '%)</span></div><div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ' + barCls + '" style="width:' + s.pct + '%"></div></div></div>';
+                    }).join('') + '</div>';
+                }
+                var taskWrap = document.getElementById('dwrTaskChartWrapper');
+                if (taskWrap) {
+                    taskWrap.innerHTML = '<p class="text-xs text-slate-500 italic">Interactive charts require internet access for Chart.js. See the full visual progress bars in the Sub-Area Wise Task Breakdown below.</p>';
+                }
+                return;
+            }
+
+            // 1. Sub-Area Bar Chart
+            var isRateMode = dwrAnalysisState.subAreaChartMetric === 'rate';
+            var subLabels = data.subAreaStats.map(function(s) { return s.subName; });
+            var subValues = data.subAreaStats.map(function(s) { return isRateMode ? s.pct : s.totalDone; });
+            var subColors = data.subAreaStats.map(function(s) { return pickColor(s.pct, 0.85); });
+            var subBorders = data.subAreaStats.map(function(s) { return pickColor(s.pct, 1); });
+
+            dwrSubAreaChartInstance = new Chart(subCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: subLabels,
+                    datasets: [{
+                        label: isRateMode ? 'Completion Rate (%)' : 'Total Times Tasks Done',
+                        data: subValues,
+                        backgroundColor: subColors,
+                        borderColor: subBorders,
+                        borderWidth: 1.5,
+                        borderRadius: 8,
+                        maxBarThickness: 54
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: function(evt, elements) {
+                        if (elements && elements.length > 0) {
+                            var clickedSub = data.subAreaStats[elements[0].index];
+                            if (clickedSub) {
+                                setDwrAnalysisSubArea(dwrAnalysisState.subAreaFilter === clickedSub.subName ? 'ALL' : clickedSub.subName);
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    var s = data.subAreaStats[ctx.dataIndex];
+                                    if (!s) return '';
+                                    return [
+                                        'Completion Rate: ' + s.pct + '%',
+                                        'Total Tasks Done: ' + s.totalDone + ' / ' + s.totalPossible,
+                                        'Configured Tasks: ' + s.tasksCount
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: isRateMode ? 100 : undefined,
+                            ticks: {
+                                precision: 0,
+                                callback: function(val) { return isRateMode ? (val + '%') : val; },
+                                font: { size: 11 }
+                            },
+                            grid: { color: 'rgba(226, 232, 240, 0.7)' }
+                        },
+                        x: {
+                            ticks: { font: { size: 11, weight: 'bold' } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // 2. Task-Wise Horizontal Bar Chart
+            var showSubPrefix = dwrAnalysisState.subAreaFilter === 'ALL';
+            var taskLabels = flattenedTasks.map(function(t) {
+                var full = showSubPrefix ? (t.subArea + ' — ' + t.taskName) : t.taskName;
+                return full.length > 52 ? (full.substring(0, 49) + '...') : full;
+            });
+            var taskValues = flattenedTasks.map(function(t) { return t.doneCount; });
+            var taskColors = flattenedTasks.map(function(t) { return pickColor(t.pct, 0.85); });
+            var taskBorders = flattenedTasks.map(function(t) { return pickColor(t.pct, 1); });
+
+            dwrTaskChartInstance = new Chart(taskCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: taskLabels,
+                    datasets: [{
+                        label: 'Times Done',
+                        data: taskValues,
+                        backgroundColor: taskColors,
+                        borderColor: taskBorders,
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        barThickness: 18
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(items) {
+                                    var t = items && items[0] ? flattenedTasks[items[0].dataIndex] : null;
+                                    return t ? (t.subArea + ' — ' + t.taskName) : '';
+                                },
+                                label: function(ctx) {
+                                    var t = flattenedTasks[ctx.dataIndex];
+                                    if (!t) return '';
+                                    return [
+                                        'Done: ' + t.doneCount + ' time(s) out of ' + data.reportsCount + ' DWR(s) (' + t.pct + '%)',
+                                        'Missed: ' + t.missedCount + ' time(s)'
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            suggestedMax: Math.max(1, data.reportsCount),
+                            ticks: { precision: 0, font: { size: 11 } },
+                            title: {
+                                display: true,
+                                text: 'Number of Times Done (out of ' + data.reportsCount + ' DWR reports)',
+                                font: { size: 11, weight: 'bold' },
+                                color: '#475569'
+                            },
+                            grid: { color: 'rgba(226, 232, 240, 0.7)' }
+                        },
+                        y: {
+                            ticks: { font: { size: 11 }, autoSkip: false },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
         }
 
         // ================= SECTION 5B: EXECUTIVE & ADMIN MONTHLY MATRIX TABLE VIEW =================
