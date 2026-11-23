@@ -5871,12 +5871,30 @@
             return 'Completed';
         }
 
-        function getStaffLeaveHistoryList(staffId, staffCode) {
+        function getStaffLeaveHistoryList(staffId, staffCode, staffName) {
             var list = Array.isArray(dbHrLeaves) ? dbHrLeaves : [];
+            var activeStaffList = (dbData && Array.isArray(dbData.hrStaff)) ? dbData.hrStaff : [];
+            var normCode = staffCode ? String(staffCode).trim().toLowerCase() : '';
+            var normName = staffName ? String(staffName).trim().toLowerCase() : '';
             return list.filter(function(lv) {
                 if (!lv || isRecordDeleted(lv.id)) return false;
-                if (staffId && lv.staffId === staffId) return true;
-                if (staffCode && lv.staffCode && String(lv.staffCode).trim().toLowerCase() === String(staffCode).trim().toLowerCase()) return true;
+                // 1. Primary exact match on unique staffId
+                if (staffId && lv.staffId && lv.staffId === staffId) return true;
+                // 2. If this leave record already belongs to another active staff member, never cross-match by shared staffCode
+                if (lv.staffId) {
+                    var ownedByAnotherActiveStaff = activeStaffList.some(function(s) {
+                        return s && !isRecordDeleted(s.id) && s.id === lv.staffId && s.id !== staffId;
+                    });
+                    if (ownedByAnotherActiveStaff) return false;
+                }
+                // 3. Fallback for legacy/orphaned records (e.g. after HR Excel re-import): require staffCode AND name match when available
+                if (normCode && lv.staffCode && String(lv.staffCode).trim().toLowerCase() === normCode) {
+                    var lvNormName = lv.staffName ? String(lv.staffName).trim().toLowerCase() : '';
+                    if (normName && lvNormName) {
+                        return lvNormName === normName;
+                    }
+                    return !lv.staffId;
+                }
                 return false;
             }).sort(function(a, b) {
                 return String(b.fromDate || '').localeCompare(String(a.fromDate || ''));
@@ -5886,7 +5904,7 @@
         function getStaffActiveOrUpcomingLeave(stf) {
             if (!stf) return null;
             var todayIso = getTodayLocalIsoDate();
-            var leaves = getStaffLeaveHistoryList(stf.id, stf.staffCode);
+            var leaves = getStaffLeaveHistoryList(stf.id, stf.staffCode, stf.name);
             var onLeaveRec = null;
             var upcomingRecs = [];
             leaves.forEach(function(lv) {
@@ -5923,7 +5941,7 @@
 
         function renderAdminStaffLeaveHistoryBadge(stf) {
             if (!currentUser || currentUser.role !== 'Administrator' || !stf) return '';
-            var leaves = getStaffLeaveHistoryList(stf.id, stf.staffCode);
+            var leaves = getStaffLeaveHistoryList(stf.id, stf.staffCode, stf.name);
             var totalDays = leaves.reduce(function(acc, lv) {
                 return acc + (calculateLeaveDaysCount(lv.fromDate, lv.toDate) || 0);
             }, 0);
@@ -5948,7 +5966,7 @@
             var upcomingEntries = [];
 
             scopedStaff.forEach(function(stf) {
-                var leaves = getStaffLeaveHistoryList(stf.id, stf.staffCode);
+                var leaves = getStaffLeaveHistoryList(stf.id, stf.staffCode, stf.name);
                 leaves.forEach(function(lv) {
                     var st = getLeaveRecordTemporalStatus(lv, todayIso);
                     if (st === 'On Leave') {
@@ -7095,7 +7113,7 @@
             if (!stf) return;
 
             currentLeaveHistoryStaffId = stf.id;
-            var leaves = getStaffLeaveHistoryList(stf.id, stf.staffCode);
+            var leaves = getStaffLeaveHistoryList(stf.id, stf.staffCode, stf.name);
             var todayIso = getTodayLocalIsoDate();
             var totalDays = leaves.reduce(function(acc, l) {
                 return acc + (calculateLeaveDaysCount(l.fromDate, l.toDate) || 0);
@@ -8396,13 +8414,33 @@
         // ================= SECTION 5B: EXECUTIVE & ADMIN MONTHLY MATRIX TABLE VIEW =================
         function renderExecutiveAdminMonthlyMatrixView(assignedAreas, daysInMonth, monthPrefix, monthName, isAdmin) {
             var todayIso = getTodayLocalIsoDate();
+            var todayDateObj = new Date(todayIso + 'T00:00:00');
+            var yestDateObj = new Date(todayDateObj.getTime());
+            yestDateObj.setDate(yestDateObj.getDate() - 1);
+            var yesterdayIso = yestDateObj.getFullYear() + '-' + String(yestDateObj.getMonth() + 1).padStart(2, '0') + '-' + String(yestDateObj.getDate()).padStart(2, '0');
+            var isViewingCurrentMonth = todayIso.indexOf(monthPrefix) === 0;
             var myEmail = currentUser && currentUser.email ? currentUser.email.toLowerCase().trim() : '';
+
+            var datesToRender = [];
+            var pinnedSet = {};
+            if (isViewingCurrentMonth) {
+                datesToRender.push(todayIso);
+                pinnedSet[todayIso] = true;
+                datesToRender.push(yesterdayIso);
+                pinnedSet[yesterdayIso] = true;
+            }
+            for (var dayIdx = 1; dayIdx <= daysInMonth; dayIdx++) {
+                var dIso = monthPrefix + '-' + String(dayIdx).padStart(2, '0');
+                if (!pinnedSet[dIso]) {
+                    datesToRender.push(dIso);
+                }
+            }
 
             var html = '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
             html += '<div class="px-5 py-3.5 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
             html += '<div>';
             html += '<h4 class="text-sm font-extrabold flex items-center space-x-2"><i class="fa-solid fa-table-cells text-emerald-400"></i><span>Monthly DWR Status Matrix — ' + monthName + '</span></h4>';
-            html += '<p class="text-[11px] text-slate-300 mt-0.5">Columns show each assigned Area. Click any <strong>Filled</strong> or <strong>Saved Draft</strong> hyperlink to open or complete the report.</p>';
+            html += '<p class="text-[11px] text-slate-300 mt-0.5">' + (isViewingCurrentMonth ? '<strong>Today</strong> &amp; <strong>Yesterday</strong> are pinned at the top for quick tracking. ' : '') + 'Click any <strong>Filled</strong> or <strong>Saved Draft</strong> hyperlink to open or complete the report.</p>';
             html += '</div>';
             html += '<span class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-900/90 text-emerald-200 border border-emerald-700 self-start sm:self-auto">' + assignedAreas.length + ' Assigned Area(s)</span>';
             html += '</div>';
@@ -8418,22 +8456,28 @@
             html += '</tr></thead>';
             html += '<tbody class="divide-y divide-slate-200 text-slate-700">';
 
-            for (var day = 1; day <= daysInMonth; day++) {
-                var dateIso = monthPrefix + '-' + String(day).padStart(2, '0');
-                var dateObj = new Date(dwrSelectedYear, dwrSelectedMonth, day);
-                var weekdayShort = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+            for (var rIdx = 0; rIdx < datesToRender.length; rIdx++) {
+                var dateIso = datesToRender[rIdx];
+                var dateObj = new Date(dateIso + 'T00:00:00');
+                var weekdayShort = isNaN(dateObj.getTime()) ? '' : dateObj.toLocaleDateString('en-US', { weekday: 'short' });
                 var isToday = dateIso === todayIso;
+                var isYesterday = dateIso === yesterdayIso;
                 var isPastOrToday = dateIso <= todayIso;
+                var isPinnedBoundary = isViewingCurrentMonth && rIdx === 1;
 
-                var rowBg = isToday ? 'bg-teal-50/60' : 'hover:bg-slate-50/80';
-                html += '<tr class="transition ' + rowBg + '">';
-                html += '<td class="p-2.5 font-mono font-bold text-slate-900 sticky left-0 z-10 border-r border-slate-300 ' + (isToday ? 'bg-teal-100/90' : 'bg-white') + '">';
+                var rowBg = isToday ? 'bg-teal-50/70' : (isYesterday ? 'bg-amber-50/60' : 'hover:bg-slate-50/80');
+                var boundaryBorder = isPinnedBoundary ? ' border-b-2 border-slate-300' : '';
+                html += '<tr class="transition ' + rowBg + boundaryBorder + '">';
+                var stickyBg = isToday ? 'bg-teal-100/90' : (isYesterday ? 'bg-amber-100/90' : 'bg-white');
+                html += '<td class="p-2.5 font-mono font-bold text-slate-900 sticky left-0 z-10 border-r border-slate-300 ' + stickyBg + '">';
                 html += '<div class="flex items-center justify-between space-x-2">';
                 html += '<span>' + dateIso + '</span>';
                 html += '<span class="text-[10px] font-sans px-1.5 py-0.5 rounded ' + (weekdayShort === 'Fri' || weekdayShort === 'Sun' ? 'bg-amber-100 text-amber-800 font-bold' : 'bg-slate-100 text-slate-500') + '">' + weekdayShort + '</span>';
                 html += '</div>';
                 if (isToday) {
                     html += '<span class="text-[9px] font-sans font-extrabold uppercase text-teal-800 block mt-0.5">Today</span>';
+                } else if (isYesterday) {
+                    html += '<span class="text-[9px] font-sans font-extrabold uppercase text-amber-800 block mt-0.5">Yesterday</span>';
                 }
                 html += '</td>';
 
@@ -11046,7 +11090,7 @@
                 : '<span class="text-slate-400">-</span>';
 
             var row = '<tr class="hover:bg-slate-50 transition">';
-            row += '<td class="p-3 font-mono font-semibold text-slate-800 whitespace-nowrap align-top">' + escapePestHtml(rec.date || '') + '</td>';
+            row += '<td class="p-3 font-mono font-semibold text-slate-800 whitespace-nowrap align-top">' + escapePestHtml(rec.date || '') + (rec._unsyncedLocal ? '<span class="block mt-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 text-[9px] font-sans font-bold uppercase w-fit" title="Saved on this device only — pending cloud sync">Pending Sync</span>' : '') + '</td>';
             if (includeAreaCol) {
                 row += '<td class="p-3 font-semibold text-slate-800 whitespace-nowrap align-top"><span class="inline-flex items-center space-x-1"><i class="fa-solid fa-location-dot text-amber-600 text-[10px]"></i><span>' + escapePestHtml(areaLabel) + '</span></span></td>';
             }
@@ -11067,16 +11111,46 @@
             return row;
         }
 
+        function normalizePestAreaName(rawArea, allowedAreas) {
+            var trimmed = String(rawArea || '').trim();
+            if (!trimmed) return '';
+            var lower = trimmed.toLowerCase();
+            var list = Array.isArray(allowedAreas) ? allowedAreas : ALL_AREAS;
+            for (var i = 0; i < list.length; i++) {
+                if (String(list[i]).trim().toLowerCase() === lower) return list[i];
+            }
+            return trimmed;
+        }
+
         function renderPestControlModule(container, actions) {
             var isAdmin = currentUser.role === 'Administrator';
             var isExec = currentUser.role.indexOf('Executive') === 0;
 
             actions.innerHTML = '<button onclick="openPestControlModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5"><i class="fa-solid fa-bug"></i><span>Add Pest Control Treatment</span></button>';
 
-            var visibleAreas = (isAdmin || isExec) ? ALL_AREAS : (currentUser.areas || []);
-            var visibleRecords = dbPestControlRecords.filter(function(r) {
-                return visibleAreas.indexOf(r.area) !== -1;
+            var baseAreas = (isAdmin || isExec) ? ALL_AREAS.slice() : (Array.isArray(currentUser.areas) ? currentUser.areas.slice() : []);
+            var visibleAreas = baseAreas.slice();
+            var visibleRecords = [];
+
+            (dbPestControlRecords || []).forEach(function(r) {
+                if (!r || isRecordDeleted(r.id)) return;
+                var canonicalArea = normalizePestAreaName(r.area, visibleAreas);
+                var inAllowed = visibleAreas.some(function(a) {
+                    return String(a).trim().toLowerCase() === String(canonicalArea).trim().toLowerCase();
+                });
+                if (inAllowed) {
+                    if (r.area !== canonicalArea) r.area = canonicalArea;
+                    visibleRecords.push(r);
+                } else if (isAdmin || isExec) {
+                    // Never silently hide a saved pest control record from Admin/Executives if area label differs
+                    var fallbackArea = canonicalArea || 'Unspecified Area';
+                    if (visibleAreas.indexOf(fallbackArea) === -1) {
+                        visibleAreas.push(fallbackArea);
+                    }
+                    visibleRecords.push(r);
+                }
             });
+            var unsyncedPestCount = visibleRecords.filter(function(r) { return r && r._unsyncedLocal; }).length;
 
             // Compute overview counts across visible records
             var pestTypeCounts = {};
@@ -11117,6 +11191,12 @@
             html += '<div><h3 class="text-base font-bold text-amber-300 flex items-center space-x-2"><i class="fa-solid fa-shield-virus"></i><span>Pest Control Management Overview</span></h3>';
             html += '<p class="text-xs text-amber-200/80 mt-1">Click any overview card option below to view matching treatments first, or browse the complete area-wise log by default.</p></div>';
             html += '<div class="px-3 py-1.5 bg-amber-900/80 rounded-lg border border-amber-700/60 text-xs font-bold text-amber-200 whitespace-nowrap">Total Entries Logged: ' + visibleRecords.length + '</div></div>';
+            if (unsyncedPestCount > 0) {
+                html += '<div class="bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">';
+                html += '<div class="flex items-start space-x-2.5 text-xs text-amber-950"><i class="fa-solid fa-cloud-arrow-up text-amber-600 mt-0.5 text-sm"></i><div><strong>' + unsyncedPestCount + ' Pest Control report(s) saved locally only</strong> and not yet synced to Firestore for other users. Click <strong>Sync Pending Reports</strong> to upload them now.</div></div>';
+                html += '<button type="button" onclick="window.syncPendingPestRecordsNow && window.syncPendingPestRecordsNow()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-sm whitespace-nowrap transition flex items-center space-x-1.5 self-start sm:self-auto"><i class="fa-solid fa-rotate"></i><span>Sync Pending Reports</span></button>';
+                html += '</div>';
+            }
 
             // Clickable Overview Cards (By Pest Type, By Performed By, By Area)
             html += '<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">';
@@ -11466,7 +11546,8 @@
             var doneBy = document.querySelector('input[name="pestDoneBy"]:checked').value;
             var selectedPestTypes = Array.from(document.querySelectorAll('input[name="pestTypeOption"]:checked')).map(function(cb) { return cb.value; });
             var photosArr = currentPestPhotos.slice();
-            var primaryPhoto = photosArr[0] || '';
+            // Do not duplicate raw data: base64 payloads in legacy `photo` field (prevents doubling Firestore doc size)
+            var primaryPhoto = (photosArr[0] && String(photosArr[0]).indexOf('data:') !== 0) ? photosArr[0] : '';
 
             var recordData;
             if (isEditing) {
@@ -11519,15 +11600,20 @@
 
             saveStateToLocalBackup();
 
+            var syncedToCloud = true;
             if (window.savePestRecordToFirestore) {
-                await window.savePestRecordToFirestore(recordData);
+                syncedToCloud = await window.savePestRecordToFirestore(recordData);
             }
 
             submitBtn.disabled = false;
             submitBtn.innerText = 'Save Pest Treatment';
             closeModal('pestControlModal');
             switchModule('pest');
-            showAppNotification(isEditing ? 'Pest control treatment updated!' : 'Pest control treatment saved!', 'success');
+            if (syncedToCloud === false) {
+                showAppNotification('Saved locally only — cloud sync failed. Click "Sync Pending Reports" to retry so Admin & other users can see it.', 'error');
+            } else {
+                showAppNotification(isEditing ? 'Pest control treatment updated & synced!' : 'Pest control treatment saved & synced!', 'success');
+            }
         }
 
         async function deletePestControlRecord(docId) {
@@ -12236,9 +12322,14 @@
 
                 var monthRegularTotal = 0;
                 var monthShreddedTotal = 0;
+                var monthCrateQtyTotal = 0;
                 monthWetLogs.forEach(function(l) {
                     monthRegularTotal += (parseFloat(l.regularQty) || 0);
                     monthShreddedTotal += (parseFloat(l.shreddedQty) || 0);
+                    var allocList = Array.isArray(l.crateAllocations) ? l.crateAllocations : [];
+                    allocList.forEach(function(a) {
+                        monthCrateQtyTotal += (parseFloat(a.qty) || 0);
+                    });
                 });
 
                 var monthCompostTotal = 0;
@@ -12249,18 +12340,24 @@
                 var selectedMonthLabel = new Date(parseInt(compostSelectedYear), parseInt(compostSelectedMonth) - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
                 // Monthly Overview Cards
-                html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
+                html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">';
 
                 html += '<div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm">';
-                html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Regular Wet Waste Total (' + selectedMonthLabel + ')</span>';
+                html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Regular Wet Waste (' + selectedMonthLabel + ')</span>';
                 html += '<div class="text-xl font-extrabold text-emerald-700 font-mono mt-1">' + formatIndianNumber(monthRegularTotal, 1) + ' kg</div>';
                 html += '<span class="text-[11px] text-slate-400">Initial wet waste measured before shredding</span>';
                 html += '</div>';
 
                 html += '<div class="bg-white p-4 rounded-xl border border-teal-200 shadow-sm">';
-                html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Shredded Wet Waste Total (' + selectedMonthLabel + ')</span>';
+                html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Shredded Wet Waste (' + selectedMonthLabel + ')</span>';
                 html += '<div class="text-xl font-extrabold text-teal-700 font-mono mt-1">' + formatIndianNumber(monthShreddedTotal, 1) + ' kg</div>';
-                html += '<span class="text-[11px] text-slate-400">Shredded from regular waste &amp; put into crates</span>';
+                html += '<span class="text-[11px] text-slate-400">Shredded wet waste prior to mixing</span>';
+                html += '</div>';
+
+                html += '<div class="bg-white p-4 rounded-xl border border-indigo-200 shadow-sm">';
+                html += '<span class="text-[11px] font-bold uppercase text-slate-500 block">Qty in Crates (' + selectedMonthLabel + ')</span>';
+                html += '<div class="text-xl font-extrabold text-indigo-700 font-mono mt-1">' + formatIndianNumber(monthCrateQtyTotal, 1) + ' kg</div>';
+                html += '<span class="text-[11px] text-slate-400">Loaded in crates (incl. cocopeat &amp; sawdust)</span>';
                 html += '</div>';
 
                 html += '<div class="bg-white p-4 rounded-xl border border-amber-200 shadow-sm">';
@@ -12281,6 +12378,7 @@
                         date: dateKey,
                         regularQty: 0,
                         shreddedQty: 0,
+                        crateQty: 0,
                         wetCrates: [],
                         compostTotalQty: 0,
                         compostCrates: [],
@@ -12292,7 +12390,7 @@
                 monthWetLogs.forEach(function(log) {
                     var dKey = log.date;
                     if (!dailyMap[dKey]) {
-                        dailyMap[dKey] = { date: dKey, regularQty: 0, shreddedQty: 0, wetCrates: [], compostTotalQty: 0, compostCrates: [], wetLogIds: [], compostLogIds: [] };
+                        dailyMap[dKey] = { date: dKey, regularQty: 0, shreddedQty: 0, crateQty: 0, wetCrates: [], compostTotalQty: 0, compostCrates: [], wetLogIds: [], compostLogIds: [] };
                     }
                     var reg = parseFloat(log.regularQty) || 0;
                     var shr = parseFloat(log.shreddedQty) || 0;
@@ -12302,6 +12400,8 @@
 
                     var allocs = Array.isArray(log.crateAllocations) ? log.crateAllocations : [];
                     allocs.forEach(function(a) {
+                        var aQty = parseFloat(a.qty) || 0;
+                        dailyMap[dKey].crateQty += aQty;
                         if (a.crateNumber && dailyMap[dKey].wetCrates.indexOf(a.crateNumber) === -1) {
                             dailyMap[dKey].wetCrates.push(a.crateNumber);
                         }
@@ -12318,7 +12418,7 @@
                 monthCompostLogs.forEach(function(cLog) {
                     var dKey = cLog.date;
                     if (!dailyMap[dKey]) {
-                        dailyMap[dKey] = { date: dKey, regularQty: 0, shreddedQty: 0, wetCrates: [], compostTotalQty: 0, compostCrates: [], wetLogIds: [], compostLogIds: [] };
+                        dailyMap[dKey] = { date: dKey, regularQty: 0, shreddedQty: 0, crateQty: 0, wetCrates: [], compostTotalQty: 0, compostCrates: [], wetLogIds: [], compostLogIds: [] };
                     }
                     var cQty = parseFloat(cLog.compostQty) || 0;
                     dailyMap[dKey].compostTotalQty += cQty;
@@ -12330,28 +12430,29 @@
 
                 var allMonthDates = Object.keys(dailyMap).sort();
                 var activeDates = allMonthDates.filter(function(k) {
-                    return dailyMap[k].regularQty > 0 || dailyMap[k].shreddedQty > 0 || dailyMap[k].compostTotalQty > 0;
+                    return dailyMap[k].regularQty > 0 || dailyMap[k].shreddedQty > 0 || dailyMap[k].crateQty > 0 || dailyMap[k].compostTotalQty > 0;
                 });
                 var rowsToRender = (compostDailyShowAllDays || activeDates.length === 0) ? allMonthDates : activeDates;
 
                 html += '<div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">';
                 html += '<div class="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">';
                 html += '<div><h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider">Daily Breakdown — ' + selectedMonthLabel + '</h4>';
-                html += '<p class="text-[11px] text-slate-500">Regular wet waste intake, shredded waste put into crates, and compost harvested</p></div>';
+                html += '<p class="text-[11px] text-slate-500">Regular wet waste, shredded wet waste, total qty loaded in crates (with cocopeat &amp; sawdust), and compost harvested</p></div>';
                 html += '<span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">' + activeDates.length + ' Active Days in ' + selectedMonthLabel + '</span>';
                 html += '</div>';
 
                 html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
                 html += '<th class="p-3">Date</th>';
                 html += '<th class="p-3">Regular Wet Waste (kg)</th>';
-                html += '<th class="p-3">Shredded Wet Waste Added (with Crates)</th>';
+                html += '<th class="p-3">Shredded Wet Waste (kg)</th>';
+                html += '<th class="p-3">Qty in Crates (kg)</th>';
                 html += '<th class="p-3">Compost Added (with Source Crates)</th>';
                 if (isAdmin || isExec) html += '<th class="p-3 text-center">Actions</th>';
                 html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
                 rowsToRender.forEach(function(dateKey) {
                     var row = dailyMap[dateKey];
-                    var hasActivity = row.regularQty > 0 || row.shreddedQty > 0 || row.compostTotalQty > 0;
+                    var hasActivity = row.regularQty > 0 || row.shreddedQty > 0 || row.crateQty > 0 || row.compostTotalQty > 0;
                     var dateObj = new Date(dateKey + 'T00:00:00');
                     var dayLabel = isNaN(dateObj.getTime()) ? '' : dateObj.toLocaleDateString('en-US', { weekday: 'short' });
 
@@ -12359,10 +12460,14 @@
                         ? '<span class="font-mono font-bold text-slate-800">' + row.regularQty.toFixed(1) + ' kg</span>'
                         : '<span class="text-slate-400">-</span>';
 
-                    var wetCrateStr = row.wetCrates.length > 0 ? ' (' + row.wetCrates.sort().join(', ') + ')' : '';
                     var shreddedDisplay = row.shreddedQty > 0
-                        ? '<span class="font-mono font-bold text-teal-700">' + row.shreddedQty.toFixed(1) + ' kg</span><span class="font-mono text-slate-600 font-semibold">' + wetCrateStr + '</span>'
+                        ? '<span class="font-mono font-bold text-teal-700">' + row.shreddedQty.toFixed(1) + ' kg</span>'
                         : '<span class="text-slate-400">-</span>';
+
+                    var wetCrateStr = row.wetCrates.length > 0 ? ' (' + row.wetCrates.sort().join(', ') + ')' : '';
+                    var crateQtyDisplay = row.crateQty > 0
+                        ? '<span class="font-mono font-bold text-indigo-700">' + row.crateQty.toFixed(1) + ' kg</span><span class="font-mono text-slate-600 font-semibold">' + wetCrateStr + '</span>'
+                        : (row.wetCrates.length > 0 ? '<span class="font-mono text-slate-600 font-semibold">' + wetCrateStr.trim() + '</span>' : '<span class="text-slate-400">-</span>');
 
                     var compostCrateStr = row.compostCrates.length > 0 ? ' (' + row.compostCrates.sort().join(', ') + ')' : '';
                     var compostDisplay = row.compostTotalQty > 0
@@ -12373,6 +12478,7 @@
                     html += '<td class="p-3 font-mono font-semibold text-slate-800 whitespace-nowrap">' + dateKey + ' <span class="text-[10px] font-sans text-slate-400 ml-1">' + dayLabel + '</span></td>';
                     html += '<td class="p-3">' + regDisplay + '</td>';
                     html += '<td class="p-3">' + shreddedDisplay + '</td>';
+                    html += '<td class="p-3">' + crateQtyDisplay + '</td>';
                     html += '<td class="p-3">' + compostDisplay + '</td>';
                     if (isAdmin || isExec) {
                         html += '<td class="p-3 text-center">';
@@ -18871,11 +18977,15 @@
                     reportTitle = "Siyanat Marol - Compost Crates (C-01 to C-90) Status";
                 } else {
                     dbWetWasteLogs.forEach(function(l) {
+                        var crateSum = (Array.isArray(l.crateAllocations) ? l.crateAllocations : []).reduce(function(acc, a) {
+                            return acc + (parseFloat(a.qty) || 0);
+                        }, 0);
                         exportRows.push({
                             'Date': l.date,
                             'Entry Type': 'Wet Waste & Shredding',
                             'Regular Wet Waste (kg)': (parseFloat(l.regularQty) || 0).toFixed(1),
                             'Shredded Wet Waste (kg)': (parseFloat(l.shreddedQty) || 0).toFixed(1),
+                            'Qty in Crates (kg)': crateSum > 0 ? crateSum.toFixed(1) : '-',
                             'Compost Generated (kg)': '-',
                             'Crates': Array.isArray(l.crateNumbers) ? l.crateNumbers.join(', ') : ''
                         });
@@ -18886,6 +18996,7 @@
                             'Entry Type': 'Compost Generated',
                             'Regular Wet Waste (kg)': '-',
                             'Shredded Wet Waste (kg)': '-',
+                            'Qty in Crates (kg)': '-',
                             'Compost Generated (kg)': (parseFloat(c.compostQty) || 0).toFixed(1),
                             'Crates': c.crateNumber || ''
                         });
@@ -19529,9 +19640,12 @@
         }
 
         function handleWriteError(contextLabel, err) {
+            console.error("Firestore write error [" + contextLabel + "]:", err);
             saveStateToLocalBackup();
             if (err && err.code === "permission-denied") {
                 setCloudSyncIndicator('warning', 'Saved Locally (Refreshing Cloud Auth)');
+            } else {
+                setCloudSyncIndicator('warning', 'Saved Locally (Cloud Sync Pending)');
             }
         }
 
@@ -19608,6 +19722,16 @@
                             window.scheduleActiveModuleRender("cleaning", false);
                         }
                     }
+                }
+                const pestSnap = await getDocs(collection(db, "pest_control"));
+                const cloudPest = [];
+                pestSnap.forEach((d) => {
+                    cloudPest.push({ id: d.id, ...d.data() });
+                });
+                window.dbPestControlRecords = mergeCollectionWithLocal(cloudPest, window.dbPestControlRecords, 'id');
+                saveStateToLocalBackup();
+                if (window.activeModule === "pest" && typeof window.scheduleActiveModuleRender === "function") {
+                    window.scheduleActiveModuleRender("pest", false);
                 }
             } catch (e) {}
         };
@@ -20721,18 +20845,86 @@
             }
         };
 
+        async function offloadLargeInlineMediaForFirestore(recordObj, subFolderLabel) {
+            if (!recordObj || typeof recordObj !== 'object') return recordObj;
+            // Remove duplicate inline base64 from legacy single `photo` field when `photos` array is present
+            if (Array.isArray(recordObj.photos) && recordObj.photos.length > 0 && typeof recordObj.photo === 'string' && recordObj.photo.indexOf('data:') === 0) {
+                recordObj.photo = '';
+            }
+            const needsOffload = (val) => typeof val === 'string' && val.indexOf('data:') === 0 && val.length > 40000;
+            const offloadOne = async (dataUrl, idx) => {
+                const mimeMatch = dataUrl.match(/^data:([^;]+);/);
+                const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+                const mediaId = 'MEDIA-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 7);
+                if (typeof dbMediaCache === 'object' && dbMediaCache) {
+                    dbMediaCache[mediaId] = dataUrl;
+                    if (typeof saveMediaCacheToLocalBackup === 'function') saveMediaCacheToLocalBackup();
+                }
+                if (typeof window.saveChunkedMediaToFirestore === 'function') {
+                    await window.saveChunkedMediaToFirestore(mediaId, dataUrl, (subFolderLabel || 'PestControl') + '_' + idx, mimeType, subFolderLabel || 'PestControl');
+                }
+                return 'media-ref://' + mediaId;
+            };
+            if (Array.isArray(recordObj.photos)) {
+                let totalInlineLen = 0;
+                recordObj.photos.forEach((p) => { if (typeof p === 'string' && p.indexOf('data:') === 0) totalInlineLen += p.length; });
+                if (totalInlineLen > 200000) {
+                    for (let i = 0; i < recordObj.photos.length; i++) {
+                        if (needsOffload(recordObj.photos[i])) {
+                            recordObj.photos[i] = await offloadOne(recordObj.photos[i], i);
+                        }
+                    }
+                }
+            }
+            if (needsOffload(recordObj.photo)) {
+                recordObj.photo = await offloadOne(recordObj.photo, 'primary');
+            }
+            return recordObj;
+        }
+
         window.savePestRecordToFirestore = async function(data) {
-            if (!data) return;
+            if (!data) return false;
             data._unsyncedLocal = true;
             saveStateToLocalBackup();
             try {
                 await window.ensureFirebaseAuthSession();
                 const docId = data.id || ("PST-" + Date.now());
                 data.id = docId;
+                await offloadLargeInlineMediaForFirestore(data, 'PestControl');
                 await setDoc(doc(db, "pest_control", docId), sanitizeForFirestore(data), { merge: true });
                 data._unsyncedLocal = false;
+                delete data._syncError;
+                saveStateToLocalBackup();
+                setCloudSyncIndicator('connected', 'Firestore & fm.marol Drive');
+                return true;
             } catch (err) {
+                data._syncError = (err && err.message) ? err.message : String(err);
                 handleWriteError("pest_control", err);
+                return false;
+            }
+        };
+
+        window.syncPendingPestRecordsNow = async function() {
+            const list = Array.isArray(window.dbPestControlRecords) ? window.dbPestControlRecords : [];
+            const pending = list.filter((r) => r && r._unsyncedLocal && !isRecordDeleted(r.id));
+            if (pending.length === 0) {
+                showAppNotification('All Pest Control reports are already synced to Firestore.', 'info');
+                return;
+            }
+            showAppNotification('Syncing ' + pending.length + ' pending Pest Control report(s)...', 'info');
+            let okCount = 0;
+            let failCount = 0;
+            for (const rec of pending) {
+                const ok = await window.savePestRecordToFirestore(rec);
+                if (ok) okCount++; else failCount++;
+            }
+            if (window.activeModule === 'pest') {
+                switchModule('pest');
+            }
+            if (failCount === 0) {
+                showAppNotification('Synced ' + okCount + ' Pest Control report(s) to Firestore! Now visible to Admin & all users.', 'success');
+            } else {
+                showAppNotification('Synced ' + okCount + ', failed ' + failCount + ' report(s). Please check connection/rules.', 'error');
             }
         };
 
@@ -21395,14 +21587,27 @@
                 // Only sync records explicitly marked _unsyncedLocal during this session.
                 const syncUnsyncedList = async (colName, arr, keyField) => {
                     if (!Array.isArray(arr)) return;
+                    let didSyncAny = false;
                     for (const item of arr) {
                         if (item && item._unsyncedLocal) {
                             const docId = item[keyField || 'id'] || item.id;
                             if (docId && !isRecordDeleted(docId)) {
-                                await setDoc(doc(db, colName, docId), sanitizeForFirestore(item), { merge: true });
-                                item._unsyncedLocal = false;
+                                try {
+                                    if (colName === 'pest_control') {
+                                        await offloadLargeInlineMediaForFirestore(item, 'PestControl');
+                                    }
+                                    await setDoc(doc(db, colName, docId), sanitizeForFirestore(item), { merge: true });
+                                    item._unsyncedLocal = false;
+                                    delete item._syncError;
+                                    didSyncAny = true;
+                                } catch (itemErr) {
+                                    console.warn("Auto-sync item failed [" + colName + "/" + docId + "]:", itemErr && itemErr.message ? itemErr.message : itemErr);
+                                }
                             }
                         }
+                    }
+                    if (didSyncAny) {
+                        saveStateToLocalBackup();
                     }
                 };
                 if (window.dbData) {
