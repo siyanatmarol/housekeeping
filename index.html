@@ -10616,9 +10616,13 @@
                 }
             }
 
-            // Group completed tasks by Sub-area for clean presentation
-            var groupedTasks = {};
+            // Build full sub-area task status list (Done with green tick vs Not Done with red cross)
+            var areaKeyForModal = rep.area || rep.block || '';
+            var configuredSubAreasMap = getScopeSubAreasForArea(areaKeyForModal);
+            var configuredOrderForModal = getOrderedSubAreaKeys(areaKeyForModal);
             var completedArr = Array.isArray(rep.tasksCompleted) ? rep.tasksCompleted : [];
+
+            var groupedCompletedExtra = {};
             completedArr.forEach(function(itemStr) {
                 var str = String(itemStr || '');
                 var sub = 'Completed Tasks';
@@ -10632,49 +10636,103 @@
                     sub = parts2[0].trim();
                     tName = parts2.slice(1).join(': ').trim();
                 }
-                if (!groupedTasks[sub]) groupedTasks[sub] = [];
-                groupedTasks[sub].push(tName);
+                if (!groupedCompletedExtra[sub]) groupedCompletedExtra[sub] = [];
+                if (groupedCompletedExtra[sub].indexOf(tName) === -1) {
+                    groupedCompletedExtra[sub].push(tName);
+                }
             });
 
-            var photosArr = Array.isArray(rep.photoURLs) ? rep.photoURLs : [];
-            var commentsArr = Array.isArray(rep.comments) ? rep.comments : [];
-
-            var html = '';
-
-            // 1. Checked Tasks Section
-            html += '<div class="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">';
-            html += '<div class="flex items-center justify-between border-b border-slate-200 pb-2.5">';
-            html += '<h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center space-x-2"><i class="fa-solid fa-list-check text-emerald-600"></i><span>Completed Checklist Tasks (' + completedArr.length + ')</span></h4>';
-            html += '<span class="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">Verified Response</span>';
-            html += '</div>';
-
             var orderedModalSubNames = [];
-            var configuredOrderForModal = getOrderedSubAreaKeys(rep.area || rep.block || '');
             configuredOrderForModal.forEach(function(sk) {
-                if (groupedTasks[sk] && orderedModalSubNames.indexOf(sk) === -1) {
+                if (!isReservedScopeMetadataKey(sk) && orderedModalSubNames.indexOf(sk) === -1) {
                     orderedModalSubNames.push(sk);
                 }
             });
-            Object.keys(groupedTasks).forEach(function(sk) {
+            Object.keys(groupedCompletedExtra).forEach(function(sk) {
                 if (!isReservedScopeMetadataKey(sk) && orderedModalSubNames.indexOf(sk) === -1) {
                     orderedModalSubNames.push(sk);
                 }
             });
 
-            if (orderedModalSubNames.length === 0) {
-                html += '<p class="text-xs text-slate-400 italic">No checklist tasks recorded in this report.</p>';
+            var subAreaTaskEntries = [];
+            var totalDoneCount = 0;
+            var totalNotDoneCount = 0;
+
+            orderedModalSubNames.forEach(function(subName) {
+                var configuredTasks = Array.isArray(configuredSubAreasMap[subName]) ? configuredSubAreasMap[subName] : [];
+                var items = [];
+                var seenNormalized = {};
+
+                configuredTasks.forEach(function(taskName) {
+                    var isDone = isTaskMarkedCompleted(completedArr, subName, taskName);
+                    items.push({ name: taskName, done: isDone });
+                    seenNormalized[String(taskName).trim().toLowerCase()] = true;
+                    if (isDone) totalDoneCount++; else totalNotDoneCount++;
+                });
+
+                // Include any legacy/custom completed tasks recorded in this report that are no longer in the current Scope of Work
+                var extraCompleted = Array.isArray(groupedCompletedExtra[subName]) ? groupedCompletedExtra[subName] : [];
+                extraCompleted.forEach(function(extraName) {
+                    var norm = String(extraName).trim().toLowerCase();
+                    if (norm && !seenNormalized[norm]) {
+                        items.push({ name: extraName, done: true });
+                        seenNormalized[norm] = true;
+                        totalDoneCount++;
+                    }
+                });
+
+                if (items.length > 0) {
+                    var subDone = items.filter(function(it) { return it.done; }).length;
+                    var subNotDone = items.length - subDone;
+                    subAreaTaskEntries.push({
+                        subName: subName,
+                        items: items,
+                        doneCount: subDone,
+                        notDoneCount: subNotDone
+                    });
+                }
+            });
+
+            var totalTasksCount = totalDoneCount + totalNotDoneCount;
+            var photosArr = Array.isArray(rep.photoURLs) ? rep.photoURLs : [];
+            var commentsArr = Array.isArray(rep.comments) ? rep.comments : [];
+
+            var html = '';
+
+            // 1. Complete Checklist Tasks Section (Done = Green Tick, Not Done = Red Cross)
+            html += '<div class="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">';
+            html += '<div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2.5">';
+            html += '<h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center space-x-2"><i class="fa-solid fa-list-check text-emerald-600"></i><span>Checklist Tasks (' + totalDoneCount + ' / ' + totalTasksCount + ' Done)</span></h4>';
+            html += '<div class="flex flex-wrap items-center gap-1.5">';
+            html += '<span class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-flex items-center space-x-1"><i class="fa-solid fa-check text-[10px]"></i><span>' + totalDoneCount + ' Done</span></span>';
+            html += '<span class="text-[11px] font-bold ' + (totalNotDoneCount > 0 ? 'text-rose-700 bg-rose-100 border-rose-200' : 'text-slate-500 bg-slate-100 border-slate-200') + ' px-2.5 py-0.5 rounded-full border inline-flex items-center space-x-1"><i class="fa-solid fa-xmark text-[10px]"></i><span>' + totalNotDoneCount + ' Not Done</span></span>';
+            html += '<span class="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">' + (isRepDraft ? 'Saved Draft' : 'Verified Response') + '</span>';
+            html += '</div>';
+            html += '</div>';
+
+            if (subAreaTaskEntries.length === 0) {
+                html += '<p class="text-xs text-slate-400 italic">No checklist tasks configured or recorded for this report.</p>';
             } else {
                 html += '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">';
-                orderedModalSubNames.forEach(function(subName) {
-                    var tList = groupedTasks[subName];
-                    html += '<div class="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-1.5">';
-                    html += '<div class="flex items-center justify-between border-b border-slate-100 pb-1">';
-                    html += '<span class="font-extrabold text-xs text-teal-900">' + subName + '</span>';
-                    html += '<span class="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">' + tList.length + ' done</span>';
+                subAreaTaskEntries.forEach(function(entry) {
+                    var cardBorderCls = entry.notDoneCount > 0 && entry.doneCount === 0 ? 'border-rose-200' : 'border-slate-200';
+                    html += '<div class="bg-white p-3 rounded-lg border ' + cardBorderCls + ' shadow-2xs space-y-1.5">';
+                    html += '<div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">';
+                    html += '<span class="font-extrabold text-xs text-teal-900">' + entry.subName + '</span>';
+                    html += '<div class="flex items-center space-x-1 flex-shrink-0">';
+                    html += '<span class="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">' + entry.doneCount + ' done</span>';
+                    if (entry.notDoneCount > 0) {
+                        html += '<span class="text-[10px] font-mono font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">' + entry.notDoneCount + ' not done</span>';
+                    }
+                    html += '</div>';
                     html += '</div>';
                     html += '<ul class="space-y-1 pt-1">';
-                    tList.forEach(function(t) {
-                        html += '<li class="text-xs text-slate-700 flex items-start space-x-2"><i class="fa-solid fa-check text-emerald-600 mt-0.5 text-[11px] flex-shrink-0"></i><span>' + t + '</span></li>';
+                    entry.items.forEach(function(item) {
+                        if (item.done) {
+                            html += '<li class="text-xs text-slate-700 flex items-start space-x-2"><i class="fa-solid fa-check text-emerald-600 mt-0.5 text-[11px] flex-shrink-0" title="Done"></i><span>' + item.name + '</span></li>';
+                        } else {
+                            html += '<li class="text-xs text-rose-700 font-medium flex items-start space-x-2"><i class="fa-solid fa-xmark text-rose-600 mt-0.5 text-[11px] flex-shrink-0" title="Not Done"></i><span>' + item.name + '</span></li>';
+                        }
                     });
                     html += '</ul></div>';
                 });
