@@ -373,7 +373,16 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Gender</label>
+                        <select id="hrGender" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
+                            <option value="">Not Specified</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Contact Number</label>
                         <input type="tel" id="hrContact" required placeholder="+91 9876543210" class="w-full text-xs px-2.5 py-2 rounded-lg border border-slate-300">
@@ -4336,6 +4345,7 @@
                                             var cl = cleanKey(hCell);
                                             if (cl.indexOf('staffid') !== -1 || cl === 'id' || cl.indexOf('empid') !== -1 || cl === 'code') colMap.staffId = cPos;
                                             else if (cl.indexOf('fullname') !== -1 || cl === 'name' || cl.indexOf('staffname') !== -1) colMap.name = cPos;
+                                            else if (cl.indexOf('gender') !== -1 || cl === 'sex') colMap.gender = cPos;
                                             else if (cl.indexOf('role') !== -1 || cl.indexOf('designation') !== -1 || cl.indexOf('position') !== -1) colMap.role = cPos;
                                             else if (cl.indexOf('contact') !== -1 || cl.indexOf('phone') !== -1 || cl.indexOf('mobile') !== -1) colMap.contact = cPos;
                                             else if (cl.indexOf('locker') !== -1) colMap.locker = cPos;
@@ -4359,6 +4369,14 @@
                                         if (!stfId && !stfName) continue;
                                         if (stfName.toLowerCase() === 'full name' || stfId.toLowerCase() === 'staff id') continue;
 
+                                        var stfGenderRaw = getVal('gender');
+                                        var stfGenderNorm = (function(g) {
+                                            var gl = String(g || '').trim().toLowerCase();
+                                            if (gl === 'm' || gl === 'male') return 'Male';
+                                            if (gl === 'f' || gl === 'female') return 'Female';
+                                            if (gl === 'other' || gl === 'o') return 'Other';
+                                            return String(g || '').trim();
+                                        })(stfGenderRaw);
                                         var stfRoleRaw = getVal('role');
                                         var stfContact = getVal('contact');
                                         var stfLocker = getVal('locker');
@@ -4384,6 +4402,7 @@
                                             id: 'STF-' + Date.now() + '-' + parsedStaffList.length,
                                             staffCode: stfId || ('STF-' + (parsedStaffList.length + 101)),
                                             name: stfName || 'Staff Member',
+                                            gender: stfGenderNorm,
                                             role: normalizedRole,
                                             area: targetArea,
                                             contact: cleanContact || '',
@@ -4417,6 +4436,14 @@
                                     var stfName = getFlexValueFromObj(r, ['Full Name', 'Name', 'Staff Name', 'Employee Name']);
                                     if (!stfId && !stfName) return;
 
+                                    var stfGenderRaw = getFlexValueFromObj(r, ['Gender', 'Sex', 'M/F']);
+                                    var stfGenderNorm = (function(g) {
+                                        var gl = String(g || '').trim().toLowerCase();
+                                        if (gl === 'm' || gl === 'male') return 'Male';
+                                        if (gl === 'f' || gl === 'female') return 'Female';
+                                        if (gl === 'other' || gl === 'o') return 'Other';
+                                        return String(g || '').trim();
+                                    })(stfGenderRaw);
                                     var stfRoleRaw = getFlexValueFromObj(r, ['Role / Designation', 'Role/Designation', 'Role', 'Designation', 'Position', 'Role Level']);
                                     var stfContact = getFlexValueFromObj(r, ['Contact Number', 'Contact No', 'Contact', 'Phone Number', 'Phone', 'Mobile Number', 'Mobile']);
                                     var stfLocker = getFlexValueFromObj(r, ['Locker Number', 'Locker No', 'Locker', 'Locker #']);
@@ -4442,6 +4469,7 @@
                                         id: 'STF-' + Date.now() + '-' + parsedStaffList.length,
                                         staffCode: stfId || ('STF-' + (parsedStaffList.length + 101)),
                                         name: stfName || 'Staff Member',
+                                        gender: stfGenderNorm,
                                         role: normalizedRole,
                                         area: targetArea,
                                         contact: cleanContact || '',
@@ -6008,7 +6036,7 @@
                 html += '<div class="border border-slate-200 rounded-xl overflow-hidden">';
                 html += '<div class="bg-slate-50 px-3.5 py-2 border-b border-slate-200 flex items-center justify-between"><span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider"><i class="fa-solid fa-list-check text-emerald-600 mr-1.5"></i>Active &amp; Upcoming Leave Schedule (' + combinedActiveUpcoming.length + ')</span></div>';
                 html += '<div class="overflow-x-auto custom-scrollbar max-h-60"><table class="w-full text-left text-xs whitespace-nowrap"><thead class="bg-slate-100/80 text-slate-600 uppercase text-[10px] font-bold border-b border-slate-200"><tr>';
-                html += '<th class="p-2.5">Employee Name</th><th class="p-2.5">Staff ID</th><th class="p-2.5">Area</th><th class="p-2.5">Leave Status &amp; Dates</th><th class="p-2.5">Days</th><th class="p-2.5">Reason</th>';
+                html += '<th class="p-2.5">Employee Name</th><th class="p-2.5">Staff ID</th><th class="p-2.5">Gender</th><th class="p-2.5">Area</th><th class="p-2.5">Leave Status &amp; Dates</th><th class="p-2.5">Days</th><th class="p-2.5">Reason</th>';
                 if (isAdmin) html += '<th class="p-2.5 text-center">Admin Actions</th>';
                 html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
@@ -6023,6 +6051,7 @@
                     html += '<tr class="hover:bg-slate-50/80">';
                     html += '<td class="p-2.5 font-bold text-slate-900"><div class="flex items-center space-x-1.5"><span>' + stf.name + '</span>' + (isAdmin ? renderAdminStaffLeaveHistoryBadge(stf) : '') + '</div></td>';
                     html += '<td class="p-2.5 font-mono font-bold text-slate-700">' + stf.staffCode + '</td>';
+                    html += '<td class="p-2.5">' + renderHrGenderBadge(stf.gender) + '</td>';
                     html += '<td class="p-2.5 font-semibold text-slate-600">' + stf.area + '</td>';
                     html += '<td class="p-2.5">' + badgeHtml + '</td>';
                     html += '<td class="p-2.5 font-mono font-bold text-slate-800">' + days + (days === 1 ? ' Day' : ' Days') + '</td>';
@@ -6236,18 +6265,32 @@
             openModal('outsourcedModal');
         }
 
+        function renderHrGenderBadge(genderVal) {
+            var g = String(genderVal || '').trim();
+            if (!g) return '<span class="text-slate-400 text-[11px]">-</span>';
+            var gl = g.toLowerCase();
+            if (gl === 'male' || gl === 'm') {
+                return '<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200"><i class="fa-solid fa-mars text-[9px]"></i><span>Male</span></span>';
+            }
+            if (gl === 'female' || gl === 'f') {
+                return '<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-50 text-pink-700 border border-pink-200"><i class="fa-solid fa-venus text-[9px]"></i><span>Female</span></span>';
+            }
+            return '<span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-50 text-violet-700 border border-violet-200"><span>' + g + '</span></span>';
+        }
+
         function openUniformStatusModal() {
             var modalBody = document.getElementById('uniformStatusModalBody');
             var inHouseStaff = dbData.hrStaff.filter(s => s.category !== 'United' && s.category !== 'Dynamic');
 
             var html = '<table class="w-full text-left text-xs"><thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
-            html += '<th class="p-3">Staff ID</th><th class="p-3">Name</th><th class="p-3">Area</th><th class="p-3">Category</th><th class="p-3">Uniform Issued</th><th class="p-3">Uniform Date</th></tr></thead>';
+            html += '<th class="p-3">Staff ID</th><th class="p-3">Name</th><th class="p-3">Gender</th><th class="p-3">Area</th><th class="p-3">Category</th><th class="p-3">Uniform Issued</th><th class="p-3">Uniform Date</th></tr></thead>';
             html += '<tbody class="divide-y divide-slate-100 text-slate-700">';
 
             inHouseStaff.forEach(function(stf) {
                 var uniformBadge = stf.uniformIssued === 'Yes' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-red-100 text-red-800 border-red-300';
                 html += '<tr class="hover:bg-slate-50"><td class="p-3 font-mono font-bold text-slate-800">' + stf.staffCode + '</td>';
                 html += '<td class="p-3 font-bold text-slate-900">' + stf.name + '</td>';
+                html += '<td class="p-3">' + renderHrGenderBadge(stf.gender) + '</td>';
                 html += '<td class="p-3 font-semibold text-slate-600">' + stf.area + '</td>';
                 html += '<td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-100 border text-[10px] font-medium">' + stf.category + '</span></td>';
                 html += '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + uniformBadge + '">' + stf.uniformIssued + '</span></td>';
@@ -6261,12 +6304,12 @@
 
         function renderMiniStaffListTable(list) {
             if (list.length === 0) return '<div class="p-4 text-xs text-slate-400 italic text-center">No staff found for this vendor.</div>';
-            var html = '<table class="w-full text-left text-xs"><thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200"><tr><th class="p-2.5">Staff ID</th><th class="p-2.5">Name</th><th class="p-2.5">Assigned Area</th><th class="p-2.5">Contact</th></tr></thead><tbody class="divide-y divide-slate-100">';
+            var html = '<table class="w-full text-left text-xs"><thead class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200"><tr><th class="p-2.5">Staff ID</th><th class="p-2.5">Name</th><th class="p-2.5">Gender</th><th class="p-2.5">Assigned Area</th><th class="p-2.5">Contact</th></tr></thead><tbody class="divide-y divide-slate-100">';
             list.forEach(function(s) {
                 var lvBadge = renderStaffLeaveStatusBadge(s);
                 var histBadge = renderAdminStaffLeaveHistoryBadge(s);
                 var badgesWrap = (lvBadge || histBadge) ? '<div class="flex items-center flex-wrap gap-1 mt-0.5">' + lvBadge + histBadge + '</div>' : '';
-                html += '<tr><td class="p-2.5 font-mono font-bold text-slate-800">' + s.staffCode + '</td><td class="p-2.5 font-bold text-slate-900"><div>' + s.name + '</div>' + badgesWrap + '</td><td class="p-2.5 text-slate-700 font-semibold">' + s.area + '</td><td class="p-2.5 text-slate-500">' + s.contact + '</td></tr>';
+                html += '<tr><td class="p-2.5 font-mono font-bold text-slate-800">' + s.staffCode + '</td><td class="p-2.5 font-bold text-slate-900"><div>' + s.name + '</div>' + badgesWrap + '</td><td class="p-2.5">' + renderHrGenderBadge(s.gender) + '</td><td class="p-2.5 text-slate-700 font-semibold">' + s.area + '</td><td class="p-2.5 text-slate-500">' + s.contact + '</td></tr>';
             });
             html += '</tbody></table>';
             return html;
@@ -6294,12 +6337,12 @@
             html += '<span class="text-[11px] font-normal text-slate-500">Supervisor Listed First &bull; Area Store &amp; Deployment Records</span></div>';
 
             html += '<div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left text-xs whitespace-nowrap"><thead class="bg-slate-50 text-slate-700 uppercase font-bold border-b border-slate-200"><tr>';
-            html += '<th class="p-3 sticky left-0 z-20 bg-slate-50 border-r border-slate-200 shadow-sm min-w-[130px] sm:min-w-[160px]">Staff Name</th><th class="p-3 font-mono">Staff ID</th><th class="p-3">Role</th><th class="p-3">Contact</th><th class="p-3">Locker No</th><th class="p-3">Category</th><th class="p-3">Uniform Issued</th><th class="p-3">Uniform Date</th>';
+            html += '<th class="p-3 sticky left-0 z-20 bg-slate-50 border-r border-slate-200 shadow-sm min-w-[130px] sm:min-w-[160px]">Staff Name</th><th class="p-3 font-mono">Staff ID</th><th class="p-3">Gender</th><th class="p-3">Role</th><th class="p-3">Contact</th><th class="p-3">Locker No</th><th class="p-3">Category</th><th class="p-3">Uniform Issued</th><th class="p-3">Uniform Date</th>';
             if (showActions) html += '<th class="p-3 text-center">Actions</th>';
             html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
             if (sortedStaffList.length === 0) {
-                html += '<tr><td colspan="9" class="p-5 text-center text-slate-400 italic">No staff members found for ' + areaName + ' matching criteria.</td></tr>';
+                html += '<tr><td colspan="10" class="p-5 text-center text-slate-400 italic">No staff members found for ' + areaName + ' matching criteria.</td></tr>';
             } else {
                 sortedStaffList.forEach(function(stf) {
                     var isSupRow = String(stf.role || '').toLowerCase().indexOf('supervisor') !== -1;
@@ -6315,8 +6358,9 @@
                     var nameAddonsHtml = (leaveStatusBadgeHtml || adminHistoryBadgeHtml)
                         ? '<div class="flex items-center flex-wrap gap-1.5 mt-1">' + leaveStatusBadgeHtml + adminHistoryBadgeHtml + '</div>'
                         : '';
-                    html += '<tr class="' + rowHighlight + ' transition"><td class="p-3 sticky left-0 z-10 ' + stickyBg + ' border-r border-slate-200 shadow-sm font-bold text-slate-900 leading-snug"><div class="flex items-center flex-wrap gap-1.5"><span>' + supIcon + stf.name + '</span></div>' + nameAddonsHtml + '<div class="text-[10px] text-slate-400 font-mono sm:hidden mt-0.5">' + stf.staffCode + ' &bull; ' + stf.role + '</div></td>';
+                    html += '<tr class="' + rowHighlight + ' transition"><td class="p-3 sticky left-0 z-10 ' + stickyBg + ' border-r border-slate-200 shadow-sm font-bold text-slate-900 leading-snug"><div class="flex items-center flex-wrap gap-1.5"><span>' + supIcon + stf.name + '</span></div>' + nameAddonsHtml + '<div class="text-[10px] text-slate-400 font-mono sm:hidden mt-0.5">' + stf.staffCode + ' &bull; ' + stf.role + (stf.gender ? ' &bull; ' + stf.gender : '') + '</div></td>';
                     html += '<td class="p-3 font-mono font-bold text-slate-800">' + stf.staffCode + '</td>';
+                    html += '<td class="p-3">' + renderHrGenderBadge(stf.gender) + '</td>';
                     html += '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ' + roleBadge + '">' + stf.role + '</span></td>';
                     html += '<td class="p-3 text-slate-600">' + stf.contact + '</td>';
                     html += '<td class="p-3 font-mono text-slate-500">' + stf.locker + '</td>';
@@ -6424,6 +6468,7 @@
             document.getElementById('hrRole').value = execRoleKey;
             document.getElementById('hrStaffIdCode').value = exec.staffId;
             document.getElementById('hrName').value = exec.name;
+            if (document.getElementById('hrGender')) document.getElementById('hrGender').value = exec.gender || '';
             document.getElementById('hrContact').value = exec.contact;
             document.getElementById('hrLocker').value = 'EXEC-LOCKER';
             document.getElementById('hrCategory').value = 'Aljamea';
@@ -6531,6 +6576,7 @@
                     document.getElementById('hrArea').value = stf.area;
                     document.getElementById('hrStaffIdCode').value = stf.staffCode;
                     document.getElementById('hrName').value = stf.name;
+                    if (document.getElementById('hrGender')) document.getElementById('hrGender').value = stf.gender || '';
                     document.getElementById('hrContact').value = stf.contact;
                     document.getElementById('hrLocker').value = stf.locker;
                     document.getElementById('hrCategory').value = stf.category;
@@ -6543,6 +6589,7 @@
                 document.getElementById('hrRole').value = 'Staff';
                 document.getElementById('hrStaffIdCode').value = '';
                 document.getElementById('hrName').value = '';
+                if (document.getElementById('hrGender')) document.getElementById('hrGender').value = '';
                 document.getElementById('hrContact').value = '';
                 document.getElementById('hrLocker').value = '';
                 document.getElementById('hrCategory').value = 'Aljamea';
@@ -6561,6 +6608,7 @@
             var area = document.getElementById('hrArea').value;
             var staffCode = document.getElementById('hrStaffIdCode').value.trim();
             var name = document.getElementById('hrName').value.trim();
+            var gender = document.getElementById('hrGender') ? document.getElementById('hrGender').value.trim() : '';
             var contact = document.getElementById('hrContact').value.trim();
             var locker = document.getElementById('hrLocker').value.trim();
             var category = document.getElementById('hrCategory').value;
@@ -6572,6 +6620,7 @@
                 if (executivesData[key]) {
                     executivesData[key].name = name;
                     executivesData[key].staffId = staffCode;
+                    executivesData[key].gender = gender;
                     executivesData[key].contact = contact;
                     delete executivesData[key].email;
                     saveStateToLocalBackup();
@@ -6594,6 +6643,7 @@
                 var stf = dbData.hrStaff.find(s => s.id === editId);
                 if (stf) {
                     stf.role = role; stf.area = area; stf.staffCode = staffCode; stf.name = name;
+                    stf.gender = gender;
                     stf.contact = contact; stf.locker = locker; stf.category = category;
                     stf.uniformIssued = uniformIssued; stf.uniformIssuedDate = uniformIssuedDate;
                     stf.updatedAt = new Date().toISOString();
@@ -6603,6 +6653,7 @@
                 savedRecord = {
                     id: 'STF-' + Date.now(),
                     role: role, area: area, staffCode: staffCode, name: name,
+                    gender: gender,
                     contact: contact, locker: locker, category: category,
                     uniformIssued: uniformIssued, uniformIssuedDate: uniformIssuedDate,
                     updatedAt: new Date().toISOString()
@@ -19740,6 +19791,7 @@
                     exportRows.push({
                         'Staff ID': ex.staffId,
                         'Full Name': ex.name,
+                        'Gender': ex.gender || '',
                         'Role / Designation': ex.role,
                         'Contact Number': ex.contact,
                         'Locker Number': 'N/A',
@@ -19753,6 +19805,7 @@
                     exportRows.push({
                         'Staff ID': stf.staffCode,
                         'Full Name': stf.name,
+                        'Gender': stf.gender || '',
                         'Role / Designation': stf.role === 'Staff' ? 'Housekeeping Staff' : stf.role,
                         'Contact Number': stf.contact,
                         'Locker Number': stf.locker,
