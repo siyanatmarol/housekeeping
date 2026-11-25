@@ -1177,10 +1177,17 @@
                     </h3>
                     <p class="text-xs text-slate-500 mt-0.5">Chronological record of stock purchases, issues, and consumption logs</p>
                 </div>
-                <button type="button" onclick="closeModal('invArchiveModal')" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
+                <div class="flex items-center space-x-2">
+                    <button type="button" id="invArchiveRefreshCloudBtn" onclick="refreshInventoryArchiveFromCloud()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5" title="Sync pending local entries and fetch latest transactions from Firestore">
+                        <i class="fa-solid fa-arrows-rotate text-[11px]"></i>
+                        <span>Sync &amp; Refresh Cloud</span>
+                    </button>
+                    <button type="button" onclick="closeModal('invArchiveModal')" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
             </div>
+            <div id="invArchivePendingSyncBanner" class="hidden mb-3 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-900"></div>
             <!-- Dynamic Search & Filter Bar (Type & Date) -->
             <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                 <div class="relative flex-1">
@@ -1514,7 +1521,7 @@
                         <div>
                             <h4 class="font-bold text-xs text-emerald-950 uppercase tracking-wider flex items-center space-x-1.5">
                                 <i class="fa-solid fa-boxes-packing text-emerald-600"></i>
-                                <span>Dynamic Crate Allocation (C-01 to C-90)</span>
+                                <span>Dynamic Crate Allocation (All Available Crates)</span>
                             </h4>
                             <p class="text-[11px] text-emerald-700 mt-0.5">Allocate shredded/wet waste across one or more crates simultaneously</p>
                         </div>
@@ -1568,7 +1575,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">From Crate Number (Active C-01 to C-90)</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">From Crate Number (All Available Crates)</label>
                     <select id="compostCrateSelect" onchange="onCompostCrateSelectionChange(this.value)" required class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"></select>
                 </div>
 
@@ -1594,6 +1601,37 @@
                 <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
                     <button type="button" onclick="closeModal('addCompostModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
                     <button type="submit" id="saveCompostSubmitBtn" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow transition">Save Compost &amp; Archive Crate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODULE 6: ADD COMPOST CRATE MODAL -->
+    <div id="addCompostCrateModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-box-open text-teal-600"></i>
+                    <span>Add New Compost Crate</span>
+                </h3>
+                <button type="button" onclick="closeModal('addCompostCrateModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="handleAddCompostCrate(event)" class="space-y-4">
+                <div class="p-3 rounded-xl bg-teal-50 border border-teal-200 text-xs text-teal-900 flex items-center justify-between">
+                    <span>Current Available Crates:</span>
+                    <span id="addCompostCrateCurrentTotal" class="font-mono font-bold text-teal-800">90 Crates</span>
+                </div>
+                <div>
+                    <label for="newCompostCrateNumberInput" class="block text-xs font-semibold text-slate-600 mb-1">New Crate Number</label>
+                    <input type="text" id="newCompostCrateNumberInput" required maxlength="24" placeholder="e.g. C-91" oninput="updateNewCratePreview()" class="w-full text-sm px-3 py-2 rounded-lg border border-slate-300 font-mono font-bold text-slate-900 uppercase focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                    <p class="text-[11px] text-slate-500 mt-1.5">Enter a crate number like <span class="font-mono font-semibold text-slate-700">C-91</span> (or just <span class="font-mono font-semibold text-slate-700">91</span> to auto-format as <span class="font-mono font-semibold text-slate-700">C-91</span>). Preview: <span id="newCompostCratePreview" class="font-mono font-bold text-teal-700">-</span></p>
+                </div>
+                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('addCompostCrateModal')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg">Cancel</button>
+                    <button type="submit" id="addCompostCrateSubmitBtn" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Crate</span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -2477,6 +2515,48 @@
             return 'C-' + String(idx + 1).padStart(2, '0');
         });
         var dbCrates = {};
+
+        function normalizeCompostCrateNumber(rawVal) {
+            var val = String(rawVal || '').trim().toUpperCase().replace(/\s+/g, '');
+            if (!val) return '';
+            if (/^\d+$/.test(val)) {
+                var num = parseInt(val, 10);
+                return 'C-' + String(num).padStart(2, '0');
+            }
+            var m = val.match(/^C-?(\d+)$/);
+            if (m) {
+                return 'C-' + String(parseInt(m[1], 10)).padStart(2, '0');
+            }
+            return val;
+        }
+
+        function compareCrateNumbersNatural(a, b) {
+            return String(a || '').localeCompare(String(b || ''), undefined, { numeric: true, sensitivity: 'base' });
+        }
+
+        function getAllCompostCrateNumbers() {
+            var seen = {};
+            var list = [];
+            ALL_CRATE_NUMBERS.forEach(function(cNum) {
+                if (cNum && !seen[cNum]) {
+                    seen[cNum] = true;
+                    list.push(cNum);
+                }
+            });
+            if (dbCrates && typeof dbCrates === 'object') {
+                Object.keys(dbCrates).forEach(function(k) {
+                    var cObj = dbCrates[k];
+                    var cNum = (cObj && cObj.crateNumber) ? String(cObj.crateNumber).trim() : String(k || '').trim();
+                    if (cNum && !seen[cNum] && !(typeof isRecordDeleted === 'function' && isRecordDeleted('CRATE_' + cNum))) {
+                        seen[cNum] = true;
+                        list.push(cNum);
+                    }
+                });
+            }
+            list.sort(compareCrateNumbersNatural);
+            return list;
+        }
+        window.getAllCompostCrateNumbers = getAllCompostCrateNumbers;
         var dbWetWasteLogs = [];
         var dbCompostLogs = [];
         var compostViewMode = 'crate'; // 'crate' or 'daily'
@@ -4904,7 +4984,11 @@
             html += '<div class="flex items-center space-x-2.5 w-full sm:w-auto flex-1">';
             html += '<div class="relative w-full sm:w-72"><i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>';
             html += '<input type="text" id="inventorySearchInput" placeholder="Search Item Name or Code..." value="' + searchSearchTerm + '" oninput="handleInvSearch(this.value)" class="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"></div>';
-            html += '<button type="button" onclick="openInvArchiveModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition whitespace-nowrap flex items-center space-x-1.5 shadow-2xs"><i class="fa-solid fa-clock-rotate-left text-blue-600"></i><span>Transactions Archive</span></button>';
+            var pendingArcCount = (dbData.inventoryArchive || []).filter(function(arc) { return arc && arc._unsyncedLocal && !isRecordDeleted(arc.id); }).length;
+            var pendingArcPill = pendingArcCount > 0
+                ? '<span class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white" title="' + pendingArcCount + ' transaction(s) pending cloud sync">' + pendingArcCount + ' Pending</span>'
+                : '';
+            html += '<button type="button" onclick="openInvArchiveModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border ' + (pendingArcCount > 0 ? 'border-amber-400 ring-1 ring-amber-300' : 'border-slate-300') + ' text-xs font-semibold px-3 py-1.5 rounded-lg transition whitespace-nowrap flex items-center space-x-1.5 shadow-2xs"><i class="fa-solid fa-clock-rotate-left text-blue-600"></i><span>Transactions Archive</span>' + pendingArcPill + '</button>';
             html += '</div>';
 
             html += '<div class="flex items-center space-x-2 w-full sm:w-auto justify-end"><span class="text-xs text-slate-500 font-medium">Category:</span>';
@@ -5494,7 +5578,7 @@
             refreshInvTransactionStockBadges();
         }
 
-        function handleInventoryTransactionSubmit(e) {
+        async function handleInventoryTransactionSubmit(e) {
             e.preventDefault();
             var type = document.getElementById('invTxType').value;
             var area = type === 'PURCHASE' ? 'Main Store' : document.getElementById('invTxArea').value;
@@ -5532,9 +5616,17 @@
                 return;
             }
 
+            var submitBtn = e.target ? e.target.querySelector('button[type="submit"]') : null;
+            var origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Syncing to Cloud...';
+            }
+
             var now = new Date();
             var timestamp = now.toISOString().replace('T', ' ').substring(0, 16);
             var baseTime = Date.now();
+            var createdRecords = [];
 
             entriesToLog.forEach(function(entry, idx) {
                 var newArc = {
@@ -5548,23 +5640,45 @@
                     user: currentUser.email,
                     userName: getUserDisplayName(currentUser.email, currentUser.name),
                     remarks: remarks,
-                    updatedAt: new Date().toISOString()
+                    updatedAt: new Date().toISOString(),
+                    _unsyncedLocal: true
                 };
                 dbData.inventoryArchive.unshift(newArc);
-                if (window.saveInventoryArchiveToFirestore) {
-                    window.saveInventoryArchiveToFirestore(newArc);
-                }
+                createdRecords.push(newArc);
             });
+
+            saveStateToLocalBackup();
+
+            var syncedCount = 0;
+            var failedCount = 0;
+            if (window.saveInventoryArchiveToFirestore) {
+                for (var rIdx = 0; rIdx < createdRecords.length; rIdx++) {
+                    var ok = await window.saveInventoryArchiveToFirestore(createdRecords[rIdx]);
+                    if (ok) syncedCount++; else failedCount++;
+                }
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origBtnHtml;
+            }
 
             saveStateToLocalBackup();
             closeModal('invTransactionModal');
             switchModule('inventory');
-            showAppNotification(
-                entriesToLog.length === 1
-                    ? 'Transaction logged and stock updated!'
-                    : ('Logged ' + entriesToLog.length + ' items (' + type + ') in one go and updated stock!'),
-                'success'
-            );
+            if (failedCount > 0) {
+                showAppNotification(
+                    'Saved locally (' + failedCount + ' of ' + createdRecords.length + ' pending cloud sync). Open Transactions Archive and click "Sync & Refresh Cloud" when online.',
+                    'error'
+                );
+            } else {
+                showAppNotification(
+                    entriesToLog.length === 1
+                        ? 'Transaction logged and synced to cloud!'
+                        : ('Logged & synced ' + entriesToLog.length + ' items (' + type + ') to cloud!'),
+                    'success'
+                );
+            }
         }
 
         function populateEditArchiveAreas(selectedType, currentArea) {
@@ -5702,9 +5816,16 @@
                 }
                 record.qty = newQty;
                 record.updatedAt = new Date().toISOString();
+                record._unsyncedLocal = true;
                 saveStateToLocalBackup();
                 if (window.saveInventoryArchiveToFirestore) {
-                    window.saveInventoryArchiveToFirestore(record);
+                    window.saveInventoryArchiveToFirestore(record).then(function(ok) {
+                        var m = document.getElementById('invArchiveModal');
+                        if (m && !m.classList.contains('hidden')) renderInvArchiveModalTable();
+                        if (!ok) {
+                            showAppNotification("Edit saved locally — cloud sync pending. Click 'Sync & Refresh Cloud' to retry.", "error");
+                        }
+                    });
                 }
                 showAppNotification("Transaction record updated and stock recalculated.", "success");
                 closeModal('editArchiveModal');
@@ -5743,6 +5864,16 @@
             renderInvArchiveModalTable();
         }
 
+        function compareArchiveDatesDesc(a, b) {
+            var da = String((a && a.date) || '').replace(' ', 'T');
+            var db = String((b && b.date) || '').replace(' ', 'T');
+            if (db !== da) return db.localeCompare(da);
+            var ua = String((a && a.updatedAt) || '');
+            var ub = String((b && b.updatedAt) || '');
+            return ub.localeCompare(ua);
+        }
+        window.compareArchiveDatesDesc = compareArchiveDatesDesc;
+
         function openInvArchiveModal() {
             var sEl = document.getElementById('invArchiveSearchInput');
             var tEl = document.getElementById('invArchiveTypeFilter');
@@ -5752,6 +5883,10 @@
             if (dEl) dEl.value = invArchiveDateFilterVal || '';
             renderInvArchiveModalTable();
             openModal('invArchiveModal');
+            // Quietly refresh from Firestore & push any pending local records when modal opens
+            if (typeof window.refreshInventoryArchiveFromCloud === 'function') {
+                window.refreshInventoryArchiveFromCloud(true);
+            }
         }
 
         function renderInvArchiveModalTable() {
@@ -5764,11 +5899,32 @@
             // Edit & Delete options available to both Executive and Admin roles, but NOT Supervisors
             var canManageArchive = (isAdmin || isExec) && !isSup;
 
+            var pendingRecords = (dbData.inventoryArchive || []).filter(function(arc) {
+                return arc && arc._unsyncedLocal && !isRecordDeleted(arc.id);
+            });
+            var pendingBanner = document.getElementById('invArchivePendingSyncBanner');
+            if (pendingBanner) {
+                if (pendingRecords.length > 0) {
+                    pendingBanner.classList.remove('hidden');
+                    pendingBanner.innerHTML =
+                        '<div class="flex items-center space-x-2">' +
+                            '<i class="fa-solid fa-cloud-arrow-up text-amber-600 text-sm"></i>' +
+                            '<span><strong>' + pendingRecords.length + ' transaction(s)</strong> saved on this device are pending Cloud Sync and not yet visible to other logins.</span>' +
+                        '</div>' +
+                        '<button type="button" onclick="syncPendingInventoryArchiveNow()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition whitespace-nowrap flex items-center space-x-1.5 self-start sm:self-auto">' +
+                            '<i class="fa-solid fa-cloud-arrow-up"></i><span>Sync Pending to Cloud</span>' +
+                        '</button>';
+                } else {
+                    pendingBanner.classList.add('hidden');
+                    pendingBanner.innerHTML = '';
+                }
+            }
+
             var qLower = (invArchiveSearchQuery || '').toLowerCase();
             var typeFilter = (invArchiveTypeFilterVal || 'ALL').toUpperCase();
             var dateFilter = (invArchiveDateFilterVal || '').trim();
 
-            var filteredArchive = dbData.inventoryArchive.filter(function(arc) {
+            var filteredArchive = (dbData.inventoryArchive || []).filter(function(arc) {
                 var roleAccessOk = true;
                 if (isAdmin) roleAccessOk = true;
                 else if (isExec) roleAccessOk = currentUser.areas.indexOf(arc.area) !== -1 || arc.area === 'Main Store';
@@ -5778,7 +5934,7 @@
                 if (typeFilter !== 'ALL' && String(arc.type || '').toUpperCase() !== typeFilter) {
                     return false;
                 }
-                if (dateFilter && String(arc.date || '') !== dateFilter) {
+                if (dateFilter && String(arc.date || '').slice(0, 10) !== dateFilter) {
                     return false;
                 }
                 if (qLower) {
@@ -5811,13 +5967,17 @@
             if (canManageArchive) html += '<th class="p-3 text-center">Actions</th>';
             html += '</tr></thead><tbody class="divide-y divide-slate-100 text-slate-700">';
 
+            filteredArchive.sort(compareArchiveDatesDesc);
             if (filteredArchive.length === 0) {
                 html += '<tr><td colspan="' + (canManageArchive ? 7 : 6) + '" class="p-6 text-center text-slate-400 italic">No transaction records found matching your search or filter criteria.</td></tr>';
             } else {
                 filteredArchive.forEach(function(arc) {
                     var badgeClass = arc.type === 'PURCHASE' ? 'bg-emerald-100 text-emerald-800' : arc.type === 'ISSUE' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800';
                     var userDispName = getUserDisplayName(arc.user, arc.userName);
-                    html += '<tr class="hover:bg-slate-50 transition"><td class="p-3 text-slate-500 font-mono">' + arc.date + '</td>';
+                    var unsyncedTag = arc._unsyncedLocal
+                        ? ' <span class="inline-block ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 text-[9px] font-bold" title="Saved locally; pending Firestore upload">Pending Sync</span>'
+                        : '';
+                    html += '<tr class="hover:bg-slate-50 transition ' + (arc._unsyncedLocal ? 'bg-amber-50/40' : '') + '"><td class="p-3 text-slate-500 font-mono">' + arc.date + unsyncedTag + '</td>';
                     html += '<td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ' + badgeClass + '">' + arc.type + '</span></td>';
                     html += '<td class="p-3 font-medium text-slate-900">' + arc.itemName + '</td>';
                     html += '<td class="p-3 font-semibold text-slate-700">' + arc.area + '</td>';
@@ -12928,7 +13088,8 @@
         // ================= MODULE 6: COMPOST MANAGEMENT =================
         function computeAll90CratesState() {
             var crateMap = {};
-            ALL_CRATE_NUMBERS.forEach(function(cNum) {
+            var crateNumbers = getAllCompostCrateNumbers();
+            crateNumbers.forEach(function(cNum) {
                 var savedCrate = dbCrates[cNum] || {};
                 crateMap[cNum] = {
                     crateNumber: cNum,
@@ -12959,7 +13120,7 @@
             });
 
             // Also honor explicit active state in `crates` collection if a crate was updated directly
-            ALL_CRATE_NUMBERS.forEach(function(cNum) {
+            crateNumbers.forEach(function(cNum) {
                 var docCrate = dbCrates[cNum];
                 if (docCrate && docCrate.status === 'active' && (parseFloat(docCrate.currentQty) || 0) > 0 && crateMap[cNum].currentQty === 0) {
                     crateMap[cNum].currentQty = parseFloat(docCrate.currentQty) || 0;
@@ -12971,13 +13132,111 @@
             return crateMap;
         }
 
+        function openAddCompostCrateModal() {
+            var allCrates = getAllCompostCrateNumbers();
+            var maxNum = 90;
+            allCrates.forEach(function(cNum) {
+                var m = String(cNum || '').match(/^C-(\d+)$/i);
+                if (m) {
+                    var n = parseInt(m[1], 10);
+                    if (n > maxNum) maxNum = n;
+                }
+            });
+            var suggested = 'C-' + String(maxNum + 1).padStart(2, '0');
+            var totalEl = document.getElementById('addCompostCrateCurrentTotal');
+            if (totalEl) totalEl.textContent = allCrates.length + ' Crates';
+            var inp = document.getElementById('newCompostCrateNumberInput');
+            if (inp) {
+                inp.value = suggested;
+                setTimeout(function() { inp.focus(); inp.select(); }, 60);
+            }
+            updateNewCratePreview();
+            openModal('addCompostCrateModal');
+        }
+
+        function updateNewCratePreview() {
+            var inp = document.getElementById('newCompostCrateNumberInput');
+            var prev = document.getElementById('newCompostCratePreview');
+            if (!inp || !prev) return;
+            var normalized = normalizeCompostCrateNumber(inp.value);
+            prev.textContent = normalized || '-';
+        }
+
+        async function handleAddCompostCrate(e) {
+            e.preventDefault();
+            var inp = document.getElementById('newCompostCrateNumberInput');
+            var rawVal = inp ? inp.value : '';
+            var crateNum = normalizeCompostCrateNumber(rawVal);
+
+            if (!crateNum) {
+                showAppNotification('Please enter a valid crate number (e.g. C-91).', 'error');
+                return;
+            }
+            if (crateNum.indexOf('/') !== -1 || crateNum.indexOf('..') !== -1) {
+                showAppNotification('Crate number cannot contain "/" or "..".', 'error');
+                return;
+            }
+
+            var existing = getAllCompostCrateNumbers();
+            var isDup = existing.some(function(c) { return c.toUpperCase() === crateNum.toUpperCase(); });
+            if (isDup) {
+                showAppNotification('Crate "' + crateNum + '" already exists in the compost crate list.', 'error');
+                return;
+            }
+
+            var submitBtn = document.getElementById('addCompostCrateSubmitBtn');
+            var origHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Adding...';
+            }
+
+            var nowIso = new Date().toISOString();
+            var newCrateDoc = {
+                crateNumber: crateNum,
+                currentQty: 0,
+                dateAdded: '',
+                status: 'empty',
+                isCustom: true,
+                createdAt: nowIso,
+                createdBy: currentUser ? currentUser.email : '',
+                updatedAt: nowIso,
+                _unsyncedLocal: true
+            };
+            dbCrates[crateNum] = newCrateDoc;
+            saveStateToLocalBackup();
+
+            var syncedOk = true;
+            if (window.addCompostCrateToFirestore) {
+                syncedOk = await window.addCompostCrateToFirestore(newCrateDoc);
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origHtml;
+            }
+
+            closeModal('addCompostCrateModal');
+            if (activeModule === 'compost') {
+                switchModule('compost');
+            }
+            if (syncedOk) {
+                showAppNotification('Crate ' + crateNum + ' added and synced to all logins!', 'success');
+            } else {
+                showAppNotification('Crate ' + crateNum + ' added locally (cloud sync pending).', 'info');
+            }
+        }
+
         function renderCompostModule(container, actions) {
             var isAdmin = currentUser && currentUser.role === 'Administrator';
             var isExec = currentUser && currentUser.role.indexOf('Executive') === 0;
 
-            // Top Action Buttons: "Add Wet Waste" and "Add Compost"
+            // Top Action Buttons: "Add Crate", "Add Wet Waste", and "Add Compost"
             actions.innerHTML =
                 '<div class="flex items-center space-x-2 flex-wrap gap-y-2">' +
+                    '<button type="button" onclick="openAddCompostCrateModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
+                        '<i class="fa-solid fa-box-open"></i><span>Add Crate</span>' +
+                    '</button>' +
                     '<button type="button" onclick="openAddWetWasteModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow transition flex items-center space-x-1.5">' +
                         '<i class="fa-solid fa-leaf"></i><span>Add Wet Waste</span>' +
                     '</button>' +
@@ -13000,7 +13259,9 @@
             });
 
             var crateStateMap = computeAll90CratesState();
-            var allCratesList = ALL_CRATE_NUMBERS.map(function(cNum) { return crateStateMap[cNum]; });
+            var allCrateNumbers = getAllCompostCrateNumbers();
+            var totalCratesCount = allCrateNumbers.length;
+            var allCratesList = allCrateNumbers.map(function(cNum) { return crateStateMap[cNum]; });
 
             var shreddedCurrentlyInCrates = 0;
             var activeCratesCount = 0;
@@ -13062,7 +13323,8 @@
             html += '<button type="button" onclick="switchCompostView(\'daily\')" class="px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 ' + dailyBtnClass + '"><i class="fa-solid fa-calendar-days"></i><span>Daily View</span></button>';
             html += '</div>';
 
-            html += '<div class="flex items-center space-x-2">';
+            html += '<div class="flex items-center flex-wrap gap-2">';
+            html += '<button type="button" onclick="openAddCompostCrateModal()" class="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5"><i class="fa-solid fa-box-open text-teal-600"></i><span>Add Crate</span></button>';
             html += '<button type="button" onclick="openAddWetWasteModal()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5"><i class="fa-solid fa-plus text-emerald-600"></i><span>Add Wet Waste</span></button>';
             html += '<button type="button" onclick="openAddCompostModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1.5"><i class="fa-solid fa-seedling text-amber-600"></i><span>Add Compost</span></button>';
             html += '</div>';
@@ -13080,8 +13342,8 @@
                 html += '</div>';
                 html += '</div>';
                 html += '<div class="flex items-center space-x-3 flex-wrap gap-y-2">';
-                html += '<div class="px-3.5 py-2 rounded-xl bg-emerald-800/80 border border-emerald-600 text-xs font-bold text-emerald-100">Active Crates: <span class="text-white font-mono">' + activeCratesCount + ' / 90</span></div>';
-                html += '<div class="px-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-xs font-bold text-slate-200">Available Empty: <span class="text-white font-mono">' + (90 - activeCratesCount) + ' / 90</span></div>';
+                html += '<div class="px-3.5 py-2 rounded-xl bg-emerald-800/80 border border-emerald-600 text-xs font-bold text-emerald-100">Active Crates: <span class="text-white font-mono">' + activeCratesCount + ' / ' + totalCratesCount + '</span></div>';
+                html += '<div class="px-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-xs font-bold text-slate-200">Available Empty: <span class="text-white font-mono">' + (totalCratesCount - activeCratesCount) + ' / ' + totalCratesCount + '</span></div>';
                 html += '</div>';
                 html += '</div>';
 
@@ -13095,7 +13357,7 @@
                     var activePill = compostCrateFilterStatus === st
                         ? 'bg-emerald-700 text-white'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200';
-                    var countLabel = st === 'All' ? 'All (90)' : (st === 'Active' ? 'Active (' + activeCratesCount + ')' : 'Empty (' + (90 - activeCratesCount) + ')');
+                    var countLabel = st === 'All' ? 'All (' + totalCratesCount + ')' : (st === 'Active' ? 'Active (' + activeCratesCount + ')' : 'Empty (' + (totalCratesCount - activeCratesCount) + ')');
                     html += '<button type="button" onclick="setCompostCrateFilterStatus(\'' + st + '\')" class="px-3 py-1 rounded-lg text-xs font-semibold transition ' + activePill + '">' + countLabel + '</button>';
                 });
                 html += '</div></div>';
@@ -13105,7 +13367,7 @@
                     var aActive = a.currentQty > 0 ? 1 : 0;
                     var bActive = b.currentQty > 0 ? 1 : 0;
                     if (aActive !== bActive) return bActive - aActive;
-                    return a.crateNumber.localeCompare(b.crateNumber);
+                    return compareCrateNumbersNatural(a.crateNumber, b.crateNumber);
                 });
 
                 var filteredCrates = sortedCrates.filter(function(c) {
@@ -13439,7 +13701,7 @@
             rowDiv.className = 'crate-allocation-row grid grid-cols-12 gap-2 items-center bg-white p-2 rounded-lg border border-emerald-200 shadow-2xs';
 
             var optionsHtml = '';
-            ALL_CRATE_NUMBERS.forEach(function(cNum) {
+            getAllCompostCrateNumbers().forEach(function(cNum) {
                 var cState = crateStateMap[cNum];
                 var activeLabel = (cState && cState.currentQty > 0) ? ' (' + cState.currentQty.toFixed(1) + ' kg active)' : ' (0 kg)';
                 var isSelected = selectedCrateNum === cNum ? 'selected' : '';
@@ -13568,7 +13830,8 @@
 
             var activeCrates = [];
             var emptyCrates = [];
-            ALL_CRATE_NUMBERS.forEach(function(cNum) {
+            var allCrateNums = getAllCompostCrateNumbers();
+            allCrateNums.forEach(function(cNum) {
                 if (crateStateMap[cNum].currentQty > 0) {
                     activeCrates.push(crateStateMap[cNum]);
                 } else {
@@ -13584,7 +13847,7 @@
                 });
                 optionsHtml += '</optgroup>';
             }
-            optionsHtml += '<optgroup label="All Crates (C-01 to C-90)">';
+            optionsHtml += '<optgroup label="Empty Crates (' + emptyCrates.length + ' of ' + allCrateNums.length + ' Total)">';
             emptyCrates.forEach(function(c) {
                 optionsHtml += '<option value="' + c.crateNumber + '">' + c.crateNumber + ' (0 kg — Empty)</option>';
             });
@@ -19848,7 +20111,8 @@
             } else if (activeModule === 'compost') {
                 if (compostViewMode === 'crate') {
                     var cMap = computeAll90CratesState();
-                    ALL_CRATE_NUMBERS.forEach(function(cNum) {
+                    var exportCrateNums = getAllCompostCrateNumbers();
+                    exportCrateNums.forEach(function(cNum) {
                         var c = cMap[cNum];
                         exportRows.push({
                             'Crate Number': c.crateNumber,
@@ -19859,7 +20123,7 @@
                     });
                     sheetName = "Compost Crates";
                     fileName = "Siyanat_Compost_Crates_Status";
-                    reportTitle = "Siyanat Marol - Compost Crates (C-01 to C-90) Status";
+                    reportTitle = "Siyanat Marol - Compost Crates (" + exportCrateNums.length + " Total) Status";
                 } else {
                     dbWetWasteLogs.forEach(function(l) {
                         var crateSum = (Array.isArray(l.crateAllocations) ? l.crateAllocations : []).reduce(function(acc, a) {
@@ -20614,9 +20878,44 @@
                     cloudPest.push({ id: d.id, ...d.data() });
                 });
                 window.dbPestControlRecords = mergeCollectionWithLocal(cloudPest, window.dbPestControlRecords, 'id');
+                // Also force-pull inventory, inventory_archive, and compost crates so Refresh always gets latest transactions & custom crates
+                try {
+                    const invSnap = await getDocs(collection(db, "inventory"));
+                    const cloudInv = [];
+                    invSnap.forEach((d) => {
+                        if (!isRecordDeleted(d.id)) cloudInv.push({ id: d.id, ...d.data() });
+                    });
+                    if (cloudInv.length > 0 && window.dbData) {
+                        window.dbData.inventory = mergeCollectionWithLocal(cloudInv, window.dbData.inventory, 'id');
+                    }
+                    const arcSnap = await getDocs(collection(db, "inventory_archive"));
+                    const cloudArcs = [];
+                    arcSnap.forEach((d) => {
+                        if (!isRecordDeleted(d.id)) cloudArcs.push({ id: d.id, ...d.data() });
+                    });
+                    if (window.dbData) {
+                        const mergedArcs = mergeCollectionWithLocal(cloudArcs, window.dbData.inventoryArchive, 'id');
+                        if (typeof window.compareArchiveDatesDesc === 'function') {
+                            mergedArcs.sort(window.compareArchiveDatesDesc);
+                        }
+                        window.dbData.inventoryArchive = mergedArcs;
+                    }
+                    const cratesSnap = await getDocs(collection(db, "crates"));
+                    const crateMap = Object.assign({}, window.dbCrates || {});
+                    cratesSnap.forEach((d) => {
+                        crateMap[d.id] = { id: d.id, ...d.data() };
+                    });
+                    window.dbCrates = crateMap;
+                } catch (invSyncErr) {
+                    console.warn("Force sync inventory/crates note:", invSyncErr && invSyncErr.message ? invSyncErr.message : invSyncErr);
+                }
                 saveStateToLocalBackup();
-                if (window.activeModule === "pest" && typeof window.scheduleActiveModuleRender === "function") {
-                    window.scheduleActiveModuleRender("pest", false);
+                var arcModalEl = document.getElementById('invArchiveModal');
+                if (arcModalEl && !arcModalEl.classList.contains('hidden') && typeof window.renderInvArchiveModalTable === 'function') {
+                    window.renderInvArchiveModalTable();
+                }
+                if ((window.activeModule === "pest" || window.activeModule === "inventory" || window.activeModule === "compost") && typeof window.scheduleActiveModuleRender === "function") {
+                    window.scheduleActiveModuleRender(window.activeModule, false);
                 }
             } catch (e) {}
         };
@@ -20987,7 +21286,11 @@
                             arcs.push({ id: docId, ...docSnap.data() });
                         });
                         const merged = mergeCollectionWithLocal(arcs, window.dbData.inventoryArchive, 'id');
-                        merged.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        if (typeof window.compareArchiveDatesDesc === 'function') {
+                            merged.sort(window.compareArchiveDatesDesc);
+                        } else {
+                            merged.sort((a, b) => String((b && b.date) || '').localeCompare(String((a && a.date) || '')));
+                        }
                         window.dbData.inventoryArchive = merged;
                         saveStateToLocalBackup();
                         var arcModal = document.getElementById('invArchiveModal');
@@ -21544,15 +21847,125 @@
         };
 
         window.saveInventoryArchiveToFirestore = async function(arcObj) {
-            if (!arcObj) return;
+            if (!arcObj) return false;
             arcObj._unsyncedLocal = true;
             saveStateToLocalBackup();
             try {
                 await window.ensureFirebaseAuthSession();
                 await setDoc(doc(db, "inventory_archive", arcObj.id), sanitizeForFirestore(arcObj), { merge: true });
                 arcObj._unsyncedLocal = false;
+                delete arcObj._syncError;
+                saveStateToLocalBackup();
+                setCloudSyncIndicator('connected', 'Firestore & fm.marol Drive');
+                return true;
             } catch (err) {
+                arcObj._syncError = (err && err.message) ? err.message : String(err);
                 handleWriteError("inventory_archive", err);
+                return false;
+            }
+        };
+
+        window.syncPendingInventoryArchiveNow = async function() {
+            const list = (window.dbData && Array.isArray(window.dbData.inventoryArchive)) ? window.dbData.inventoryArchive : [];
+            const pending = list.filter((r) => r && r._unsyncedLocal && !isRecordDeleted(r.id));
+            if (pending.length === 0) {
+                showAppNotification('All Inventory Transactions are already synced to Firestore.', 'info');
+                return { okCount: 0, failCount: 0 };
+            }
+            showAppNotification('Syncing ' + pending.length + ' pending inventory transaction(s) to cloud...', 'info');
+            let okCount = 0;
+            let failCount = 0;
+            for (const rec of pending) {
+                const ok = await window.saveInventoryArchiveToFirestore(rec);
+                if (ok) okCount++; else failCount++;
+            }
+            saveStateToLocalBackup();
+            if (typeof window.renderInvArchiveModalTable === 'function') {
+                window.renderInvArchiveModalTable();
+            }
+            if (window.activeModule === 'inventory') {
+                switchModule('inventory');
+            }
+            if (failCount === 0) {
+                showAppNotification('Synced ' + okCount + ' transaction(s) to Firestore! Now visible across all logins.', 'success');
+            } else {
+                showAppNotification('Synced ' + okCount + ', failed ' + failCount + ' transaction(s). Please check your internet connection and retry.', 'error');
+            }
+            return { okCount, failCount };
+        };
+
+        window.refreshInventoryArchiveFromCloud = async function(silent) {
+            const btn = document.getElementById('invArchiveRefreshCloudBtn');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn && !silent) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[11px]"></i><span>Syncing...</span>';
+            }
+            try {
+                await window.ensureFirebaseAuthSession();
+                // 1. Push any local unsynced archive transactions to Firestore first
+                const localList = (window.dbData && Array.isArray(window.dbData.inventoryArchive)) ? window.dbData.inventoryArchive : [];
+                let pushedCount = 0;
+                for (const rec of localList) {
+                    if (rec && rec._unsyncedLocal && !isRecordDeleted(rec.id)) {
+                        const ok = await window.saveInventoryArchiveToFirestore(rec);
+                        if (ok) pushedCount++;
+                    }
+                }
+                // 2. Pull fresh cloud snapshot of inventory_archive
+                const snap = await getDocs(collection(db, "inventory_archive"));
+                const cloudArcs = [];
+                const cloudIdSet = new Set();
+                snap.forEach((docSnap) => {
+                    const docId = docSnap.id;
+                    if (window.isRecordDeleted && window.isRecordDeleted(docId)) return;
+                    cloudIdSet.add(docId);
+                    cloudArcs.push({ id: docId, ...docSnap.data() });
+                });
+                // 3. Safety net: if a local record created by the current user is missing from cloud (e.g. legacy unsynced before this update) and not deleted, push it!
+                if (!silent && window.currentUser && window.currentUser.email) {
+                    const myEmail = String(window.currentUser.email).toLowerCase().trim();
+                    for (const rec of localList) {
+                        if (rec && rec.id && !cloudIdSet.has(rec.id) && !isRecordDeleted(rec.id) && String(rec.user || '').toLowerCase().trim() === myEmail) {
+                            const ok = await window.saveInventoryArchiveToFirestore(rec);
+                            if (ok) {
+                                pushedCount++;
+                                cloudIdSet.add(rec.id);
+                                cloudArcs.push(rec);
+                            }
+                        }
+                    }
+                }
+                const merged = mergeCollectionWithLocal(cloudArcs, window.dbData ? window.dbData.inventoryArchive : [], 'id');
+                if (typeof window.compareArchiveDatesDesc === 'function') {
+                    merged.sort(window.compareArchiveDatesDesc);
+                }
+                if (window.dbData) window.dbData.inventoryArchive = merged;
+                saveStateToLocalBackup();
+                if (typeof window.renderInvArchiveModalTable === 'function') {
+                    window.renderInvArchiveModalTable();
+                }
+                if (window.activeModule === 'inventory' && typeof window.scheduleActiveModuleRender === 'function') {
+                    window.scheduleActiveModuleRender('inventory', false);
+                }
+                if (!silent) {
+                    showAppNotification(
+                        pushedCount > 0
+                            ? ('Uploaded ' + pushedCount + ' local transaction(s) and refreshed ' + merged.length + ' cloud records!')
+                            : ('Transaction Archive refreshed from cloud (' + merged.length + ' total records).'),
+                        'success'
+                    );
+                }
+            } catch (err) {
+                console.warn("Refresh inventory_archive failed:", err);
+                if (!silent) {
+                    showAppNotification('Could not sync with cloud right now. Please check your internet connection.', 'error');
+                }
+            } finally {
+                if (btn && !silent) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
             }
         };
 
@@ -21891,6 +22304,24 @@
                 }
             } catch (err) {
                 handleWriteError("wet_waste_logs", err);
+            }
+        };
+
+        window.addCompostCrateToFirestore = async function(crateDoc) {
+            if (!crateDoc || !crateDoc.crateNumber) return false;
+            crateDoc._unsyncedLocal = true;
+            window.dbCrates[crateDoc.crateNumber] = crateDoc;
+            saveStateToLocalBackup();
+            try {
+                await window.ensureFirebaseAuthSession();
+                await setDoc(doc(db, "crates", crateDoc.crateNumber), sanitizeForFirestore(crateDoc), { merge: true });
+                crateDoc._unsyncedLocal = false;
+                saveStateToLocalBackup();
+                setCloudSyncIndicator('connected', 'Firestore & fm.marol Drive');
+                return true;
+            } catch (err) {
+                handleWriteError("crates", err);
+                return false;
             }
         };
 
@@ -22513,6 +22944,22 @@
                 await syncUnsyncedList("dry_waste_offloadings", window.dbWasteOffloadings, "id");
                 await syncUnsyncedList("wet_waste_logs", window.dbWetWasteLogs, "id");
                 await syncUnsyncedList("compost_logs", window.dbCompostLogs, "id");
+                if (window.dbCrates && typeof window.dbCrates === 'object') {
+                    let didSyncCrate = false;
+                    for (const cKey of Object.keys(window.dbCrates)) {
+                        const cObj = window.dbCrates[cKey];
+                        if (cObj && cObj._unsyncedLocal) {
+                            try {
+                                await setDoc(doc(db, "crates", cObj.crateNumber || cKey), sanitizeForFirestore(cObj), { merge: true });
+                                cObj._unsyncedLocal = false;
+                                didSyncCrate = true;
+                            } catch (cErr) {
+                                console.warn("Auto-sync crate failed [" + cKey + "]:", cErr && cErr.message ? cErr.message : cErr);
+                            }
+                        }
+                    }
+                    if (didSyncCrate) saveStateToLocalBackup();
+                }
                 await syncUnsyncedList("cleaning_logs", window.dbCleaningLogs, "id");
                 await syncUnsyncedList("daily_work_reports", window.dbDailyWorkReports, "reportId");
                 if (window.dbScopeUnsyncedLocal && window.dbScopeOfWork && Object.keys(window.dbScopeOfWork).length > 0 && typeof window.saveScopeOfWorkToFirestore === "function") {
